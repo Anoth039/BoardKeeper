@@ -1,0 +1,60 @@
+<div class="card mb-4">
+  <div class="card-body">
+    <h5 class="card-title">{{ isEditMode ? 'Edit Game' : 'Add a New Game' }}</h5>
+
+    <form [formGroup]="form" (ngSubmit)="onSubmit()">
+      <div class="mb-3">
+        <label class="form-label">Title *</label>
+        <input type="text" class="form-control" formControlName="title" />
+        <div class="text-danger small" *ngIf="form.get('title')?.invalid && form.get('title')?.touched">
+          Title is required.
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Description</label>
+        <textarea class="form-control" formControlName="description" rows="2"></textarea>
+      </div>
+
+      <div class="row">
+        <div class="col mb-3">
+          <label class="form-label">Min Players *</label>
+          <input type="number" class="form-control" formControlName="minPlayers" min="1" />
+          <div class="text-danger small" *ngIf="form.get('minPlayers')?.invalid && form.get('minPlayers')?.touched">
+            Must be at least 1 player.
+          </div>
+        </div>
+        <div class="col mb-3">
+          <label class="form-label">Max Players *</label>
+          <input type="number" class="form-control" formControlName="maxPlayers" min="1" />
+          <div class="text-danger small" *ngIf="form.get('maxPlayers')?.invalid && form.get('maxPlayers')?.touched">
+            Must be at least 1 player.
+          </div>
+        </div>
+      </div>
+
+      <div class="text-danger small mb-2" *ngIf="form.errors?.['maxLessThanMin'] && (form.get('minPlayers')?.touched || form.get('maxPlayers')?.touched)">
+        Max players cannot be less than min players.
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Category</label>
+        <input type="text" class="form-control" formControlName="category" placeholder="e.g. Strategy, Party, Family" />
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Image URL</label>
+        <input type="text" class="form-control" formControlName="imageUrl" placeholder="https://..." />
+      </div>
+
+      <div class="alert alert-danger" *ngIf="errorMessage">{{ errorMessage }}</div>
+
+      <button type="submit" class="btn btn-primary" [disabled]="submitting">
+        {{ submitting ? 'Saving...' : (isEditMode ? 'Save Changes' : 'Add Game') }}
+      </button>
+      <button type="button" class="btn btn-secondary ms-2" (click)="onCancel()">
+        Cancel
+      </button>
+    </form>
+  </div>
+</div>

@@ -1,0 +1,184 @@
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+  <div class="input-group" style="max-width: 320px;">
+    <span class="input-group-text bg-white">
+      <i class="bi bi-search"></i>
+    </span>
+    <input type="text" class="form-control" placeholder="Search games by name or category..." [(ngModel)]="gameSearchTerm"/>
+  </div>
+
+  <button class="btn btn-primary" (click)="openAddForm()" *ngIf="!showForm">
+    <i class="bi bi-plus-lg"></i> Add Game
+  </button>
+</div>
+
+<div *ngIf="showForm" class="mb-4">
+  <app-game-form
+    [gameToEdit]="editingGame"
+    (gameSaved)="onFormSaved()"
+    (cancelled)="onFormCancelled()"
+  ></app-game-form>
+</div>
+
+<div *ngIf="games.length === 0" class="alert alert-secondary">
+  No games found. Add one to get started.
+</div>
+
+<div *ngIf="games.length > 0 && filteredGames.length === 0" class="alert alert-secondary">
+  No games match your search.
+</div>
+
+<div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3">
+  <div class="col" *ngFor="let game of filteredGames">
+    <div class="card game-card h-100 shadow-sm">
+      <img *ngIf="game.imageUrl" [src]="game.imageUrl" class="card-img-top game-card-img" alt="{{ game.title }} cover"/>
+      <div class="card-body d-flex flex-column">
+        <div class="d-flex justify-content-between align-items-start">
+          <div>
+            <h6 class="card-title mb-0">{{ game.title }}</h6>
+            <small class="text-muted">{{ game.category }}</small>
+          </div>
+          <div class="d-flex" style="gap: 0.25rem;">
+            <button class="btn btn-sm btn-outline-secondary" (click)="openEditForm(game)">
+              <i class="bi bi-pencil"></i>
+            </button>
+            <button class="btn btn-sm btn-outline-danger" (click)="deleteGame(game)">
+              <i class="bi bi-trash"></i>
+            </button>
+          </div>
+        </div>
+
+        <p class="card-text game-card-description mt-2">{{ game.description }}</p>
+
+        <div class="mt-auto">
+          <small class="text-muted d-block mb-2">
+            {{ game.minPlayers }}–{{ game.maxPlayers }} players
+          </small>
+
+          <div class="d-flex justify-content-between align-items-center">
+            <span class="badge bg-primary">
+              {{ availableCount(game) }} / {{ game.copies?.length || 0 }} available
+            </span>
+            <button class="btn btn-sm btn-outline-primary" (click)="openCopiesModal(game)">
+              View Copies
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop-custom" *ngIf="selectedGameForCopies" (click)="closeCopiesModal()">
+  <div class="modal-box" (click)="$event.stopPropagation()">
+    <div class="modal-header-custom">
+      <h5 class="mb-0">{{ selectedGameForCopies.title }} — Copies</h5>
+      <button class="btn-close" (click)="closeCopiesModal()"></button>
+    </div>
+
+    <div class="modal-body-custom">
+      <div class="row g-2 mb-2">
+        <div class="col-12">
+          <input
+            type="text"
+            class="form-control form-control-sm"
+            placeholder="Search by copy name/number..."
+            [(ngModel)]="copySearchTerm"
+          />
+        </div>
+        <div class="col-6">
+          <select class="form-select form-select-sm" [(ngModel)]="copyFilterCondition">
+            <option value="all">All conditions</option>
+            <option value="new">New</option>
+            <option value="good">Good</option>
+            <option value="worn">Worn</option>
+            <option value="damaged">Damaged</option>
+          </select>
+        </div>
+        <div class="col-6">
+          <select class="form-select form-select-sm" [(ngModel)]="copyFilterAvailability">
+            <option value="all">All statuses</option>
+            <option value="available">Available</option>
+            <option value="rented">Rented out</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="copies-scroll-area">
+        <ul class="list-group mb-0" *ngIf="filteredCopies.length > 0">
+          <li class="list-group-item" *ngFor="let copy of filteredCopies">
+
+            <div class="d-flex justify-content-between align-items-center" *ngIf="editingCopyId !== copy.id">
+              <span>
+                {{ getCopyLabel(copy) }}
+                <span class="badge ms-2" [ngClass]="conditionBadgeClass(copy.condition)">
+                  {{ copy.condition }}
+                </span>
+                <span class="badge ms-1" [ngClass]="copy.isAvailable ? 'bg-success' : 'bg-secondary'">
+                  {{ copy.isAvailable ? 'Available' : 'Rented out' }}
+                </span>
+              </span>
+              <div>
+                <button class="btn btn-sm btn-outline-secondary" (click)="startEditCopy(copy)">
+                  <i class="bi bi-pencil"></i>
+                </button>
+                <button class="btn btn-sm btn-outline-danger ms-1" (click)="deleteCopy(copy.id)">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </div>
+            </div>
+
+            <div *ngIf="editingCopyId === copy.id" class="row g-2 align-items-center">
+              <div class="col-4">
+                <input type="text" class="form-control form-control-sm" placeholder="Copy #" [(ngModel)]="editCopyNumber" />
+              </div>
+              <div class="col-3">
+                <select class="form-select form-select-sm" [(ngModel)]="editCopyCondition">
+                  <option value="new">New</option>
+                  <option value="good">Good</option>
+                  <option value="worn">Worn</option>
+                  <option value="damaged">Damaged</option>
+                </select>
+              </div>
+              <div class="col-2 form-check">
+                <input class="form-check-input" type="checkbox" [(ngModel)]="editCopyAvailable" id="avail-{{copy.id}}" />
+                <label class="form-check-label small" for="avail-{{copy.id}}">Avail.</label>
+              </div>
+              <div class="col-3 d-flex justify-content-end gap-1">
+                <button class="btn btn-sm btn-success" (click)="saveEditCopy(copy.id)">Save</button>
+                <button class="btn btn-sm btn-outline-secondary" (click)="cancelEditCopy()">✕</button>
+              </div>
+            </div>
+
+          </li>
+        </ul>
+
+        <p *ngIf="filteredCopies.length === 0" class="text-muted fst-italic mb-0">
+          {{ selectedGameForCopies!.copies && selectedGameForCopies!.copies.length > 0 ? 'No copies match your search/filters.' : 'No copies added yet.' }}
+        </p>
+      </div>
+
+      <hr class="my-2" />
+
+      <h6>Add a Copy</h6>
+      <div class="row g-2 align-items-center">
+        <div class="col-5">
+          <input type="text" class="form-control form-control-sm" placeholder="Copy # (optional)" [(ngModel)]="newCopyNumber" />
+        </div>
+        <div class="col-4">
+          <select class="form-select form-select-sm" [(ngModel)]="newCopyCondition">
+            <option value="new">New</option>
+            <option value="good">Good</option>
+            <option value="worn">Worn</option>
+            <option value="damaged">Damaged</option>
+          </select>
+        </div>
+        <div class="col-3">
+          <button class="btn btn-sm btn-primary w-100" (click)="addCopy()" [disabled]="addingCopy">
+            {{ addingCopy ? 'Adding...' : 'Add' }}
+          </button>
+        </div>
+      </div>
+      <div class="text-danger small mt-1" *ngIf="copyErrorMessage">{{ copyErrorMessage }}</div>
+    </div>
+  </div>
+</div>
