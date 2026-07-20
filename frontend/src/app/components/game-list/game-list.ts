@@ -20,7 +20,7 @@ export class GameListComponent implements OnInit {
   selectedGameForCopies: Game | null = null;
   gameSearchTerm = '';
 
-  newCopyCondition = 'good';
+  newCopyCondition = 'new';
   newCopyNumber = '';
   addingCopy = false;
   copyErrorMessage = '';
@@ -88,7 +88,7 @@ export class GameListComponent implements OnInit {
   }
 
   resetNewCopyForm(): void {
-    this.newCopyCondition = 'good';
+    this.newCopyCondition = 'new';
     this.newCopyNumber = '';
     this.copyErrorMessage = '';
   }

@@ -1,1 +1,56 @@
-<p>member-list works!</p>
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+  <div class="input-group" style="max-width: 320px;">
+    <input type="text" class="form-control" placeholder="Search by name or email..." [(ngModel)]="searchTerm"/>
+  </div>
+
+  <button class="btn btn-primary" (click)="openAddForm()" *ngIf="!showForm">
+    <i class="bi bi-plus-lg"></i> Add Member
+  </button>
+</div>
+
+<div *ngIf="showForm" class="mb-4">
+  <app-member-form [memberToEdit]="editingMember" (memberSaved)="onFormSaved()" (cancelled)="onFormCancelled()"></app-member-form>
+</div>
+
+<div *ngIf="members.length === 0" class="alert alert-secondary">
+  No members found. Add one to get started.
+</div>
+
+<div *ngIf="members.length > 0 && filteredMembers.length === 0" class="alert alert-secondary">
+  No members match your search.
+</div>
+
+<table class="table table-hover align-middle" *ngIf="filteredMembers.length > 0">
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Email</th>
+      <th>Phone</th>
+      <th>Status</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr *ngFor="let member of filteredMembers" [class.text-muted]="!member.isActive">
+      <td>{{ member.firstName }} {{ member.lastName }}</td>
+      <td>{{ member.email }}</td>
+      <td>{{ member.phone || '—' }}</td>
+      <td>
+        <span class="badge" [ngClass]="member.isActive ? 'bg-success' : 'bg-secondary'">
+          {{ member.isActive ? 'Active' : 'Inactive' }}
+        </span>
+      </td>
+      <td class="text-end">
+        <div class="d-flex" style="gap: 0.25rem;">
+          <button class="btn btn-sm btn-outline-secondary" (click)="openEditForm(member)" [disabled]="!member.isActive" title="Edit">
+            <i class="bi bi-pencil"></i>
+          </button>
+          <button class="btn btn-sm" [ngClass]="member.isActive ? 'btn-outline-danger' : 'btn-outline-success'"
+            (click)="toggleActive(member)" [title]="member.isActive ? 'Deactivate' : 'Reactivate'">
+            <i class="bi" [ngClass]="member.isActive ? 'bi-person-dash' : 'bi-person-check'"></i>
+          </button>
+        </div>
+      </td>
+    </tr>
+  </tbody>
+</table>

@@ -1,0 +1,46 @@
+<div class="card mb-4">
+  <div class="card-body">
+    <h5 class="card-title">{{ isEditMode ? 'Edit Member' : 'Add a New Member' }}</h5>
+
+    <form [formGroup]="form" (ngSubmit)="onSubmit()">
+      <div class="row">
+        <div class="col mb-3">
+          <label class="form-label">First Name *</label>
+          <input type="text" class="form-control" formControlName="firstName" />
+          <div class="text-danger small" *ngIf="form.get('firstName')?.invalid && form.get('firstName')?.touched">
+            First name is required.
+          </div>
+        </div>
+        <div class="col mb-3">
+          <label class="form-label">Last Name *</label>
+          <input type="text" class="form-control" formControlName="lastName" />
+          <div class="text-danger small" *ngIf="form.get('lastName')?.invalid && form.get('lastName')?.touched">
+            Last name is required.
+          </div>
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Email *</label>
+        <input type="email" class="form-control" formControlName="email" />
+        <div class="text-danger small" *ngIf="form.get('email')?.invalid && form.get('email')?.touched">
+          A valid email is required.
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Phone</label>
+        <input type="text" class="form-control" formControlName="phone" />
+      </div>
+
+      <div class="alert alert-danger" *ngIf="errorMessage">{{ errorMessage }}</div>
+
+      <button type="submit" class="btn btn-primary" [disabled]="submitting">
+        {{ submitting ? 'Saving...' : (isEditMode ? 'Save Changes' : 'Add Member') }}
+      </button>
+      <button type="button" class="btn btn-secondary ms-2" (click)="onCancel()">
+        Cancel
+      </button>
+    </form>
+  </div>
+</div>
