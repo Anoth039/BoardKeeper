@@ -20,7 +20,7 @@ export const getMemberById = async (req: Request, res: Response) => {
     const id = Number(req.params.id);
     const member = await memberRepository.findOne({
       where: { id },
-      relations: { rentals: true },
+      relations: { rentals: { gameCopy: { game: true } } },
     });
 
     if (!member) {

@@ -1,0 +1,73 @@
+<div *ngIf="loading" class="text-muted">Loading member...</div>
+
+<div *ngIf="notFound" class="alert alert-danger">
+  Member not found. <a routerLink="/members">Back to Members</a>
+</div>
+
+<div *ngIf="member">
+  <div class="d-flex justify-content-between align-items-start mb-4">
+    <div>
+      <h2 class="mb-0">{{ member.firstName }} {{ member.lastName }}</h2>
+      <p class="text-muted mb-0">{{ member.email }}</p>
+      <p class="text-muted mb-0" *ngIf="member.phone">{{ member.phone }}</p>
+      <span class="badge mt-1" [ngClass]="member.isActive ? 'bg-success' : 'bg-secondary'">
+        {{ member.isActive ? 'Active' : 'Inactive' }}
+      </span>
+    </div>
+    <a routerLink="/members" class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-arrow-left"></i> Back to Members
+    </a>
+  </div>
+
+  <h5>Currently Rented ({{ activeRentals.length }})</h5>
+  <div *ngIf="activeRentals.length === 0" class="text-muted mb-4">No active rentals.</div>
+
+  <table class="table table-sm table-hover mb-4" *ngIf="activeRentals.length > 0">
+    <thead>
+      <tr>
+        <th>Game</th>
+        <th>Copy</th>
+        <th>Rented</th>
+        <th>Due</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let rental of activeRentals">
+        <td>{{ rental.gameCopy?.game?.title || '—' }}</td>
+        <td>{{ rental.gameCopy?.copyNumber || ('Copy #' + rental.gameCopy?.id) }}</td>
+        <td>{{ rental.rentalDate }}</td>
+        <td>{{ rental.dueDate }}</td>
+        <td>
+          <span class="badge" [ngClass]="statusBadgeClass(rental.status)">{{ rental.status }}</span>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h5>Rental History ({{ pastRentals.length }})</h5>
+  <div *ngIf="pastRentals.length === 0" class="text-muted">No past rentals.</div>
+
+  <table class="table table-sm table-hover" *ngIf="pastRentals.length > 0">
+    <thead>
+      <tr>
+        <th>Game</th>
+        <th>Copy</th>
+        <th>Rented</th>
+        <th>Returned</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let rental of pastRentals">
+        <td>{{ rental.gameCopy?.game?.title || '—' }}</td>
+        <td>{{ rental.gameCopy?.copyNumber || ('Copy #' + rental.gameCopy?.id) }}</td>
+        <td>{{ rental.rentalDate }}</td>
+        <td>{{ rental.returnDate || '—' }}</td>
+        <td>
+          <span class="badge" [ngClass]="statusBadgeClass(rental.status)">{{ rental.status }}</span>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>

@@ -4,11 +4,12 @@ import { FormsModule } from '@angular/forms';
 import { MemberService } from '../../services/member';
 import { Member } from '../../models/member.model';
 import { MemberForm } from '../member-form/member-form';
+import { RouterLink } from '@angular/router';
 
 @Component({
   selector: 'app-member-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, MemberForm],
+  imports: [CommonModule, FormsModule, MemberForm, RouterLink],
   templateUrl: './member-list.html',
   styleUrl: './member-list.css'
 })
@@ -39,13 +40,21 @@ export class MemberListComponent implements OnInit {
   }
 
   get filteredMembers(): Member[] {
-    if (this.searchTerm.trim() === '') return this.members;
+    let result = this.members;
 
-    const term = this.searchTerm.trim().toLowerCase();
-    return this.members.filter(m =>
-      `${m.firstName} ${m.lastName}`.toLowerCase().includes(term)
-      || m.email.toLowerCase().includes(term)
-    );
+    if (this.searchTerm.trim() !== '') {
+      const term = this.searchTerm.trim().toLowerCase();
+      result = result.filter(m =>
+        `${m.firstName} ${m.lastName}`.toLowerCase().includes(term)
+        || m.email.toLowerCase().includes(term)
+      );
+    }
+
+    return [...result].sort((a, b) => {
+      const statusDiff = Number(b.isActive) - Number(a.isActive);
+      if (statusDiff !== 0) return statusDiff;
+      return a.lastName.localeCompare(b.lastName);
+    });
   }
 
   openAddForm(): void {

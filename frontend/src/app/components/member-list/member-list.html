@@ -1,5 +1,8 @@
 <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
   <div class="input-group" style="max-width: 320px;">
+    <span class="input-group-text bg-white">
+      <i class="bi bi-search"></i>
+    </span>
     <input type="text" class="form-control" placeholder="Search by name or email..." [(ngModel)]="searchTerm"/>
   </div>
 
@@ -32,7 +35,11 @@
   </thead>
   <tbody>
     <tr *ngFor="let member of filteredMembers" [class.text-muted]="!member.isActive">
-      <td>{{ member.firstName }} {{ member.lastName }}</td>
+      <td>
+        <a [routerLink]="['/members', member.id]" class="text-decoration-none">
+          {{ member.firstName }} {{ member.lastName }}
+        </a>
+      </td>
       <td>{{ member.email }}</td>
       <td>{{ member.phone || '—' }}</td>
       <td>

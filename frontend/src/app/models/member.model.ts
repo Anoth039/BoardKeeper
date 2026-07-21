@@ -1,3 +1,5 @@
+import { Rental } from "./rental.model";
+
 export interface Member {
   id: number;
   firstName: string;
@@ -5,5 +7,6 @@ export interface Member {
   email: string;
   phone?: string;
   isActive: boolean;
+  rentals?: Rental[];
   createdAt: string;
 }
