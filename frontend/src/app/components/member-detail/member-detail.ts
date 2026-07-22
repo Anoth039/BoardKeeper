@@ -46,6 +46,18 @@ export class MemberDetail implements OnInit {
     return this.member?.rentals?.filter(r => r.status !== RentalStatus.ACTIVE) || [];
   }
 
+  get initials(): string {
+  if (!this.member) return '';
+  return `${this.member.firstName.charAt(0)}${this.member.lastName.charAt(0)}`.toUpperCase();
+  }
+
+  get memberSince(): string {
+    if (!this.member) return '';
+    return new Date(this.member.createdAt).toLocaleDateString(undefined, {
+      year: 'numeric', month: 'long'
+    });
+  }
+
   statusBadgeClass(status: RentalStatus): string {
     switch (status) {
       case RentalStatus.ACTIVE: return 'bg-primary';

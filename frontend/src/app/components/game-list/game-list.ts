@@ -224,9 +224,9 @@ export class GameListComponent implements OnInit {
 
   conditionBadgeClass(condition: string): string {
     switch (condition) {
-      case 'new': return 'bg-success';
-      case 'good': return 'bg-primary';
-      case 'worn': return 'bg-warning text-dark';
+      case 'new': return 'bg-primary';
+      case 'good': return 'bg-success';
+      case 'worn': return 'bg-warning';
       case 'damaged': return 'bg-danger';
       default: return 'bg-secondary';
     }
