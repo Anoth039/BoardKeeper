@@ -1,1 +1,65 @@
-<p>rental-list works!</p>
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+  <div class="d-flex gap-2 flex-wrap">
+    <div class="input-group" style="max-width: 260px;">
+      <span class="input-group-text bg-white">
+        <i class="bi bi-search"></i>
+      </span>
+      <input type="text" class="form-control" placeholder="Search by member or game..." [(ngModel)]="searchTerm"/>
+    </div>
+    <select class="form-select" style="max-width: 160px;" [(ngModel)]="statusFilter">
+      <option value="all">All statuses</option>
+      <option value="active">Active</option>
+      <option value="returned">Returned</option>
+    </select>
+  </div>
+
+  <button class="btn btn-primary" (click)="openForm()" *ngIf="!showForm">
+    <i class="bi bi-plus-lg"></i> New Rental
+  </button>
+</div>
+
+<div *ngIf="showForm" class="mb-4">
+  <app-rental-form (rentalCreated)="onFormCreated()" (cancelled)="onFormCancelled()"></app-rental-form>
+</div>
+
+<div *ngIf="rentals.length === 0" class="alert alert-secondary">
+  No rentals yet.
+</div>
+
+<div *ngIf="rentals.length > 0 && filteredRentals.length === 0" class="alert alert-secondary">
+  No rentals match your search/filter.
+</div>
+
+<table class="table table-hover align-middle" *ngIf="filteredRentals.length > 0">
+  <thead class="table-light">
+    <tr>
+      <th>Member</th>
+      <th>Game</th>
+      <th>Copy</th>
+      <th>Rented</th>
+      <th>Due</th>
+      <th>Returned</th>
+      <th>Status</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr *ngFor="let rental of filteredRentals">
+      <td>{{ rental.member?.firstName }} {{ rental.member?.lastName }}</td>
+      <td>{{ rental.gameCopy?.game?.title || '—' }}</td>
+      <td>{{ rental.gameCopy?.copyNumber || ('Copy #' + rental.gameCopy?.id) }}</td>
+      <td>{{ rental.rentalDate }}</td>
+      <td>{{ rental.dueDate }}</td>
+      <td>{{ rental.returnDate || '—' }}</td>
+      <td>
+        <span class="badge" [ngClass]="statusBadgeClass(rental)">{{ displayStatus(rental) }}</span>
+      </td> 
+      <td class="text-end">
+        <button class="btn btn-sm btn-outline-success" *ngIf="rental.status === 'active'" 
+            (click)="returnRental(rental)" title="Mark as returned">
+          <i class="bi bi-box-arrow-in-left"></i> Return
+        </button>
+      </td>
+    </tr>
+  </tbody>
+</table>

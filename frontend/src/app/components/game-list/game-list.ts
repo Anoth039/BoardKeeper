@@ -28,7 +28,6 @@ export class GameListComponent implements OnInit {
   editingCopyId: number | null = null;
   editCopyCondition = 'good';
   editCopyNumber = '';
-  editCopyAvailable = true;
 
   copySearchTerm = '';
   copyFilterCondition = 'all';
@@ -123,7 +122,6 @@ export class GameListComponent implements OnInit {
     this.editingCopyId = copy.id;
     this.editCopyCondition = copy.condition;
     this.editCopyNumber = copy.copyNumber || '';
-    this.editCopyAvailable = copy.isAvailable;
   }
 
   cancelEditCopy(): void {
@@ -134,7 +132,6 @@ export class GameListComponent implements OnInit {
     this.gameCopyService.update(copyId, {
       condition: this.editCopyCondition as any,
       copyNumber: this.editCopyNumber || undefined,
-      isAvailable: this.editCopyAvailable
     }).subscribe({
       next: () => {
         this.editingCopyId = null;
@@ -146,6 +143,12 @@ export class GameListComponent implements OnInit {
   }
 
   deleteCopy(copyId: number): void {
+    const copy = this.selectedGameForCopies?.copies?.find(c => c.id === copyId);
+    if (copy && !copy.isAvailable) {
+      alert('This copy is currently rented out and cannot be deleted.');
+      return;
+    }
+
     if (!confirm('Delete this copy? This cannot be undone.')) return;
 
     this.gameCopyService.delete(copyId).subscribe({

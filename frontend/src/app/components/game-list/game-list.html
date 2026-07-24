@@ -108,7 +108,7 @@
                   {{ copy.isAvailable ? 'Available' : 'Rented out' }}
                 </span>
               </span>
-              <div>
+              <div *ngIf="copy.isAvailable">
                 <button class="btn btn-sm btn-outline-secondary" (click)="startEditCopy(copy)">
                   <i class="bi bi-pencil"></i>
                 </button>
@@ -116,25 +116,19 @@
                   <i class="bi bi-trash"></i>
                 </button>
               </div>
+              <span *ngIf="!copy.isAvailable" class="text-muted small fst-italic">Locked while rented</span>
             </div>
 
-            <div *ngIf="editingCopyId === copy.id" class="row g-2 align-items-center">
-              <div class="col-4">
-                <input type="text" class="form-control form-control-sm" placeholder="Copy #" [(ngModel)]="editCopyNumber" />
-              </div>
-              <div class="col-3">
-                <select class="form-select form-select-sm" [(ngModel)]="editCopyCondition">
-                  <option value="new">New</option>
-                  <option value="good">Good</option>
-                  <option value="worn">Worn</option>
-                  <option value="damaged">Damaged</option>
-                </select>
-              </div>
-              <div class="col-2 form-check">
-                <input class="form-check-input" type="checkbox" [(ngModel)]="editCopyAvailable" id="avail-{{copy.id}}" />
-                <label class="form-check-label small" for="avail-{{copy.id}}">Avail.</label>
-              </div>
-              <div class="col-3 d-flex justify-content-end gap-1">
+            <div *ngIf="editingCopyId === copy.id" class="d-flex align-items-center gap-2">
+              <input type="text" class="form-control form-control-sm" placeholder="Copy #" style="max-width: 120px;"
+                [(ngModel)]="editCopyNumber"/>
+              <select class="form-select form-select-sm" style="max-width: 110px;" [(ngModel)]="editCopyCondition">
+                <option value="new">New</option>
+                <option value="good">Good</option>
+                <option value="worn">Worn</option>
+                <option value="damaged">Damaged</option>
+              </select>
+              <div class="ms-auto d-flex gap-1">
                 <button class="btn btn-sm btn-success" (click)="saveEditCopy(copy.id)">Save</button>
                 <button class="btn btn-sm btn-outline-secondary" (click)="cancelEditCopy()">✕</button>
               </div>

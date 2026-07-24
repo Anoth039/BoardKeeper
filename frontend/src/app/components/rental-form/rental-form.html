@@ -1,0 +1,63 @@
+<div class="card mb-4">
+  <div class="card-body">
+    <h5 class="card-title">New Rental</h5>
+
+    <form (ngSubmit)="onSubmit()">
+      <div class="mb-3">
+        <label class="form-label">Member *</label>
+        <select class="form-select" [(ngModel)]="selectedMemberId" name="memberId" required>
+          <option [ngValue]="null" disabled>Select a member</option>
+          <option *ngFor="let member of members" [ngValue]="member.id">
+            {{ member.firstName }} {{ member.lastName }} ({{ member.email }})
+          </option>
+        </select>
+        <div class="form-text" *ngIf="members.length === 0">
+          No active members available. Add or reactivate a member first.
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Game *</label>
+        <select class="form-select" [(ngModel)]="selectedGameId" name="gameId" (ngModelChange)="onGameChange()" required>
+          <option [ngValue]="null" disabled>Select a game</option>
+          <option *ngFor="let game of games" [ngValue]="game.id">
+            {{ game.title }}
+          </option>
+        </select>
+      </div>
+
+      <div class="mb-3" *ngIf="selectedGameId">
+        <label class="form-label">Copy *</label>
+        <select class="form-select" [(ngModel)]="selectedCopyId" name="copyId" required>
+          <option [ngValue]="null" disabled>Select a copy</option>
+          <option *ngFor="let copy of availableCopiesForSelectedGame" [ngValue]="copy.id">
+            {{ copy.copyNumber || ('Copy #' + copy.id) }} ({{ copy.condition }})
+          </option>
+        </select>
+        <div class="form-text" *ngIf="availableCopiesForSelectedGame.length === 0">
+          No available copies of this game right now.
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col mb-3">
+          <label class="form-label">Rental Date *</label>
+          <input type="date" class="form-control" [(ngModel)]="rentalDate" name="rentalDate" required />
+        </div>
+        <div class="col mb-3">
+          <label class="form-label">Due Date *</label>
+          <input type="date" class="form-control" [(ngModel)]="dueDate" name="dueDate" required />
+        </div>
+      </div>
+
+      <div class="alert alert-danger" *ngIf="errorMessage">{{ errorMessage }}</div>
+
+      <button type="submit" class="btn btn-primary" [disabled]="submitting">
+        {{ submitting ? 'Renting...' : 'Rent Out' }}
+      </button>
+      <button type="button" class="btn btn-secondary ms-2" (click)="onCancel()">
+        Cancel
+      </button>
+    </form>
+  </div>
+</div>
