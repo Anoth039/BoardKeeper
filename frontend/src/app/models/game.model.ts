@@ -1,3 +1,5 @@
+import { Rental } from './rental.model';
+
 export interface Game {
   id: number;
   title: string;
@@ -16,5 +18,6 @@ export interface GameCopy {
   copyNumber?: string;
   isAvailable: boolean;
   game?: Game;
+  rentals?: Rental[];
   createdAt: string;
 }

@@ -17,9 +17,9 @@ export class Rental {
   @JoinColumn({ name: "member_id" })
   member!: Member;
 
-  @ManyToOne(() => GameCopy, { onDelete: "CASCADE" })
+  @ManyToOne(() => GameCopy, { onDelete: "SET NULL", nullable: true })
   @JoinColumn({ name: "game_copy_id" })
-  gameCopy!: GameCopy;
+  gameCopy!: GameCopy | null;
 
   @Column({ name: "rental_date", type: "date" })
   rentalDate!: string;
@@ -39,4 +39,10 @@ export class Rental {
 
   @CreateDateColumn({ name: "created_at" })
   createdAt!: Date;
+
+  @Column({ name: "game_title_snapshot", nullable: true })
+  gameTitleSnapshot!: string;
+
+  @Column({ name: "copy_label_snapshot", nullable: true })
+  copyLabelSnapshot!: string;
 }

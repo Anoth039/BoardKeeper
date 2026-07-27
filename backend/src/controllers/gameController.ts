@@ -80,12 +80,27 @@ export const updateGame = async (req: Request, res: Response) => {
 export const deleteGame = async (req: Request, res: Response) => {
   try {
     const id = Number(req.params.id);
-    const result = await gameRepository.delete(id);
 
-    if (result.affected === 0) {
+    const game = await gameRepository.findOne({
+      where: { id },
+      relations: { copies: { rentals: true } },
+    });
+
+    if (!game) {
       return res.status(404).json({ message: "Game not found" });
     }
 
+    const hasActiveRentals = game.copies?.some(copy =>
+      copy.rentals?.some(rental => rental.status === "active")
+    );
+
+    if (hasActiveRentals) {
+      return res.status(409).json({
+        message: "Cannot delete this game — one or more copies are currently rented out. Please wait until they are returned.",
+      });
+    }
+
+    await gameRepository.delete(id);
     res.status(204).send();
   } catch (error) {
     res.status(500).json({ message: "Failed to delete game", error });

@@ -156,7 +156,12 @@ export class GameListComponent implements OnInit {
         this.loadGames();
         this.cdr.detectChanges();
       },
-      error: (err) => console.error('Failed to delete copy', err)
+      error: (err) => {
+        const message = err.error?.message || 'Failed to delete this copy. Please try again.';
+        alert(message);
+        console.error(err);
+        this.cdr.detectChanges();
+      }
     });
   }
 
@@ -164,7 +169,6 @@ export class GameListComponent implements OnInit {
     const confirmed = confirm(
       `Delete "${game.title}"? This will also delete all ${game.copies?.length || 0} copies of it. This cannot be undone.`
     );
-
     if (!confirmed) return;
 
     this.gameService.delete(game.id).subscribe({
@@ -173,8 +177,9 @@ export class GameListComponent implements OnInit {
         this.cdr.detectChanges();
       },
       error: (err) => {
-        console.error('Failed to delete game', err);
-        alert('Failed to delete this game. Please try again.');
+        const message = err.error?.message || 'Failed to delete this game. Please try again.';
+        alert(message);
+        console.error(err);
         this.cdr.detectChanges();
       }
     });

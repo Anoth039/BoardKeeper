@@ -14,6 +14,8 @@ export interface Rental {
   returnDate: string | null;
   status: RentalStatus;
   member?: Member;
-  gameCopy?: GameCopy;
+  gameCopy?: GameCopy | null;
+  gameTitleSnapshot?: string;
+  copyLabelSnapshot?: string;
   createdAt: string;
 }

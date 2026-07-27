@@ -58,7 +58,10 @@ export const createRental = async (req: Request, res: Response) => {
         throw new Error("MEMBER_NOT_FOUND");
       }
 
-      const gameCopy = await gameCopyRepo.findOneBy({ id: gameCopyId });
+      const gameCopy = await gameCopyRepo.findOne({
+        where: { id: gameCopyId },
+        relations: { game: true },
+      });
       if (!gameCopy) {
         throw new Error("COPY_NOT_FOUND");
       }
@@ -72,6 +75,8 @@ export const createRental = async (req: Request, res: Response) => {
         rentalDate,
         dueDate,
         status: RentalStatus.ACTIVE,
+        gameTitleSnapshot: gameCopy.game?.title,
+        copyLabelSnapshot: gameCopy.copyNumber || `Copy #${gameCopy.id}`,
       });
       const newRental = await rentalRepo.save(rental);
 
@@ -116,9 +121,12 @@ export const returnRental = async (req: Request, res: Response) => {
       if (rental.status === RentalStatus.RETURNED) {
         throw new Error("ALREADY_RETURNED");
       }
+      if (!rental.gameCopy) {
+        throw new Error("COPY_NO_LONGER_EXISTS");
+      }
 
       rental.status = RentalStatus.RETURNED;
-      rental.returnDate = new Date().toISOString().split("T")[0]; // "YYYY-MM-DD"
+      rental.returnDate = new Date().toISOString().split("T")[0];
       const savedRental = await rentalRepo.save(rental);
 
       rental.gameCopy.isAvailable = true;
@@ -134,6 +142,9 @@ export const returnRental = async (req: Request, res: Response) => {
     }
     if (error.message === "ALREADY_RETURNED") {
       return res.status(409).json({ message: "This rental has already been returned" });
+    }
+    if (error.message === "COPY_NO_LONGER_EXISTS") {
+      return res.status(409).json({ message: "This rental's copy no longer exists and cannot be marked as returned this way" });
     }
     res.status(500).json({ message: "Failed to return rental", error });
   }

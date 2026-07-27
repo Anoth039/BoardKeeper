@@ -1,5 +1,6 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn } from "typeorm";
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn, OneToMany } from "typeorm";
 import { Game } from "./Game";
+import { Rental } from "./Rental";
 
 export enum CopyCondition {
   NEW = "new",
@@ -29,6 +30,9 @@ export class GameCopy {
 
   @Column({ name: "is_available", default: true })
   isAvailable!: boolean;
+
+  @OneToMany(() => Rental, (rental) => rental.gameCopy)
+  rentals!: Rental[];
 
   @CreateDateColumn({ name: "created_at" })
   createdAt!: Date;

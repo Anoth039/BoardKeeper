@@ -109,8 +109,8 @@
         </thead>
         <tbody>
           <tr *ngFor="let rental of pastRentals">
-            <td>{{ rental.gameCopy?.game?.title || '—' }}</td>
-            <td>{{ rental.gameCopy?.copyNumber || ('Copy #' + rental.gameCopy?.id) }}</td>
+            <td>{{ rental.gameCopy?.game?.title || rental.gameTitleSnapshot || 'Unknown game' }}</td>
+            <td>{{ (rental.gameCopy ? (rental.gameCopy.copyNumber || ('Copy #' + rental.gameCopy.id)) : null) || rental.copyLabelSnapshot || 'Unknown copy' }}</td>
             <td>{{ rental.rentalDate }}</td>
             <td>{{ rental.returnDate || '—' }}</td>
             <td><span class="badge" [ngClass]="statusBadgeClass(rental.status)">{{ rental.status }}</span></td>

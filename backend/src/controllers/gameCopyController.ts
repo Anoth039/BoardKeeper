@@ -85,12 +85,25 @@ export const updateGameCopy = async (req: Request, res: Response) => {
 export const deleteGameCopy = async (req: Request, res: Response) => {
   try {
     const id = Number(req.params.id);
-    const result = await gameCopyRepository.delete(id);
 
-    if (result.affected === 0) {
+    const copy = await gameCopyRepository.findOne({
+      where: { id },
+      relations: { rentals: true },
+    });
+
+    if (!copy) {
       return res.status(404).json({ message: "Game copy not found" });
     }
 
+    const hasActiveRental = copy.rentals?.some(rental => rental.status === "active");
+
+    if (hasActiveRental) {
+      return res.status(409).json({
+        message: "Cannot delete this copy — it is currently rented out.",
+      });
+    }
+
+    await gameCopyRepository.delete(id);
     res.status(204).send();
   } catch (error) {
     res.status(500).json({ message: "Failed to delete game copy", error });
