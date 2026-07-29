@@ -25,7 +25,7 @@ export class GameCopy {
   })
   condition!: CopyCondition;
 
-  @Column({ name: "copy_number", nullable: true })
+  @Column({ name: "copy_number" })
   copyNumber!: string;
 
   @Column({ name: "is_available", default: true })

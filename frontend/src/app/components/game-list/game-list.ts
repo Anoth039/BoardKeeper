@@ -95,13 +95,31 @@ export class GameListComponent implements OnInit {
   addCopy(): void {
     if (!this.selectedGameForCopies) return;
 
+    const trimmedNumber = this.newCopyNumber.trim();
+
+    if (trimmedNumber.length < 3 || trimmedNumber.length > 40) {
+      this.copyErrorMessage = 'Copy name/number must be between 3 and 40 characters.';
+      this.cdr.detectChanges();
+      return;
+    }
+
+    const isDuplicate = this.selectedGameForCopies.copies?.some(
+      copy => copy.copyNumber.toLowerCase() === trimmedNumber.toLowerCase()
+    );
+
+    if (isDuplicate) {
+      this.copyErrorMessage = 'A copy with this name already exists for this game.';
+      this.cdr.detectChanges();
+      return;
+    }
+
     this.addingCopy = true;
     this.copyErrorMessage = '';
 
     this.gameCopyService.create({
       gameId: this.selectedGameForCopies.id,
       condition: this.newCopyCondition,
-      copyNumber: this.newCopyNumber || undefined
+      copyNumber: trimmedNumber
     }).subscribe({
       next: () => {
         this.addingCopy = false;
@@ -111,7 +129,7 @@ export class GameListComponent implements OnInit {
       },
       error: (err) => {
         this.addingCopy = false;
-        this.copyErrorMessage = 'Failed to add copy.';
+        this.copyErrorMessage = err.error?.message || 'Failed to add copy.';
         console.error(err);
         this.cdr.detectChanges();
       }
@@ -129,16 +147,36 @@ export class GameListComponent implements OnInit {
   }
 
   saveEditCopy(copyId: number): void {
+    const trimmedNumber = this.editCopyNumber.trim();
+
+    if (trimmedNumber.length < 3 || trimmedNumber.length > 40) {
+      alert('Copy name/number must be between 3 and 40 characters.');
+      return;
+    }
+
+    const isDuplicate = this.selectedGameForCopies?.copies?.some(
+      copy => copy.id !== copyId && copy.copyNumber.toLowerCase() === trimmedNumber.toLowerCase()
+    );
+
+    if (isDuplicate) {
+      alert('A copy with this name already exists for this game.');
+      return;
+    }
+
     this.gameCopyService.update(copyId, {
       condition: this.editCopyCondition as any,
-      copyNumber: this.editCopyNumber || undefined,
+      copyNumber: trimmedNumber
     }).subscribe({
       next: () => {
         this.editingCopyId = null;
         this.loadGames();
         this.cdr.detectChanges();
       },
-      error: (err) => console.error('Failed to update copy', err)
+      error: (err) => {
+        alert(err.error?.message || 'Failed to update copy.');
+        console.error(err);
+        this.cdr.detectChanges();
+      }
     });
   }
 
@@ -185,13 +223,6 @@ export class GameListComponent implements OnInit {
     });
   }
 
-  getCopyLabel(copy: GameCopy): string {
-    if (copy.copyNumber) return copy.copyNumber;
-    const copies = this.selectedGameForCopies?.copies || [];
-    const index = copies.findIndex(c => c.id === copy.id);
-    return `Copy #${index + 1}`;
-  }
-
   get filteredGames(): Game[] {
     if (this.gameSearchTerm.trim() === '') return this.games;
 
@@ -207,7 +238,7 @@ export class GameListComponent implements OnInit {
 
     return this.selectedGameForCopies.copies.filter(copy => {
       const matchesSearch = this.copySearchTerm.trim() === ''
-        || this.getCopyLabel(copy).toLowerCase().includes(this.copySearchTerm.trim().toLowerCase());
+        || copy.copyNumber.toLowerCase().includes(this.copySearchTerm.trim().toLowerCase());
 
       const matchesCondition = this.copyFilterCondition === 'all'
         || copy.condition === this.copyFilterCondition;

@@ -15,7 +15,7 @@ export interface Game {
 export interface GameCopy {
   id: number;
   condition: string;
-  copyNumber?: string;
+  copyNumber: string;
   isAvailable: boolean;
   game?: Game;
   rentals?: Rental[];

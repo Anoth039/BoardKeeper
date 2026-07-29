@@ -100,7 +100,7 @@
 
             <div class="d-flex justify-content-between align-items-center" *ngIf="editingCopyId !== copy.id">
               <span>
-                {{ getCopyLabel(copy) }}
+                <span class="copy-name-text" [title]="copy.copyNumber">{{ copy.copyNumber }}</span>
                 <span class="badge ms-2" [ngClass]="conditionBadgeClass(copy.condition)">
                   {{ copy.condition }}
                 </span>
@@ -147,7 +147,8 @@
       <h6>Add a Copy</h6>
       <div class="row g-2 align-items-center">
         <div class="col-5">
-          <input type="text" class="form-control form-control-sm" placeholder="Copy # (optional)" [(ngModel)]="newCopyNumber" />
+          <input type="text" class="form-control form-control-sm" placeholder="Copy name/number *" 
+            [(ngModel)]="newCopyNumber" required minlength="3" maxlength="40"/>
         </div>
         <div class="col-4">
           <select class="form-select form-select-sm" [(ngModel)]="newCopyCondition">

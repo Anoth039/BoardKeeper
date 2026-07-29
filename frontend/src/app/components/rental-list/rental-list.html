@@ -47,7 +47,7 @@
     <tr *ngFor="let rental of filteredRentals">
       <td>{{ rental.member?.firstName }} {{ rental.member?.lastName }}</td>
       <td>{{ rental.gameCopy?.game?.title || rental.gameTitleSnapshot || 'Unknown game' }}</td>
-      <td>{{ (rental.gameCopy ? (rental.gameCopy.copyNumber || ('Copy #' + rental.gameCopy.id)) : null) || rental.copyLabelSnapshot || 'Unknown copy' }}</td>
+      <td>{{ rental.gameCopy?.copyNumber || rental.copyLabelSnapshot || 'Unknown copy' }}</td>
       <td>{{ rental.rentalDate }}</td>
       <td>{{ rental.dueDate }}</td>
       <td>{{ rental.returnDate || '—' }}</td>

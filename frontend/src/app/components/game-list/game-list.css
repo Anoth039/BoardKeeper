@@ -68,3 +68,12 @@
   padding: 1rem 1.25rem;
   border-bottom: 1px solid #dee2e6;
 }
+
+.copy-name-text {
+  display: inline-block;
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: middle;
+}
