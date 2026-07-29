@@ -19,3 +19,22 @@ export interface Rental {
   copyLabelSnapshot?: string;
   createdAt: string;
 }
+
+export function isRentalOverdue(rental: Rental): boolean {
+  const today = new Date().toISOString().split('T')[0];
+  return rental.status === RentalStatus.ACTIVE && rental.dueDate < today;
+}
+
+export function rentalStatusBadgeClass(rental: Rental): string {
+  if (isRentalOverdue(rental)) return 'bg-danger';
+  switch (rental.status) {
+    case RentalStatus.ACTIVE: return 'bg-primary';
+    case RentalStatus.RETURNED: return 'bg-success';
+    default: return 'bg-secondary';
+  }
+}
+
+export function rentalDisplayStatus(rental: Rental): string {
+  if (isRentalOverdue(rental)) return 'overdue';
+  return rental.status;
+}

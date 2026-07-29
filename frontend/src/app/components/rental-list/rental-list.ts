@@ -2,7 +2,7 @@ import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RentalService } from '../../services/rental';
-import { Rental, RentalStatus } from '../../models/rental.model';
+import { isRentalOverdue, Rental, rentalDisplayStatus, RentalStatus, rentalStatusBadgeClass } from '../../models/rental.model';
 import { RentalForm } from '../rental-form/rental-form';
 
 @Component({
@@ -17,6 +17,10 @@ export class RentalListComponent implements OnInit {
   searchTerm = '';
   statusFilter: 'all' | RentalStatus = 'all';
   showForm = false;
+
+  isOverdue = isRentalOverdue;
+  statusBadgeClass = rentalStatusBadgeClass;
+  displayStatus = rentalDisplayStatus;
 
   constructor(private rentalService: RentalService, private cdr: ChangeDetectorRef) {}
 
@@ -95,28 +99,5 @@ export class RentalListComponent implements OnInit {
         this.cdr.detectChanges();
       }
     });
-  }
-
-  isOverdue(rental: Rental): boolean {
-    return rental.status === RentalStatus.ACTIVE && rental.dueDate < this.today();
-  }
-
-  private today(): string {
-    return new Date().toISOString().split('T')[0];
-  }
-
-  statusBadgeClass(rental: Rental): string {
-    if (this.isOverdue(rental)) return 'bg-danger';
-    switch (rental.status) {
-      case RentalStatus.ACTIVE: return 'bg-success';
-      case RentalStatus.RETURNED: return 'bg-primary';
-      case RentalStatus.OVERDUE: return 'bg-warning';
-      default: return 'bg-secondary';
-    }
-  }
-
-  displayStatus(rental: Rental): string {
-    if (this.isOverdue(rental)) return 'overdue';
-    return rental.status;
   }
 }

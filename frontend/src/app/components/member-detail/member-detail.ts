@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { MemberService } from '../../services/member';
 import { Member } from '../../models/member.model';
-import { RentalStatus } from '../../models/rental.model';
+import { isRentalOverdue, rentalDisplayStatus, RentalStatus, rentalStatusBadgeClass } from '../../models/rental.model';
 
 @Component({
   selector: 'app-member-detail',
@@ -16,6 +16,10 @@ export class MemberDetail implements OnInit {
   member: Member | null = null;
   loading = true;
   notFound = false;
+
+  statusBadgeClass = rentalStatusBadgeClass;
+  displayStatus = rentalDisplayStatus;
+  isOverdue = isRentalOverdue;
 
   constructor(private route: ActivatedRoute, private router: Router, private memberService: MemberService, 
     private cdr: ChangeDetectorRef) {}
@@ -56,14 +60,5 @@ export class MemberDetail implements OnInit {
     return new Date(this.member.createdAt).toLocaleDateString(undefined, {
       year: 'numeric', month: 'long'
     });
-  }
-
-  statusBadgeClass(status: RentalStatus): string {
-    switch (status) {
-      case RentalStatus.ACTIVE: return 'bg-primary';
-      case RentalStatus.RETURNED: return 'bg-success';
-      case RentalStatus.OVERDUE: return 'bg-danger';
-      default: return 'bg-secondary';
-    }
   }
 }

@@ -52,8 +52,11 @@
       <td>{{ rental.dueDate }}</td>
       <td>{{ rental.returnDate || '—' }}</td>
       <td>
-        <span class="badge" [ngClass]="statusBadgeClass(rental)">{{ displayStatus(rental) }}</span>
-      </td> 
+        <span class="badge" [ngClass]="statusBadgeClass(rental)">
+          <i class="bi bi-exclamation-triangle-fill me-1" *ngIf="isOverdue(rental)"></i>
+          {{ displayStatus(rental) }}
+        </span>
+      </td>
       <td class="text-end">
         <button class="btn btn-sm btn-outline-success" *ngIf="rental.status === 'active'" 
             (click)="returnRental(rental)" title="Mark as returned">

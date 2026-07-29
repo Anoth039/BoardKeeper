@@ -79,10 +79,13 @@
         <tbody>
           <tr *ngFor="let rental of activeRentals">
             <td>{{ rental.gameCopy?.game?.title || '—' }}</td>
-            <td>{{ rental.gameCopy?.copyNumber || ('Copy #' + rental.gameCopy?.id) }}</td>
+            <td>{{ rental.gameCopy?.copyNumber }}</td>
             <td>{{ rental.rentalDate }}</td>
             <td>{{ rental.dueDate }}</td>
-            <td><span class="badge" [ngClass]="statusBadgeClass(rental.status)">{{ rental.status }}</span></td>
+            <td><span class="badge" [ngClass]="statusBadgeClass(rental)">
+              <i class="bi bi-exclamation-triangle-fill me-1" *ngIf="isOverdue(rental)"></i>
+              {{ displayStatus(rental) }}
+            </span></td>
           </tr>
         </tbody>
       </table>
@@ -113,7 +116,7 @@
             <td>{{ rental.gameCopy?.copyNumber || rental.copyLabelSnapshot || 'Unknown copy' }}</td>
             <td>{{ rental.rentalDate }}</td>
             <td>{{ rental.returnDate || '—' }}</td>
-            <td><span class="badge" [ngClass]="statusBadgeClass(rental.status)">{{ rental.status }}</span></td>
+            <td><span class="badge" [ngClass]="statusBadgeClass(rental)">{{ displayStatus(rental) }}</span></td>
           </tr>
         </tbody>
       </table>
