@@ -52,7 +52,7 @@
           <button class="btn btn-sm btn-outline-secondary" (click)="openEditForm(member)" [disabled]="!member.isActive" title="Edit">
             <i class="bi bi-pencil"></i>
           </button>
-          <button class="btn btn-sm" [ngClass]="member.isActive ? 'btn-outline-danger' : 'btn-outline-success'"
+          <button class="btn btn-sm"   *ngIf="isAdmin" [ngClass]="member.isActive ? 'btn-outline-danger' : 'btn-outline-success'"
             (click)="toggleActive(member)" [title]="member.isActive ? 'Deactivate' : 'Reactivate'">
             <i class="bi" [ngClass]="member.isActive ? 'bi-person-dash' : 'bi-person-check'"></i>
           </button>

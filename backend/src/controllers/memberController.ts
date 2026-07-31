@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { AppDataSource } from "../data-source";
 import { Member } from "../entities/Member";
 import { Rental, RentalStatus } from "../entities/Rental";
+import { AuthenticatedRequest } from "../middleware/authMiddleware";
 
 const memberRepository = AppDataSource.getRepository(Member);
 const rentalRepository = AppDataSource.getRepository(Rental);
@@ -56,13 +57,19 @@ export const createMember = async (req: Request, res: Response) => {
 };
 
 // PUT /api/members/:id
-export const updateMember = async (req: Request, res: Response) => {
+export const updateMember = async (req: AuthenticatedRequest, res: Response) => {
   try {
     const id = Number(req.params.id);
     const member = await memberRepository.findOneBy({ id });
 
     if (!member) {
       return res.status(404).json({ message: "Member not found" });
+    }
+
+    if (req.body.isActive !== undefined && req.body.isActive !== member.isActive) {
+      if (req.user?.role !== "admin") {
+        return res.status(403).json({ message: "Admin access required to activate or deactivate members" });
+      }
     }
 
     if (req.body.isActive === false && member.isActive === true) {

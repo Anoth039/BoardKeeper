@@ -5,6 +5,7 @@ import { MemberService } from '../../services/member';
 import { Member } from '../../models/member.model';
 import { MemberForm } from '../member-form/member-form';
 import { RouterLink } from '@angular/router';
+import { AuthService } from '../../services/auth';
 
 @Component({
   selector: 'app-member-list',
@@ -20,7 +21,7 @@ export class MemberListComponent implements OnInit {
   showForm = false;
   editingMember: Member | null = null;
 
-  constructor(private memberService: MemberService, private cdr: ChangeDetectorRef) {}
+  constructor(private memberService: MemberService, private cdr: ChangeDetectorRef, public authService: AuthService) {}
 
   ngOnInit(): void {
     this.loadMembers();
@@ -55,6 +56,10 @@ export class MemberListComponent implements OnInit {
       if (statusDiff !== 0) return statusDiff;
       return a.lastName.localeCompare(b.lastName);
     });
+  }
+
+  get isAdmin(): boolean {
+    return this.authService.getCurrentUser()?.role === 'admin';
   }
 
   openAddForm(): void {

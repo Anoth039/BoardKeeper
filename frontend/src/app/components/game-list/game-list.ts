@@ -5,6 +5,7 @@ import { GameService } from '../../services/game';
 import { GameCopyService } from '../../services/game-copy';
 import { Game, GameCopy } from '../../models/game.model';
 import { GameForm } from '../game-form/game-form';
+import { AuthService } from '../../services/auth';
 
 @Component({
   selector: 'app-game-list',
@@ -33,7 +34,8 @@ export class GameListComponent implements OnInit {
   copyFilterCondition = 'all';
   copyFilterAvailability = 'all';
 
-  constructor(private gameService: GameService, private gameCopyService: GameCopyService, private cdr: ChangeDetectorRef) {}
+  constructor(private gameService: GameService, private gameCopyService: GameCopyService, 
+    private cdr: ChangeDetectorRef, public authService: AuthService) {}
 
   ngOnInit(): void {
     this.loadGames();
@@ -249,6 +251,10 @@ export class GameListComponent implements OnInit {
 
       return matchesSearch && matchesCondition && matchesAvailability;
     });
+  }
+
+  get isAdmin(): boolean {
+    return this.authService.getCurrentUser()?.role === 'admin';
   }
 
   resetCopyFilters(): void {

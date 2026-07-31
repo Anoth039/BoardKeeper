@@ -1,12 +1,13 @@
 import { Router } from "express";
 import { getAllGameCopies, getGameCopyById, createGameCopy, updateGameCopy, deleteGameCopy } from "../controllers/gameCopyController";
+import { requireAdmin } from "../middleware/authMiddleware";
 
 const router = Router();
 
 router.get("/", getAllGameCopies);
 router.get("/:id", getGameCopyById);
-router.post("/", createGameCopy);
-router.put("/:id", updateGameCopy);
-router.delete("/:id", deleteGameCopy);
-
+router.post("/", requireAdmin, createGameCopy);
+router.put("/:id", requireAdmin, updateGameCopy);
+router.delete("/:id", requireAdmin, deleteGameCopy);
+    
 export default router;
