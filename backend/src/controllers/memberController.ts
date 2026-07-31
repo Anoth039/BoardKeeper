@@ -66,12 +66,6 @@ export const updateMember = async (req: AuthenticatedRequest, res: Response) => 
       return res.status(404).json({ message: "Member not found" });
     }
 
-    if (req.body.isActive !== undefined && req.body.isActive !== member.isActive) {
-      if (req.user?.role !== "admin") {
-        return res.status(403).json({ message: "Admin access required to activate or deactivate members" });
-      }
-    }
-
     if (req.body.isActive === false && member.isActive === true) {
       const activeRentalCount = await rentalRepository.count({
         where: { member: { id }, status: RentalStatus.ACTIVE },
@@ -96,12 +90,23 @@ export const updateMember = async (req: AuthenticatedRequest, res: Response) => 
 export const deleteMember = async (req: Request, res: Response) => {
   try {
     const id = Number(req.params.id);
-    const result = await memberRepository.delete(id);
 
-    if (result.affected === 0) {
+    const member = await memberRepository.findOne({
+      where: { id },
+      relations: { rentals: true },
+    });
+
+    if (!member) {
       return res.status(404).json({ message: "Member not found" });
     }
 
+    if (member.rentals && member.rentals.length > 0) {
+      return res.status(409).json({
+        message: "Cannot delete a member with rental history. Deactivate instead.",
+      });
+    }
+
+    await memberRepository.delete(id);
     res.status(204).send();
   } catch (error) {
     res.status(500).json({ message: "Failed to delete member", error });

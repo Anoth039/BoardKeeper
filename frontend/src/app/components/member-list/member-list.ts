@@ -130,4 +130,22 @@ export class MemberListComponent implements OnInit {
       }
     });
   }
+
+  deleteMember(member: Member): void {
+    const confirmed = confirm(`Permanently delete ${member.firstName} ${member.lastName}? This cannot be undone.`);
+    if (!confirmed) return;
+
+    this.memberService.delete(member.id).subscribe({
+      next: () => {
+        this.members = this.members.filter(m => m.id !== member.id);
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        const message = err.error?.message || 'Failed to delete this member.';
+        alert(message);
+        console.error(err);
+        this.cdr.detectChanges();
+      }
+    });
+  }
 }

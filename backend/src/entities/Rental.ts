@@ -14,9 +14,9 @@ export class Rental {
   @PrimaryGeneratedColumn()
   id!: number;
 
-  @ManyToOne(() => Member, (member) => member.rentals, { onDelete: "CASCADE" })
+  @ManyToOne(() => Member, (member) => member.rentals, { onDelete: "SET NULL", nullable: true })
   @JoinColumn({ name: "member_id" })
-  member!: Member;
+  member!: Member | null;
 
   @ManyToOne(() => GameCopy, { onDelete: "SET NULL", nullable: true })
   @JoinColumn({ name: "game_copy_id" })

@@ -48,13 +48,16 @@
         </span>
       </td>
       <td class="text-end">
-        <div class="d-flex" style="gap: 0.25rem;">
-          <button class="btn btn-sm btn-outline-secondary" (click)="openEditForm(member)" [disabled]="!member.isActive" title="Edit">
+        <div class="d-flex justify-content-end gap-2">
+          <button class="btn btn-sm btn-outline-secondary" (click)="openEditForm(member)" title="Edit">
             <i class="bi bi-pencil"></i>
           </button>
-          <button class="btn btn-sm"   *ngIf="isAdmin" [ngClass]="member.isActive ? 'btn-outline-danger' : 'btn-outline-success'"
+          <button class="btn btn-sm" [ngClass]="member.isActive ? 'btn-outline-warning' : 'btn-outline-success'"
             (click)="toggleActive(member)" [title]="member.isActive ? 'Deactivate' : 'Reactivate'">
             <i class="bi" [ngClass]="member.isActive ? 'bi-person-dash' : 'bi-person-check'"></i>
+          </button>
+          <button class="btn btn-sm btn-outline-danger" *ngIf="isAdmin" (click)="deleteMember(member)" title="Delete">
+            <i class="bi bi-trash"></i>
           </button>
         </div>
       </td>

@@ -3,7 +3,7 @@
     <a class="navbar-brand" routerLink="/games">BoardKeeper</a>
 
     <div class="collapse navbar-collapse">
-      <ul class="navbar-nav me-auto" *ngIf="authService.isLoggedIn()">
+      <ul class="navbar-nav me-auto">
         <li class="nav-item">
           <a class="nav-link" routerLink="/games" routerLinkActive="active">Games</a>
         </li>
@@ -15,18 +15,15 @@
         </li>
       </ul>
 
-      <div class="d-flex align-items-center gap-3" *ngIf="authService.isLoggedIn()">
+      <div class="d-flex align-items-center gap-3">
         <span class="text-light small">
           <i class="bi bi-person-circle me-1"></i>{{ authService.getCurrentUser()?.email }}
+          <span class="badge bg-secondary ms-1">{{ authService.getCurrentUser()?.role }}</span>
         </span>
         <button class="btn btn-sm btn-outline-light" (click)="logout()">
           <i class="bi bi-box-arrow-right"></i> Logout
         </button>
       </div>
-
-      <a *ngIf="!authService.isLoggedIn()" routerLink="/login" class="btn btn-sm btn-outline-light ms-auto">
-        Log In
-      </a>
     </div>
   </div>
 </nav>
