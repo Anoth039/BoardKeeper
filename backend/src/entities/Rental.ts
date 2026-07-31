@@ -1,6 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn } from "typeorm";
 import { Member } from "./Member";
 import { GameCopy } from "./GameCopy";
+import { User } from "./User";
 
 export enum RentalStatus {
   ACTIVE = "active",
@@ -39,6 +40,14 @@ export class Rental {
 
   @CreateDateColumn({ name: "created_at" })
   createdAt!: Date;
+
+  @ManyToOne(() => User, { nullable: true, onDelete: "SET NULL" })
+  @JoinColumn({ name: "handled_by_user_id" })
+  handledBy!: User | null;
+
+  @ManyToOne(() => User, { nullable: true, onDelete: "SET NULL" })
+  @JoinColumn({ name: "returned_by_user_id" })
+  returnedBy!: User | null;
 
   @Column({ name: "game_title_snapshot", nullable: true })
   gameTitleSnapshot!: string;

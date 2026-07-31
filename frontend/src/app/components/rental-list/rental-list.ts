@@ -100,4 +100,14 @@ export class RentalListComponent implements OnInit {
       }
     });
   }
+
+  handledByInitials(rental: Rental): string {
+    if (!rental.handledBy?.email) return '?';
+    return rental.handledBy.email.charAt(0).toUpperCase();
+  }
+
+  returnedByInitials(rental: Rental): string {
+    if (!rental.returnedBy?.email) return '?';
+    return rental.returnedBy.email.charAt(0).toUpperCase();
+  }
 }

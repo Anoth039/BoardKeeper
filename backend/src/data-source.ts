@@ -5,6 +5,7 @@ import { GameCopy } from './entities/GameCopy';
 import { Game } from './entities/Game';
 import { Rental } from './entities/Rental';
 import { Member } from './entities/Member';
+import { User } from './entities/User';
 
 dotenv.config();
 
@@ -17,5 +18,5 @@ export const AppDataSource = new DataSource({
   database: process.env.DB_NAME || 'boardkeeper_db',
   synchronize: true,
   logging: true,
-  entities: [Game, GameCopy, Member, Rental],
+  entities: [Game, GameCopy, Member, Rental, User],
 });

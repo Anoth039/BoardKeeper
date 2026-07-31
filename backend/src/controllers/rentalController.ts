@@ -3,6 +3,8 @@ import { AppDataSource } from "../data-source";
 import { Rental, RentalStatus } from "../entities/Rental";
 import { GameCopy } from "../entities/GameCopy";
 import { Member } from "../entities/Member";
+import { AuthenticatedRequest } from "../middleware/authMiddleware";
+import { User } from "../entities/User";
 
 const rentalRepository = AppDataSource.getRepository(Rental);
 
@@ -10,7 +12,7 @@ const rentalRepository = AppDataSource.getRepository(Rental);
 export const getAllRentals = async (req: Request, res: Response) => {
   try {
     const rentals = await rentalRepository.find({
-      relations: { member: true, gameCopy: { game: true } },
+      relations: { member: true, gameCopy: { game: true }, handledBy: true, returnedBy: true },
     });
     res.json(rentals);
   } catch (error) {
@@ -24,7 +26,7 @@ export const getRentalById = async (req: Request, res: Response) => {
     const id = Number(req.params.id);
     const rental = await rentalRepository.findOne({
       where: { id },
-      relations: { member: true, gameCopy: { game: true } },
+      relations: { member: true, gameCopy: { game: true }, handledBy: true, returnedBy: true },
     });
 
     if (!rental) {
@@ -38,7 +40,7 @@ export const getRentalById = async (req: Request, res: Response) => {
 };
 
 // POST /api/rentals
-export const createRental = async (req: Request, res: Response) => {
+export const createRental = async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { memberId, gameCopyId, rentalDate, dueDate } = req.body;
 
@@ -52,6 +54,7 @@ export const createRental = async (req: Request, res: Response) => {
       const memberRepo = manager.getRepository(Member);
       const gameCopyRepo = manager.getRepository(GameCopy);
       const rentalRepo = manager.getRepository(Rental);
+      const userRepo = manager.getRepository(User);
 
       const member = await memberRepo.findOneBy({ id: memberId });
       if (!member) {
@@ -69,6 +72,10 @@ export const createRental = async (req: Request, res: Response) => {
         throw new Error("COPY_NOT_AVAILABLE");
       }
 
+      const handledByUser = req.user
+        ? await userRepo.findOneBy({ id: req.user.userId })
+        : null;
+
       const rental = rentalRepo.create({
         member,
         gameCopy,
@@ -76,7 +83,8 @@ export const createRental = async (req: Request, res: Response) => {
         dueDate,
         status: RentalStatus.ACTIVE,
         gameTitleSnapshot: gameCopy.game?.title,
-        copyLabelSnapshot: gameCopy.copyNumber || `Copy #${gameCopy.id}`,
+        copyLabelSnapshot: gameCopy.copyNumber,
+        handledBy: handledByUser,
       });
       const newRental = await rentalRepo.save(rental);
 
@@ -102,13 +110,14 @@ export const createRental = async (req: Request, res: Response) => {
 };
 
 // PUT /api/rentals/:id/return
-export const returnRental = async (req: Request, res: Response) => {
+export const returnRental = async (req: AuthenticatedRequest, res: Response) => {
   try {
     const id = Number(req.params.id);
 
     const updatedRental = await AppDataSource.transaction(async (manager) => {
       const rentalRepo = manager.getRepository(Rental);
       const gameCopyRepo = manager.getRepository(GameCopy);
+      const userRepo = manager.getRepository(User);
 
       const rental = await rentalRepo.findOne({
         where: { id },
@@ -125,8 +134,13 @@ export const returnRental = async (req: Request, res: Response) => {
         throw new Error("COPY_NO_LONGER_EXISTS");
       }
 
+      const returnedByUser = req.user
+        ? await userRepo.findOneBy({ id: req.user.userId })
+        : null;
+
       rental.status = RentalStatus.RETURNED;
       rental.returnDate = new Date().toISOString().split("T")[0];
+      rental.returnedBy = returnedByUser;
       const savedRental = await rentalRepo.save(rental);
 
       rental.gameCopy.isAvailable = true;

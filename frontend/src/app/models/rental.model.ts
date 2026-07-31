@@ -17,6 +17,8 @@ export interface Rental {
   gameCopy?: GameCopy | null;
   gameTitleSnapshot?: string;
   copyLabelSnapshot?: string;
+  handledBy?: { id: number; email: string } | null;
+  returnedBy?: { id: number; email: string } | null;
   createdAt: string;
 }
 

@@ -1,0 +1,28 @@
+.avatar-stack {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  height: 26px;
+}
+
+.handler-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #6c757d;
+  color: white;
+  font-size: 0.75rem;
+  font-weight: bold;
+  cursor: default;
+  border: 2px solid white;
+  box-sizing: border-box;
+}
+
+.returned-avatar {
+  background: #198754;
+  margin-left: -10px;
+}

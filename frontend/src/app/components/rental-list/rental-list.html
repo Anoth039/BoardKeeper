@@ -40,7 +40,7 @@
       <th>Due</th>
       <th>Returned</th>
       <th>Status</th>
-      <th></th>
+      <th class="text-center">Handled By</th>    
     </tr>
   </thead>
   <tbody>
@@ -57,9 +57,18 @@
           {{ displayStatus(rental) }}
         </span>
       </td>
+      <td class="text-center">
+        <span class="avatar-stack">
+          <span class="handler-avatar" [title]="'Checked out by: ' + (rental.handledBy?.email || 'Unknown')">
+            {{ handledByInitials(rental) }}
+          </span>
+          <span class="handler-avatar returned-avatar" *ngIf="rental.status === 'returned'" [title]="'Returned by: ' + (rental.returnedBy?.email || 'Unknown')">
+            {{ returnedByInitials(rental) }}
+          </span>
+        </span>
+      </td>
       <td class="text-end">
-        <button class="btn btn-sm btn-outline-success" *ngIf="rental.status === 'active'" 
-            (click)="returnRental(rental)" title="Mark as returned">
+        <button class="btn btn-sm btn-outline-success"*ngIf="rental.status === 'active'" (click)="returnRental(rental)" title="Mark as returned">
           <i class="bi bi-box-arrow-in-left"></i> Return
         </button>
       </td>
