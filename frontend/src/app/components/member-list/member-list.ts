@@ -6,6 +6,7 @@ import { Member } from '../../models/member.model';
 import { MemberForm } from '../member-form/member-form';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth';
+import { isRentalOverdue } from '../../models/rental.model';
 
 @Component({
   selector: 'app-member-list',
@@ -60,6 +61,10 @@ export class MemberListComponent implements OnInit {
 
   get isAdmin(): boolean {
     return this.authService.getCurrentUser()?.role === 'admin';
+  }
+
+  hasOverdueRental(member: Member): boolean {
+    return member.rentals?.some(r => isRentalOverdue(r)) ?? false;
   }
 
   openAddForm(): void {

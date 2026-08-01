@@ -10,7 +10,9 @@ const rentalRepository = AppDataSource.getRepository(Rental);
 // GET /api/members
 export const getAllMembers = async (req: Request, res: Response) => {
   try {
-    const members = await memberRepository.find();
+    const members = await memberRepository.find({
+      relations: { rentals: true },
+    });
     res.json(members);
   } catch (error) {
     res.status(500).json({ message: "Failed to fetch members", error });

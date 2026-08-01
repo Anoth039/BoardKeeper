@@ -40,7 +40,8 @@
       <th>Due</th>
       <th>Returned</th>
       <th>Status</th>
-      <th class="text-center">Handled By</th>    
+      <th class="text-center">Handled By</th>
+      <th></th> 
     </tr>
   </thead>
   <tbody>
@@ -62,7 +63,7 @@
           <span class="handler-avatar" [title]="'Checked out by: ' + (rental.handledBy?.email || 'Unknown')">
             {{ handledByInitials(rental) }}
           </span>
-          <span class="handler-avatar returned-avatar" *ngIf="rental.status === 'returned'" [title]="'Returned by: ' + (rental.returnedBy?.email || 'Unknown')">
+          <span class="handler-avatar returned-avatar" *ngIf="rental.status === 'returned'" [title]="'Checked in by: ' + (rental.returnedBy?.email || 'Unknown')">
             {{ returnedByInitials(rental) }}
           </span>
         </span>
