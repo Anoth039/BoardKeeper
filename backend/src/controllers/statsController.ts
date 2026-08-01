@@ -42,17 +42,36 @@ export const getStats = async (req: Request, res: Response) => {
       .limit(5)
       .getRawMany();
 
-    const topMembersAllTime = await rentalRepository
-      .createQueryBuilder("rental")
-      .leftJoin("rental.member", "member")
-      .select("member.firstName", "firstName")
-      .addSelect("member.lastName", "lastName")
-      .addSelect("COUNT(rental.id)", "rentalCount")
-      .where("member.id IS NOT NULL")
-      .groupBy("member.id")
-      .orderBy("rentalCount", "DESC")
-      .limit(5)
-      .getRawMany();
+    const allGames = await gameRepository.find({
+      relations: { copies: { rentals: true } },
+    });
+
+    const unusedGames = allGames
+      .map((game) => {
+        const allRentalDates = (game.copies || [])
+          .flatMap((copy) => copy.rentals || [])
+          .map((rental) => rental.rentalDate)
+          .sort()
+          .reverse();
+
+        const lastRentedDate = allRentalDates.length > 0 ? allRentalDates[0] : null;
+
+        return {
+          title: game.title,
+          imageUrl: game.imageUrl,
+          lastRentedDate,
+          createdAt: game.createdAt,
+        };
+      })
+      .sort((a, b) => {
+        if (!a.lastRentedDate && !b.lastRentedDate) {
+          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        }
+        if (!a.lastRentedDate) return -1;
+        if (!b.lastRentedDate) return 1;
+        return a.lastRentedDate.localeCompare(b.lastRentedDate);
+      })
+      .slice(0, 5);
 
     res.json({
       totalGames,
@@ -62,7 +81,7 @@ export const getStats = async (req: Request, res: Response) => {
       activeRentals,
       overdueRentals,
       topGamesThisMonth,
-      topMembersAllTime,
+      unusedGames,
     });
   } catch (error) {
     res.status(500).json({ message: "Failed to fetch stats", error });

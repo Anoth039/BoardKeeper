@@ -3,10 +3,11 @@ export interface TopGame {
   rentalCount: string;
 }
 
-export interface TopMember {
-  firstName: string;
-  lastName: string;
-  rentalCount: string;
+export interface UnusedGame {
+  title: string;
+  imageUrl?: string;
+  lastRentedDate: string | null;
+  createdAt: string;
 }
 
 export interface Stats {
@@ -17,5 +18,5 @@ export interface Stats {
   activeRentals: number;
   overdueRentals: number;
   topGamesThisMonth: TopGame[];
-  topMembersAllTime: TopMember[];
+  unusedGames: UnusedGame[];
 }
