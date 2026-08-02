@@ -246,7 +246,7 @@ export class GameListComponent implements OnInit {
         || copy.condition === this.copyFilterCondition;
 
       const matchesAvailability = this.copyFilterAvailability === 'all'
-        || (this.copyFilterAvailability === 'available' && copy.isAvailable)
+        || (this.copyFilterAvailability === 'available' && copy.isAvailable && copy.condition !== 'lost')
         || (this.copyFilterAvailability === 'rented' && !copy.isAvailable);
 
       return matchesSearch && matchesCondition && matchesAvailability;
@@ -264,7 +264,7 @@ export class GameListComponent implements OnInit {
   }
 
   availableCount(game: Game): number {
-    return game.copies?.filter(copy => copy.isAvailable).length || 0;
+    return game.copies?.filter(copy => copy.isAvailable && copy.condition !== 'lost').length || 0;
   }
 
   conditionBadgeClass(condition: string): string {
@@ -273,7 +273,30 @@ export class GameListComponent implements OnInit {
       case 'good': return 'bg-success';
       case 'worn': return 'bg-warning';
       case 'damaged': return 'bg-danger';
+      case 'lost': return 'bg-dark';
       default: return 'bg-secondary';
     }
+  }
+
+  ageRatingColor(rating: number): string {
+    switch (rating) {
+      case 3:  return '#22c55e';
+      case 7:  return '#14b8a6';
+      case 12: return '#eab308';
+      case 16: return '#f97316';
+      case 18: return '#ef4444';
+      default: return '#71717a';
+    }
+  }
+
+  formatPlayTime(minutes: number): string {
+    if (minutes < 60) return `${minutes} min`;
+    const hours = Math.floor(minutes / 60);
+    const remainder = minutes % 60;
+    return remainder === 0 ? `${hours}h` : `${hours}h ${remainder}m`;
+  }
+
+  capitalize(text: string): string {
+    return text.charAt(0).toUpperCase() + text.slice(1);
   }
 }

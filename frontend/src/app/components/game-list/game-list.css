@@ -77,3 +77,18 @@
   white-space: nowrap;
   vertical-align: middle;
 }
+
+.age-rating-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 30px;
+  height: 24px;
+  padding: 0 6px;
+  border-radius: 6px;
+  border: 2px solid;
+  font-weight: bold;
+  font-size: 0.7rem;
+  background: white;
+  flex-shrink: 0;
+}

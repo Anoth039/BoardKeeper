@@ -6,7 +6,8 @@ export enum CopyCondition {
   NEW = "new",
   GOOD = "good",
   WORN = "worn",
-  DAMAGED = "damaged"
+  DAMAGED = "damaged",
+  LOST = "lost"
 }
 
 @Entity()

@@ -91,7 +91,7 @@ export class RentalForm implements OnInit {
   }
 
   get availableCopiesForSelectedGame(): GameCopy[] {
-    return this.selectedGame?.copies?.filter(c => c.isAvailable) || [];
+    return this.selectedGame?.copies?.filter(c => c.isAvailable && c.condition !== 'lost') || [];
   }
 
   selectMember(member: Member): void {

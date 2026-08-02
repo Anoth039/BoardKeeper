@@ -36,7 +36,7 @@ export const getGameById = async (req: Request, res: Response) => {
 // POST /api/games
 export const createGame = async (req: Request, res: Response) => {
   try {
-    const { title, description, minPlayers, maxPlayers, category, imageUrl } = req.body;
+    const { title, description, minPlayers, maxPlayers, category, imageUrl, ageRating, estimatedTimeMinutes } = req.body;
 
     if (!title || !minPlayers || !maxPlayers) {
       return res.status(400).json({ message: "title, minPlayers, and maxPlayers are required" });
@@ -49,6 +49,8 @@ export const createGame = async (req: Request, res: Response) => {
       maxPlayers,
       category,
       imageUrl,
+      ageRating,
+      estimatedTimeMinutes,
     });
 
     const savedGame = await gameRepository.save(game);

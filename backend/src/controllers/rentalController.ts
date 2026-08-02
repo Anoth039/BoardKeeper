@@ -77,6 +77,9 @@ export const createRental = async (req: AuthenticatedRequest, res: Response) => 
       if (!gameCopy.isAvailable) {
         throw new Error("COPY_NOT_AVAILABLE");
       }
+      if (gameCopy.condition === "lost") {
+        throw new Error("COPY_LOST");
+      }
 
       const handledByUser = req.user
         ? await userRepo.findOneBy({ id: req.user.userId })
@@ -110,6 +113,9 @@ export const createRental = async (req: AuthenticatedRequest, res: Response) => 
     }
     if (error.message === "COPY_NOT_AVAILABLE") {
       return res.status(409).json({ message: "This copy is not available for rent" });
+    }
+    if (error.message === "COPY_LOST") {
+      return res.status(409).json({ message: "This copy is marked as lost and cannot be rented" });
     }
     res.status(500).json({ message: "Failed to create rental", error });
   }

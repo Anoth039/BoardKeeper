@@ -42,6 +42,23 @@
         <input type="text" class="form-control" formControlName="category" placeholder="e.g. Strategy, Party, Family" />
       </div>
 
+       <div class="col mb-3">
+        <label class="form-label">Age Rating</label>
+        <select class="form-select" formControlName="ageRating">
+          <option [ngValue]="null">Not rated</option>
+          <option [ngValue]="3">3+</option>
+          <option [ngValue]="7">7+</option>
+          <option [ngValue]="12">12+</option>
+          <option [ngValue]="16">16+</option>
+          <option [ngValue]="18">18+</option>
+        </select>
+      </div>
+      
+      <div class="col mb-3">
+        <label class="form-label">Estimated Time (minutes)</label>
+        <input type="number" class="form-control" formControlName="estimatedTimeMinutes" placeholder="e.g. 45" min="1" />
+      </div>
+
       <div class="mb-3">
         <label class="form-label">Image URL</label>
         <input type="text" class="form-control" formControlName="imageUrl" placeholder="https://..." />

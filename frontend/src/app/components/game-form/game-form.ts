@@ -37,7 +37,9 @@ export class GameForm implements OnInit, OnChanges {
       minPlayers: [1, [Validators.required, Validators.min(1)]],
       maxPlayers: [4, [Validators.required, Validators.min(1)]],
       category: [''],
-      imageUrl: ['']
+      imageUrl: [''],
+      ageRating: [null],
+      estimatedTimeMinutes: [null, Validators.min(1)]
     }, { validators: maxNotLessThanMinValidator });
   }
 
@@ -59,7 +61,9 @@ export class GameForm implements OnInit, OnChanges {
         minPlayers: this.gameToEdit.minPlayers,
         maxPlayers: this.gameToEdit.maxPlayers,
         category: this.gameToEdit.category,
-        imageUrl: this.gameToEdit.imageUrl
+        imageUrl: this.gameToEdit.imageUrl,
+        ageRating: this.gameToEdit.ageRating,
+        estimatedTimeMinutes: this.gameToEdit.estimatedTimeMinutes
       });
     }
   }
