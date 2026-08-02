@@ -18,9 +18,7 @@
   </button>
 </div>
 
-<div *ngIf="showForm" class="mb-4">
-  <app-rental-form (rentalCreated)="onFormCreated()" (cancelled)="onFormCancelled()"></app-rental-form>
-</div>
+<app-rental-form *ngIf="showForm" (rentalCreated)="onFormCreated()" (cancelled)="onFormCancelled()"></app-rental-form>
 
 <div *ngIf="rentals.length === 0" class="alert alert-secondary">
   No rentals yet.
@@ -40,7 +38,7 @@
       <th>Due</th>
       <th>Returned</th>
       <th>Status</th>
-      <th class="text-center">Handled By</th>
+      <th class="text-center" *ngIf="isAdmin">Handled By</th>
       <th></th> 
     </tr>
   </thead>
@@ -58,7 +56,7 @@
           {{ displayStatus(rental) }}
         </span>
       </td>
-      <td class="text-center">
+      <td class="text-center" *ngIf="isAdmin">
         <span class="avatar-stack">
           <span class="handler-avatar" [title]="'Checked out by: ' + (rental.handledBy?.email || 'Unknown')">
             {{ handledByInitials(rental) }}

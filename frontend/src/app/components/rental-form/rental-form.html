@@ -1,63 +1,108 @@
-<div class="card mb-4">
-  <div class="card-body">
-    <h5 class="card-title">New Rental</h5>
+<div class="modal-backdrop-custom" (click)="onCancel()">
+  <div class="modal-box modal-box-wide" (click)="$event.stopPropagation()">
+    <div class="modal-header-custom">
+      <h5 class="mb-0"><i class="bi bi-journal-plus me-2"></i>New Rental</h5>
+      <button class="btn-close" (click)="onCancel()"></button>
+    </div>
 
-    <form (ngSubmit)="onSubmit()">
-      <div class="mb-3">
-        <label class="form-label">Member *</label>
-        <select class="form-select" [(ngModel)]="selectedMemberId" name="memberId" required>
-          <option [ngValue]="null" disabled>Select a member</option>
-          <option *ngFor="let member of members" [ngValue]="member.id">
-            {{ member.firstName }} {{ member.lastName }} ({{ member.email }})
-          </option>
-        </select>
-        <div class="form-text" *ngIf="members.length === 0">
-          No active members available. Add or reactivate a member first.
+    <div class="modal-body-custom">
+      <form (ngSubmit)="onSubmit()">
+
+        <div class="rental-section mb-4">
+          <h6 class="rental-section-title"><i class="bi bi-person-fill me-1"></i>Who's renting?</h6>
+
+          <div *ngIf="selectedMember" class="d-flex align-items-center justify-content-between border rounded p-2 bg-light">
+            <span>
+              <strong>{{ selectedMember.firstName }} {{ selectedMember.lastName }}</strong>
+              <span class="text-muted small d-block">{{ selectedMember.email }}</span>
+            </span>
+            <button type="button" class="btn btn-sm btn-outline-secondary" (click)="clearMemberSelection()">
+              Change
+            </button>
+          </div>
+
+          <div *ngIf="!selectedMember" class="position-relative">
+            <input type="text" class="form-control" placeholder="Search members by name or email..." [(ngModel)]="memberSearchTerm"
+              name="memberSearch" (focus)="showMemberDropdown = true"/>
+            <div class="dropdown-list" *ngIf="showMemberDropdown">
+              <div class="dropdown-list-item" *ngFor="let member of filteredMembers" (click)="selectMember(member)">
+                {{ member.firstName }} {{ member.lastName }}
+                <small class="text-muted d-block">{{ member.email }}</small>
+              </div>
+              <div class="dropdown-list-item text-muted" *ngIf="filteredMembers.length === 0">
+                No matching members.
+              </div>
+            </div>
+          </div>
+
+          <div class="form-text" *ngIf="members.length === 0">
+            No active members available. Add or reactivate a member first.
+          </div>
         </div>
-      </div>
 
-      <div class="mb-3">
-        <label class="form-label">Game *</label>
-        <select class="form-select" [(ngModel)]="selectedGameId" name="gameId" (ngModelChange)="onGameChange()" required>
-          <option [ngValue]="null" disabled>Select a game</option>
-          <option *ngFor="let game of games" [ngValue]="game.id">
-            {{ game.title }}
-          </option>
-        </select>
-      </div>
+        <div class="rental-section mb-4">
+          <h6 class="rental-section-title"><i class="bi bi-dice-5-fill me-1"></i>What game?</h6>
 
-      <div class="mb-3" *ngIf="selectedGameId">
-        <label class="form-label">Copy *</label>
-        <select class="form-select" [(ngModel)]="selectedCopyId" name="copyId" required>
-          <option [ngValue]="null" disabled>Select a copy</option>
-          <option *ngFor="let copy of availableCopiesForSelectedGame" [ngValue]="copy.id">
-            {{ copy.copyNumber || ('Copy #' + copy.id) }} ({{ copy.condition }})
-          </option>
-        </select>
-        <div class="form-text" *ngIf="availableCopiesForSelectedGame.length === 0">
-          No available copies of this game right now.
+          <div *ngIf="selectedGame" class="d-flex align-items-center justify-content-between border rounded p-2 bg-light mb-2">
+            <span><strong>{{ selectedGame.title }}</strong></span>
+            <button type="button" class="btn btn-sm btn-outline-secondary" (click)="clearGameSelection()">
+              Change
+            </button>
+          </div>
+
+          <div *ngIf="!selectedGame" class="position-relative">
+            <input type="text" class="form-control" placeholder="Search games by title..." [(ngModel)]="gameSearchTerm"
+              name="gameSearch" (focus)="showGameDropdown = true"/>
+            <div class="dropdown-list" *ngIf="showGameDropdown">
+              <div class="dropdown-list-item" *ngFor="let game of filteredGames" (click)="selectGame(game)">
+                {{ game.title }}
+              </div>
+              <div class="dropdown-list-item text-muted" *ngIf="filteredGames.length === 0">
+                No matching games.
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-2" *ngIf="selectedGame">
+            <label class="form-label small">Copy *</label>
+            <select class="form-select" [(ngModel)]="selectedCopyId" name="copyId" required>
+              <option [ngValue]="null" disabled>Select a copy</option>
+              <option *ngFor="let copy of availableCopiesForSelectedGame" [ngValue]="copy.id">
+                {{ copy.copyNumber }} ({{ copy.condition }})
+              </option>
+            </select>
+            <div class="form-text" *ngIf="availableCopiesForSelectedGame.length === 0">
+              No available copies of this game right now.
+            </div>
+          </div>
         </div>
-      </div>
 
-      <div class="row">
-        <div class="col mb-3">
-          <label class="form-label">Rental Date *</label>
-          <input type="date" class="form-control" [(ngModel)]="rentalDate" name="rentalDate" required />
+        <div class="rental-section mb-4">
+          <h6 class="rental-section-title"><i class="bi bi-calendar-event me-1"></i>When?</h6>
+
+          <div class="row">
+            <div class="col mb-2">
+              <label class="form-label small">Rental Date *</label>
+              <input type="date" class="form-control" [(ngModel)]="rentalDate" name="rentalDate" [min]="minRentalDate"
+                [max]="maxRentalDate" required/>
+            </div>
+            <div class="col mb-2">
+              <label class="form-label small">Due Date *</label>
+              <input type="date" class="form-control" [(ngModel)]="dueDate" name="dueDate" [min]="minDueDate"
+                [max]="maxDueDate" required/>
+            </div>
+          </div>
         </div>
-        <div class="col mb-3">
-          <label class="form-label">Due Date *</label>
-          <input type="date" class="form-control" [(ngModel)]="dueDate" name="dueDate" required />
-        </div>
-      </div>
 
-      <div class="alert alert-danger" *ngIf="errorMessage">{{ errorMessage }}</div>
+        <div class="alert alert-danger py-2" *ngIf="errorMessage">{{ errorMessage }}</div>
 
-      <button type="submit" class="btn btn-primary" [disabled]="submitting">
-        {{ submitting ? 'Renting...' : 'Rent Out' }}
-      </button>
-      <button type="button" class="btn btn-secondary ms-2" (click)="onCancel()">
-        Cancel
-      </button>
-    </form>
+        <button type="submit" class="btn btn-primary" [disabled]="submitting">
+          {{ submitting ? 'Renting...' : 'Rent Out' }}
+        </button>
+        <button type="button" class="btn btn-secondary ms-2" (click)="onCancel()">
+          Cancel
+        </button>
+      </form>
+    </div>
   </div>
 </div>

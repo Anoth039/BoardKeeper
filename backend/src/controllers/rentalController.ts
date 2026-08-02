@@ -9,11 +9,15 @@ import { User } from "../entities/User";
 const rentalRepository = AppDataSource.getRepository(Rental);
 
 // GET /api/rentals
-export const getAllRentals = async (req: Request, res: Response) => {
+export const getAllRentals = async (req: AuthenticatedRequest, res: Response) => {
   try {
+    const isAdmin = req.user?.role === "admin";
+
     const rentals = await rentalRepository.find({
-      relations: { member: true, gameCopy: { game: true }, handledBy: true, returnedBy: true },
+      relations: { member: true, gameCopy: { game: true }, ...(isAdmin ? { handledBy: true, returnedBy: true } : {}),
+      },
     });
+
     res.json(rentals);
   } catch (error) {
     res.status(500).json({ message: "Failed to fetch rentals", error });
@@ -21,12 +25,14 @@ export const getAllRentals = async (req: Request, res: Response) => {
 };
 
 // GET /api/rentals/:id
-export const getRentalById = async (req: Request, res: Response) => {
+export const getRentalById = async (req: AuthenticatedRequest, res: Response) => {
   try {
+    const isAdmin = req.user?.role === "admin";
+
     const id = Number(req.params.id);
     const rental = await rentalRepository.findOne({
       where: { id },
-      relations: { member: true, gameCopy: { game: true }, handledBy: true, returnedBy: true },
+      relations: { member: true, gameCopy: { game: true }, ...(isAdmin ? { handledBy: true, returnedBy: true } : {}) },
     });
 
     if (!rental) {

@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { RentalService } from '../../services/rental';
 import { isRentalOverdue, Rental, rentalDisplayStatus, RentalStatus, rentalStatusBadgeClass } from '../../models/rental.model';
 import { RentalForm } from '../rental-form/rental-form';
+import { AuthService } from '../../services/auth';
 
 @Component({
   selector: 'app-rental-list',
@@ -22,7 +23,7 @@ export class RentalListComponent implements OnInit {
   statusBadgeClass = rentalStatusBadgeClass;
   displayStatus = rentalDisplayStatus;
 
-  constructor(private rentalService: RentalService, private cdr: ChangeDetectorRef) {}
+  constructor(private rentalService: RentalService, private cdr: ChangeDetectorRef, public authService: AuthService) {}
 
   ngOnInit(): void {
     this.loadRentals();
@@ -39,6 +40,10 @@ export class RentalListComponent implements OnInit {
         this.cdr.detectChanges();
       }
     });
+  }
+
+  get isAdmin(): boolean {
+    return this.authService.getCurrentUser()?.role === 'admin';
   }
 
   get filteredRentals(): Rental[] {

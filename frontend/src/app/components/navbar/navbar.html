@@ -26,7 +26,9 @@
       <div class="d-flex align-items-center gap-3">
         <span class="text-light small">
           <i class="bi bi-person-circle me-1"></i>{{ authService.getCurrentUser()?.email }}
-          <span class="badge bg-secondary ms-1">{{ authService.getCurrentUser()?.role }}</span>
+          <span class="badge ms-1" [ngClass]="authService.getCurrentUser()?.role === 'admin' ? 'bg-danger' : 'bg-secondary'">
+            {{ authService.getCurrentUser()?.role }}
+          </span>
         </span>
         <button class="btn btn-sm btn-outline-light" (click)="logout()">
           <i class="bi bi-box-arrow-right"></i> Logout
