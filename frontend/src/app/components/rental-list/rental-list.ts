@@ -2,7 +2,7 @@ import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RentalService } from '../../services/rental';
-import { isRentalOverdue, Rental, rentalDisplayStatus, RentalStatus, rentalStatusBadgeClass } from '../../models/rental.model';
+import { isRentalDueSoon, isRentalOverdue, Rental, rentalDisplayStatus, RentalStatus, rentalStatusBadgeClass } from '../../models/rental.model';
 import { RentalForm } from '../rental-form/rental-form';
 import { AuthService } from '../../services/auth';
 
@@ -20,6 +20,7 @@ export class RentalListComponent implements OnInit {
   showForm = false;
 
   isOverdue = isRentalOverdue;
+  isDueSoon = isRentalDueSoon;
   statusBadgeClass = rentalStatusBadgeClass;
   displayStatus = rentalDisplayStatus;
 
@@ -70,8 +71,9 @@ export class RentalListComponent implements OnInit {
 
   private statusPriority(rental: Rental): number {
     if (this.isOverdue(rental)) return 0;
-    if (rental.status === RentalStatus.ACTIVE) return 1;
-    return 2;
+    if (this.isDueSoon(rental)) return 1;
+    if (rental.status === RentalStatus.ACTIVE) return 2;
+    return 3;
   }
 
   openForm(): void {
@@ -101,6 +103,28 @@ export class RentalListComponent implements OnInit {
       error: (err) => {
         console.error('Failed to return rental', err);
         alert('Failed to mark this rental as returned.');
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  markLost(rental: Rental): void {
+    const confirmed = confirm(
+      `Mark "${rental.gameCopy?.game?.title || rental.gameTitleSnapshot}" (${rental.gameCopy?.copyNumber || rental.copyLabelSnapshot}) 
+        as lost? This closes the rental and marks the copy as lost.`
+    );
+    if (!confirmed) return;
+
+    this.rentalService.markLost(rental.id).subscribe({
+      next: (updated) => {
+        rental.status = updated.status;
+        rental.returnDate = updated.returnDate;
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        const message = err.error?.message || 'Failed to mark this rental as lost.';
+        alert(message);
+        console.error(err);
         this.cdr.detectChanges();
       }
     });

@@ -176,6 +176,61 @@ export const returnRental = async (req: AuthenticatedRequest, res: Response) => 
   }
 };
 
+export const markRentalLost = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const id = Number(req.params.id);
+
+    const updatedRental = await AppDataSource.transaction(async (manager) => {
+      const rentalRepo = manager.getRepository(Rental);
+      const gameCopyRepo = manager.getRepository(GameCopy);
+      const userRepo = manager.getRepository(User);
+
+      const rental = await rentalRepo.findOne({
+        where: { id },
+        relations: { gameCopy: true },
+      });
+
+      if (!rental) {
+        throw new Error("RENTAL_NOT_FOUND");
+      }
+      if (rental.status !== RentalStatus.ACTIVE) {
+        throw new Error("NOT_ACTIVE");
+      }
+      if (!rental.gameCopy) {
+        throw new Error("COPY_NO_LONGER_EXISTS");
+      }
+
+      const returnedByUser = req.user
+        ? await userRepo.findOneBy({ id: req.user.userId })
+        : null;
+
+      rental.gameCopy.condition = "lost" as any;
+      rental.gameCopy.isAvailable = true;
+      await gameCopyRepo.save(rental.gameCopy);
+
+      rental.status = RentalStatus.LOST;
+      rental.returnDate = new Date().toISOString().split("T")[0];
+      rental.returnedBy = returnedByUser;
+      const savedRental = await rentalRepo.save(rental);
+
+      return savedRental;
+    });
+
+    res.json(updatedRental);
+  } catch (error: any) {
+    if (error.message === "RENTAL_NOT_FOUND") {
+      return res.status(404).json({ message: "Rental not found" });
+    }
+    if (error.message === "NOT_ACTIVE") {
+      return res.status(409).json({ message: "Only active rentals can be marked as lost" });
+    }
+    if (error.message === "COPY_NO_LONGER_EXISTS") {
+      return res.status(409).json({ message: "This rental's copy no longer exists" });
+    }
+    res.status(500).json({ message: "Failed to mark rental as lost", error });
+  }
+};
+
 // DELETE /api/rentals/:id
 export const deleteRental = async (req: Request, res: Response) => {
   try {

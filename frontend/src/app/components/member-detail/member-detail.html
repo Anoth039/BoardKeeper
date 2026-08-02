@@ -84,6 +84,7 @@
             <td>{{ rental.dueDate }}</td>
             <td><span class="badge" [ngClass]="statusBadgeClass(rental)">
               <i class="bi bi-exclamation-triangle-fill me-1" *ngIf="isOverdue(rental)"></i>
+              <i class="bi bi-clock-fill me-1" *ngIf="isDueSoon(rental)"></i>
               {{ displayStatus(rental) }}
             </span></td>
           </tr>

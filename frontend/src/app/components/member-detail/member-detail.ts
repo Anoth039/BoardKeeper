@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { MemberService } from '../../services/member';
 import { Member } from '../../models/member.model';
-import { isRentalOverdue, rentalDisplayStatus, RentalStatus, rentalStatusBadgeClass } from '../../models/rental.model';
+import { isRentalDueSoon, isRentalOverdue, rentalDisplayStatus, RentalStatus, rentalStatusBadgeClass } from '../../models/rental.model';
 
 @Component({
   selector: 'app-member-detail',
@@ -20,6 +20,7 @@ export class MemberDetail implements OnInit {
   statusBadgeClass = rentalStatusBadgeClass;
   displayStatus = rentalDisplayStatus;
   isOverdue = isRentalOverdue;
+  isDueSoon = isRentalDueSoon;
 
   constructor(private route: ActivatedRoute, private router: Router, private memberService: MemberService, 
     private cdr: ChangeDetectorRef) {}

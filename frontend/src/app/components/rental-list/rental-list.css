@@ -13,7 +13,7 @@
   width: 26px;
   height: 26px;
   border-radius: 50%;
-  background: #6c757d;
+  background: #2489e2;
   color: white;
   font-size: 0.75rem;
   font-weight: bold;
@@ -25,4 +25,8 @@
 .returned-avatar {
   background: #198754;
   margin-left: -10px;
+}
+
+.lost-avatar {
+  background: #212529;
 }

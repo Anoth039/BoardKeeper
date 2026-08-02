@@ -10,6 +10,7 @@
       <option value="all">All statuses</option>
       <option value="active">Active</option>
       <option value="returned">Returned</option>
+      <option value="lost">Lost</option>
     </select>
   </div>
 
@@ -53,6 +54,7 @@
       <td>
         <span class="badge" [ngClass]="statusBadgeClass(rental)">
           <i class="bi bi-exclamation-triangle-fill me-1" *ngIf="isOverdue(rental)"></i>
+          <i class="bi bi-clock-fill me-1" *ngIf="isDueSoon(rental)"></i>
           {{ displayStatus(rental) }}
         </span>
       </td>
@@ -61,15 +63,21 @@
           <span class="handler-avatar" [title]="'Checked out by: ' + (rental.handledBy?.email || 'Unknown')">
             {{ handledByInitials(rental) }}
           </span>
-          <span class="handler-avatar returned-avatar" *ngIf="rental.status === 'returned'" [title]="'Checked in by: ' + (rental.returnedBy?.email || 'Unknown')">
-            {{ returnedByInitials(rental) }}
-          </span>
+          <span class="handler-avatar returned-avatar" *ngIf="rental.status === 'returned' || rental.status === 'lost'"
+            [ngClass]="{ 'lost-avatar': rental.status === 'lost' }" [title]="(rental.status === 'lost' ? 'Marked lost by: ' : 'Returned by: ') + (rental.returnedBy?.email || 'Unknown')">
+          {{ returnedByInitials(rental) }}
+        </span>
         </span>
       </td>
       <td class="text-end">
-        <button class="btn btn-sm btn-outline-success"*ngIf="rental.status === 'active'" (click)="returnRental(rental)" title="Mark as returned">
-          <i class="bi bi-box-arrow-in-left"></i> Return
-        </button>
+        <div class="d-flex justify-content-end gap-2" *ngIf="rental.status === 'active'">
+          <button class="btn btn-sm btn-outline-success" (click)="returnRental(rental)" title="Mark as returned">
+            <i class="bi bi-box-arrow-in-left"></i> Return
+          </button>
+          <button class="btn btn-sm btn-outline-dark" *ngIf="isAdmin" (click)="markLost(rental)" title="Mark as lost">
+            <i class="bi bi-question-diamond-fill"></i> Lost
+          </button>
+        </div>
       </td>
     </tr>
   </tbody>
