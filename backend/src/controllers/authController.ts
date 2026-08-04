@@ -3,6 +3,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { AppDataSource } from "../data-source";
 import { User } from "../entities/User";
+import { sendResetCodeEmail } from "../mailer";
 
 const userRepository = AppDataSource.getRepository(User);
 
@@ -68,5 +69,81 @@ export const login = async (req: Request, res: Response) => {
     });
   } catch (error) {
     res.status(500).json({ message: "Failed to login", error });
+  }
+};
+
+export const forgotPassword = async (req: Request, res: Response) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ message: "email is required" });
+    }
+
+    const user = await userRepository.findOneBy({ email });
+    if (!user) {
+      return res.status(404).json({ message: "No account found with this email" });
+    }
+
+    if (user.resetCodeRequestedAt) {
+      const secondsSinceLastRequest = (Date.now() - user.resetCodeRequestedAt.getTime()) / 1000;
+      if (secondsSinceLastRequest < 60) {
+        const waitSeconds = Math.ceil(60 - secondsSinceLastRequest);
+        return res.status(429).json({
+          message: `Please wait ${waitSeconds} seconds before requesting another code`,
+          retryAfterSeconds: waitSeconds,
+        });
+      }
+    }
+
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+    user.resetCode = code;
+    user.resetCodeExpiresAt = expiresAt;
+    user.resetCodeRequestedAt = new Date();
+    await userRepository.save(user);
+
+    await sendResetCodeEmail(email, code);
+
+    res.json({ message: "A reset code has been sent to your email" });
+  } catch (error) {
+    res.status(500).json({ message: "Failed to send reset code", error });
+  }
+};
+
+export const resetPassword = async (req: Request, res: Response) => {
+  try {
+    const { email, code, newPassword } = req.body;
+
+    if (!email || !code || !newPassword) {
+      return res.status(400).json({ message: "email, code, and newPassword are required" });
+    }
+
+    if (newPassword.length < 8) {
+      return res.status(400).json({ message: "Password must be at least 8 characters" });
+    }
+
+    const user = await userRepository.findOneBy({ email });
+    if (!user) {
+      return res.status(404).json({ message: "No account found with this email" });
+    }
+
+    if (!user.resetCode || user.resetCode !== code) {
+      return res.status(400).json({ message: "Invalid reset code" });
+    }
+
+    if (!user.resetCodeExpiresAt || user.resetCodeExpiresAt < new Date()) {
+      return res.status(400).json({ message: "Reset code has expired. Please request a new one." });
+    }
+
+    user.passwordHash = await bcrypt.hash(newPassword, 10);
+    user.resetCode = null as any;
+    user.resetCodeExpiresAt = null as any;
+    await userRepository.save(user);
+
+    res.json({ message: "Password reset successfully" });
+  } catch (error) {
+    res.status(500).json({ message: "Failed to reset password", error });
   }
 };

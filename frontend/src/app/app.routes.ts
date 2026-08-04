@@ -8,10 +8,12 @@ import { Login } from './components/login/login';
 import { authGuard } from './guards/auth-guard';
 import { StatsPage } from './components/stats/stats';
 import { adminGuard } from './guards/admin-guard';
+import { ForgotPassword } from './components/forgot-password/forgot-password';
 
 export const routes: Routes = [
   { path: 'login', component: Login },
   { path: 'register', component: Register },
+  { path: 'forgot-password', component: ForgotPassword },
   { path: '', redirectTo: 'games', pathMatch: 'full' },
   { path: 'games', component: GameListComponent, canActivate: [authGuard] },
   { path: 'members', component: MemberListComponent, canActivate: [authGuard] },

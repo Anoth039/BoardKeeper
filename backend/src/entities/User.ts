@@ -16,4 +16,13 @@ export class User {
 
   @CreateDateColumn({ name: "created_at" })
   createdAt!: Date;
+
+  @Column({ name: "reset_code", nullable: true })
+  resetCode!: string;
+
+  @Column({ name: "reset_code_requested_at", type: "datetime", nullable: true })
+  resetCodeRequestedAt!: Date;
+
+  @Column({ name: "reset_code_expires_at", type: "datetime", nullable: true })
+  resetCodeExpiresAt!: Date;
 }
