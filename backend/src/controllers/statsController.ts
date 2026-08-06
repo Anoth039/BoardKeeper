@@ -5,82 +5,164 @@ import { GameCopy } from "../entities/GameCopy";
 import { Member } from "../entities/Member";
 import { Rental, RentalStatus } from "../entities/Rental";
 
-const gameRepository = AppDataSource.getRepository(Game);
-const gameCopyRepository = AppDataSource.getRepository(GameCopy);
-const memberRepository = AppDataSource.getRepository(Member);
-const rentalRepository = AppDataSource.getRepository(Rental);
+const gameRepo = AppDataSource.getRepository(Game);
+const copyRepo = AppDataSource.getRepository(GameCopy);
+const memberRepo = AppDataSource.getRepository(Member);
+const rentalRepo = AppDataSource.getRepository(Rental);
+
+const toLocalDate = (d: Date): string => {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+};
+
+const todayStr = () => toLocalDate(new Date());
+
+const monthStartStr = () => {
+  const d = new Date();
+  d.setDate(1);
+  return toLocalDate(d);
+};
+
+const nDaysAgoStr = (n: number) => {
+  const d = new Date();
+  d.setDate(d.getDate() - n);
+  return toLocalDate(d);
+};
 
 export const getStats = async (req: Request, res: Response) => {
   try {
-    const totalGames = await gameRepository.count();
-    const totalCopies = await gameCopyRepository.count();
-    const activeMembers = await memberRepository.count({ where: { isActive: true } });
-    const inactiveMembers = await memberRepository.count({ where: { isActive: false } });
-    const activeRentals = await rentalRepository.count({ where: { status: RentalStatus.ACTIVE } });
+    const today = todayStr();
+    const monthStart = monthStartStr();
+    const fourteenDaysAgo = nDaysAgoStr(13);
 
-    const today = new Date().toISOString().split("T")[0];
-    const overdueRentals = await rentalRepository
-      .createQueryBuilder("rental")
-      .where("rental.status = :status", { status: RentalStatus.ACTIVE })
-      .andWhere("rental.dueDate < :today", { today })
+    const totalGames = await gameRepo.count();
+    const totalCopies = await copyRepo.count();
+    const availableCopies = await copyRepo
+      .createQueryBuilder("c")
+      .where("c.is_available = true")
+      .andWhere("c.condition != :lost", { lost: "lost" })
+      .getCount();
+    const activeMembers = await memberRepo.count({ where: { isActive: true } });
+    const inactiveMembers = await memberRepo.count({ where: { isActive: false } });
+
+    const activeRentals = await rentalRepo
+      .createQueryBuilder("r")
+      .where("r.status = :s", { s: RentalStatus.ACTIVE })
       .getCount();
 
-    const startOfMonth = new Date();
-    startOfMonth.setDate(1);
-    const startOfMonthStr = startOfMonth.toISOString().split("T")[0];
+    const overdueRentals = await rentalRepo
+      .createQueryBuilder("r")
+      .where("r.status = :s", { s: RentalStatus.ACTIVE })
+      .andWhere("r.due_date < :today", { today })
+      .getCount();
 
-    const topGamesThisMonth = await rentalRepository
-      .createQueryBuilder("rental")
-      .leftJoin("rental.gameCopy", "gameCopy")
-      .leftJoin("gameCopy.game", "game")
+    const monthActive = await rentalRepo
+      .createQueryBuilder("r")
+      .where("r.status = :s", { s: RentalStatus.ACTIVE })
+      .andWhere("DATE(r.rental_date) >= :start", { start: monthStart })
+      .getCount();
+
+    const monthOverdue = await rentalRepo
+      .createQueryBuilder("r")
+      .where("r.status = :s", { s: RentalStatus.ACTIVE })
+      .andWhere("r.due_date < :today", { today })
+      .andWhere("DATE(r.rental_date) >= :start", { start: monthStart })
+      .getCount();
+
+    const monthReturned = await rentalRepo
+      .createQueryBuilder("r")
+      .where("r.status = :s", { s: RentalStatus.RETURNED })
+      .andWhere("DATE(r.rental_date) >= :start", { start: monthStart })
+      .getCount();
+
+    const monthLost = await rentalRepo
+      .createQueryBuilder("r")
+      .where("r.status = :s", { s: RentalStatus.LOST })
+      .andWhere("DATE(r.rental_date) >= :start", { start: monthStart })
+      .getCount();
+
+    const topGamesThisMonth = await rentalRepo
+      .createQueryBuilder("r")
+      .leftJoin("r.gameCopy", "copy")
+      .leftJoin("copy.game", "game")
       .select("game.title", "title")
-      .addSelect("COUNT(rental.id)", "rentalCount")
-      .where("rental.rentalDate >= :startOfMonth", { startOfMonth: startOfMonthStr })
+      .addSelect("COUNT(r.id)", "rentalCount")
+      .where("DATE(r.rental_date) >= :start", { start: monthStart })
       .andWhere("game.id IS NOT NULL")
       .groupBy("game.id")
+      .addGroupBy("game.title")
       .orderBy("rentalCount", "DESC")
       .limit(5)
       .getRawMany();
 
-    const allGames = await gameRepository.find({
+    const rawActivity = await rentalRepo
+      .createQueryBuilder("r")
+      .select("DATE(r.rental_date)", "date")
+      .addSelect("COUNT(r.id)", "count")
+      .where("DATE(r.rental_date) >= :start", { start: fourteenDaysAgo })
+      .groupBy("DATE(r.rental_date)")
+      .orderBy("date", "ASC")
+      .getRawMany();
+
+    const activityMap = new Map<string, number>(
+      rawActivity.map((row) => [toLocalDate(row.date), Number(row.count)])
+    );
+
+    const rentalActivity: { date: string; count: number }[] = [];
+    for (let i = 13; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const ds = toLocalDate(d);
+      rentalActivity.push({ date: ds, count: activityMap.get(ds) ?? 0 });
+    }
+
+    const allGames = await gameRepo.find({
       relations: { copies: { rentals: true } },
     });
 
     const unusedGames = allGames
-      .map((game) => {
-        const allRentalDates = (game.copies || [])
-          .flatMap((copy) => copy.rentals || [])
-          .map((rental) => rental.rentalDate)
+      .map((g) => {
+        const dates = (g.copies ?? [])
+          .flatMap((c) => c.rentals ?? [])
+          .map((r) => r.rentalDate)
           .sort()
           .reverse();
-
-        const lastRentedDate = allRentalDates.length > 0 ? allRentalDates[0] : null;
-
         return {
-          title: game.title,
-          imageUrl: game.imageUrl,
-          lastRentedDate,
-          createdAt: game.createdAt,
+          title: g.title,
+          imageUrl: g.imageUrl ?? null,
+          lastRentedDate: dates[0] ?? null,
+          createdAt: g.createdAt,
         };
       })
       .sort((a, b) => {
-        if (!a.lastRentedDate && !b.lastRentedDate) {
+        if (!a.lastRentedDate && !b.lastRentedDate)
           return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-        }
         if (!a.lastRentedDate) return -1;
         if (!b.lastRentedDate) return 1;
         return a.lastRentedDate.localeCompare(b.lastRentedDate);
       })
-      .slice(0, 5);
+      .slice(0, 10);
 
     res.json({
-      totalGames,
-      totalCopies,
-      activeMembers,
-      inactiveMembers,
-      activeRentals,
-      overdueRentals,
+      summary: {
+        totalGames,
+        totalCopies,
+        availableCopies,
+        activeMembers,
+        inactiveMembers,
+        activeRentals,
+        overdueRentals,
+      },
+      monthlyBreakdown: {
+        active: monthActive - monthOverdue,
+        overdue: monthOverdue,
+        returned: monthReturned,
+        lost: monthLost,
+      },
       topGamesThisMonth,
+      rentalActivity,
       unusedGames,
     });
   } catch (error) {

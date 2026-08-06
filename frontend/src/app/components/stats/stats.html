@@ -2,112 +2,121 @@
   <div class="spinner-border spinner-border-sm me-2"></div> Loading statistics...
 </div>
 
-<div *ngIf="!loading && stats">
-  <h2 class="mb-4"><i class="bi bi-bar-chart-fill me-2"></i>Statistics</h2>
+<ng-container *ngIf="!loading && stats">
 
   <div class="row g-3 mb-4">
-    <div class="col-6 col-md-3">
-      <div class="card text-center shadow-sm h-100">
-        <div class="card-body">
-          <i class="bi bi-dice-5-fill fs-3 text-primary"></i>
-          <div class="fs-4 fw-bold">{{ stats.totalGames }}</div>
-          <div class="text-muted small">Games</div>
+    <div class="col-6 col-sm-4 col-lg-2">
+      <div class="stat-card">
+        <i class="bi bi-dice-5-fill stat-icon text-primary"></i>
+        <div class="stat-value">{{ stats.summary.totalGames }}</div>
+        <div class="stat-label">Games</div>
+      </div>
+    </div>
+    <div class="col-6 col-sm-4 col-lg-2">
+      <div class="stat-card">
+        <i class="bi bi-boxes stat-icon text-secondary"></i>
+        <div class="stat-value">{{ stats.summary.availableCopies }}<span class="stat-sub">/{{ stats.summary.totalCopies }}</span></div>
+        <div class="stat-label">Available Copies</div>
+      </div>
+    </div>
+    <div class="col-6 col-sm-4 col-lg-2">
+      <div class="stat-card">
+        <i class="bi bi-people-fill stat-icon text-success"></i>
+        <div class="stat-value">{{ stats.summary.activeMembers }}</div>
+        <div class="stat-label">Active Members</div>
+      </div>
+    </div>
+    <div class="col-6 col-sm-4 col-lg-2">
+      <div class="stat-card">
+        <i class="bi bi-controller stat-icon text-primary"></i>
+        <div class="stat-value">{{ stats.summary.activeRentals }}</div>
+        <div class="stat-label">Active Rentals</div>
+      </div>
+    </div>
+    <div class="col-6 col-sm-4 col-lg-2">
+      <div class="stat-card" [class.stat-card-danger]="stats.summary.overdueRentals > 0">
+        <i class="bi bi-exclamation-triangle-fill stat-icon"
+           [ngClass]="stats.summary.overdueRentals > 0 ? 'text-danger' : 'text-muted'"></i>
+        <div class="stat-value" [ngClass]="stats.summary.overdueRentals > 0 ? 'text-danger' : ''">
+          {{ stats.summary.overdueRentals }}
+        </div>
+        <div class="stat-label">Overdue</div>
+      </div>
+    </div>
+    <div class="col-6 col-sm-4 col-lg-2">
+      <div class="stat-card">
+        <i class="bi bi-person-dash-fill stat-icon text-muted"></i>
+        <div class="stat-value">{{ stats.summary.inactiveMembers }}</div>
+        <div class="stat-label">Inactive Members</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-3">
+    <div class="col-lg-8">
+      <div class="chart-card">
+        <div class="chart-card-header">
+          <i class="bi bi-graph-up me-1 text-primary"></i> Rental Activity — Last 14 Days
+        </div>
+        <div class="chart-card-body">
+          <canvas #activityCanvas></canvas>
         </div>
       </div>
     </div>
-    <div class="col-6 col-md-3">
-      <div class="card text-center shadow-sm h-100">
-        <div class="card-body">
-          <i class="bi bi-boxes fs-3 text-secondary"></i>
-          <div class="fs-4 fw-bold">{{ stats.totalCopies }}</div>
-          <div class="text-muted small">Total Copies</div>
+    <div class="col-lg-4">
+      <div class="chart-card h-100">
+        <div class="chart-card-header">
+          <i class="bi bi-pie-chart-fill me-1 text-secondary"></i> This Month's Rentals
         </div>
-      </div>
-    </div>
-    <div class="col-6 col-md-3">
-      <div class="card text-center shadow-sm h-100">
-        <div class="card-body">
-          <i class="bi bi-people-fill fs-3 text-success"></i>
-          <div class="fs-4 fw-bold">{{ stats.activeMembers }}</div>
-          <div class="text-muted small">Active Members</div>
-        </div>
-      </div>
-    </div>
-    <div class="col-6 col-md-3">
-      <div class="card text-center shadow-sm h-100">
-        <div class="card-body">
-          <i class="bi bi-person-dash-fill fs-3 text-muted"></i>
-          <div class="fs-4 fw-bold">{{ stats.inactiveMembers }}</div>
-          <div class="text-muted small">Inactive Members</div>
-        </div>
-      </div>
-    </div>
-    <div class="col-6 col-md-3">
-      <div class="card text-center shadow-sm h-100">
-        <div class="card-body">
-          <i class="bi bi-controller fs-3 text-primary"></i>
-          <div class="fs-4 fw-bold">{{ stats.activeRentals }}</div>
-          <div class="text-muted small">Active Rentals</div>
-        </div>
-      </div>
-    </div>
-    <div class="col-6 col-md-3">
-      <div class="card text-center shadow-sm h-100" [class.border-danger]="stats.overdueRentals > 0">
-        <div class="card-body">
-          <i class="bi bi-exclamation-triangle-fill fs-3" [ngClass]="stats.overdueRentals > 0 ? 'text-danger' : 'text-muted'"></i>
-          <div class="fs-4 fw-bold" [ngClass]="stats.overdueRentals > 0 ? 'text-danger' : ''">{{ stats.overdueRentals }}</div>
-          <div class="text-muted small">Overdue</div>
+        <div class="chart-card-body chart-card-body-sm d-flex align-items-center justify-content-center">
+          <canvas #statusCanvas></canvas>
         </div>
       </div>
     </div>
   </div>
 
   <div class="row g-3">
-    <div class="col-md-6">
-      <div class="card shadow-sm h-100">
-        <div class="card-header bg-white">
+    <div class="col-lg-6">
+      <div class="chart-card">
+        <div class="chart-card-header">
           <i class="bi bi-trophy-fill me-1 text-warning"></i> Most Rented This Month
         </div>
-        <div class="card-body p-0">
-          <div *ngIf="stats.topGamesThisMonth.length === 0" class="text-muted p-3">
-            No rentals yet this month.
+        <div class="chart-card-body">
+          <div *ngIf="stats.topGamesThisMonth.length === 0" class="text-muted text-center py-4">
+            No rentals recorded this month yet.
           </div>
-
-          <ul class="list-group list-group-flush" *ngIf="stats.topGamesThisMonth.length > 0">
-            <li class="list-group-item d-flex align-items-center gap-3 py-3" *ngFor="let game of stats.topGamesThisMonth; let i = index">
-              <span class="rank-badge" [ngClass]="rankBadgeClass(i)">{{ i + 1 }}</span>
-              <span class="flex-grow-1 fw-semibold">{{ game.title }}</span>
-              <span class="text-muted small">{{ game.rentalCount }} rentals</span>
-            </li>
-          </ul>
+          <canvas #topGamesCanvas [class.d-none]="stats.topGamesThisMonth.length === 0"></canvas>
         </div>
       </div>
     </div>
-
-    <div class="col-md-6">
-      <div class="card shadow-sm h-100">
-        <div class="card-header bg-white">
-          <i class="bi bi-hourglass-split me-1 text-secondary"></i> Dormant Games
+    <div class="col-lg-6">
+      <div class="chart-card">
+        <div class="chart-card-header">
+          <i class="bi bi-hourglass-split me-1 text-secondary"></i> Sitting Unused
         </div>
-        <div class="card-body p-0">
+        <div class="chart-card-body p-0">
           <div *ngIf="stats.unusedGames.length === 0" class="text-muted p-3">
-            No games yet.
+            Every game has been recently rented.
           </div>
-          <ul class="list-group list-group-flush" *ngIf="stats.unusedGames.length > 0">
-            <li class="list-group-item d-flex align-items-center gap-3" *ngFor="let game of stats.unusedGames">
-              <img *ngIf="game.imageUrl" [src]="game.imageUrl" class="unused-game-thumb" alt="{{ game.title }} cover"/>
-              <div *ngIf="!game.imageUrl" class="unused-game-thumb unused-game-thumb-placeholder">
-                <i class="bi bi-dice-5-fill"></i>
-              </div>
-
-              <div class="flex-grow-1">
-                <div class="fw-semibold">{{ game.title }}</div>
-                <small class="text-muted">{{ unusedGameLabel(game) }}</small>
-              </div>
-            </li>
-          </ul>
+          <div class="unused-scroll">
+            <ul class="list-group list-group-flush" *ngIf="stats.unusedGames.length > 0">
+              <li class="list-group-item d-flex align-items-center gap-3 py-2 px-3" 
+                *ngFor="let game of stats.unusedGames; let i = index">
+                <span class="unused-rank">{{ i + 1 }}</span>
+                <img *ngIf="game.imageUrl" [src]="game.imageUrl" class="unused-thumb" [alt]="game.title" />
+                <div *ngIf="!game.imageUrl" class="unused-thumb unused-thumb-placeholder">
+                  <i class="bi bi-dice-5-fill"></i>
+                </div>
+                <div class="flex-grow-1 min-w-0">
+                  <div class="fw-semibold text-truncate">{{ game.title }}</div>
+                  <small class="text-muted">{{ unusedGameLabel(game) }}</small>
+                </div>
+              </li>
+            </ul>
+          </div>
         </div>
       </div>
     </div>
   </div>
-</div>
+
+</ng-container>
