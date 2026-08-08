@@ -151,8 +151,8 @@ export class GameListComponent implements OnInit {
   saveEditCopy(copyId: number): void {
     const trimmedNumber = this.editCopyNumber.trim();
 
-    if (trimmedNumber.length < 3 || trimmedNumber.length > 40) {
-      alert('Copy name/number must be between 3 and 40 characters.');
+    if (trimmedNumber.length < 3 || trimmedNumber.length > 12) {
+      alert('Copy name/number must be between 3 and 12 characters.');
       return;
     }
 

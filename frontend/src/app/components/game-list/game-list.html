@@ -40,7 +40,7 @@
             <small class="text-muted">{{ game.category }}</small>
           </div>
           <div class="d-flex" style="gap: 0.25rem;" *ngIf="isAdmin">
-            <button class="btn btn-sm btn-outline-secondary" (click)="openEditForm(game)">
+            <button class="btn btn-sm btn-outline-secondary" (click)="openEditForm(game)" title="Edit">
               <i class="bi bi-pencil"></i>
             </button>
             <button class="btn btn-sm btn-outline-danger" (click)="deleteGame(game)" title="Delete">
@@ -134,7 +134,7 @@
 
             <div *ngIf="editingCopyId === copy.id" class="d-flex align-items-center gap-2">
               <input type="text" class="form-control form-control-sm" placeholder="Copy #" style="max-width: 120px;"
-                [(ngModel)]="editCopyNumber"/>
+                [(ngModel)]="editCopyNumber" required minlength="3" maxlength="12"/>
               <select class="form-select form-select-sm" style="max-width: 110px;" [(ngModel)]="editCopyCondition">
                 <option value="new">New</option>
                 <option value="good">Good</option>
@@ -163,7 +163,7 @@
         <div class="row g-2 align-items-center">
           <div class="col-5">
             <input type="text" class="form-control form-control-sm" placeholder="Copy name/number *" 
-              [(ngModel)]="newCopyNumber" required minlength="3" maxlength="40"/>
+              [(ngModel)]="newCopyNumber" required minlength="3" maxlength="12"/>
         </div>
         <div class="col-4">
           <select class="form-select form-select-sm" [(ngModel)]="newCopyCondition">

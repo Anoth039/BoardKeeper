@@ -1,84 +1,150 @@
-<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-  <div class="d-flex gap-2 flex-wrap">
-    <div class="input-group" style="max-width: 260px;">
-      <span class="input-group-text bg-white">
-        <i class="bi bi-search"></i>
-      </span>
-      <input type="text" class="form-control" placeholder="Search by member or game..." [(ngModel)]="searchTerm"/>
-    </div>
-    <select class="form-select" style="max-width: 160px;" [(ngModel)]="statusFilter">
-      <option value="all">All statuses</option>
-      <option value="active">Active</option>
-      <option value="returned">Returned</option>
-      <option value="lost">Lost</option>
-    </select>
-  </div>
-
-  <button class="btn btn-primary" (click)="openForm()" *ngIf="!showForm">
-    <i class="bi bi-plus-lg"></i> New Rental
-  </button>
-</div>
-
 <app-rental-form *ngIf="showForm" (rentalCreated)="onFormCreated()" (cancelled)="onFormCancelled()"></app-rental-form>
 
-<div *ngIf="rentals.length === 0" class="alert alert-secondary">
-  No rentals yet.
+<div class="rental-toolbar mb-3">
+  <div class="d-flex gap-2 flex-wrap align-items-center">
+    <div class="input-group search-input">
+      <span class="input-group-text bg-white">
+        <i class="bi bi-search text-muted"></i>
+      </span>
+      <input type="text" class="form-control border-start-0" placeholder="Search member, game, copy..." [(ngModel)]="searchTerm"/>
+      <button *ngIf="searchTerm" class="btn btn-outline-secondary" (click)="searchTerm = ''">
+        <i class="bi bi-x"></i>
+      </button>
+    </div>
+
+    <button class="btn btn-outline-secondary position-relative" [class.active]="showFilters" (click)="showFilters = !showFilters">
+      <i class="bi bi-funnel"></i> Filters
+      <span class="filter-badge" *ngIf="activeFilterCount > 0">{{ activeFilterCount }}</span>
+    </button>
+
+    <button *ngIf="activeFilterCount > 0 || searchTerm" class="btn btn-link text-muted btn-sm" (click)="clearFilters()">
+      Clear all
+    </button>
+
+    <div class="ms-auto">
+      <button class="btn btn-primary" (click)="openForm()" *ngIf="!showForm">
+        <i class="bi bi-plus-lg me-1"></i> New Rental
+      </button>
+    </div>
+  </div>
+
+  <div class="filter-panel mt-2" *ngIf="showFilters">
+    <div class="row g-2 align-items-end">
+      <div class="col-sm-3">
+        <label class="filter-label">Status</label>
+        <select class="form-select form-select-sm" [(ngModel)]="statusFilter">
+          <option value="all">All statuses</option>
+          <option value="active">Active</option>
+          <option value="returned">Returned</option>
+          <option value="lost">Lost</option>
+        </select>
+      </div>
+      <div class="col-sm-2">
+        <label class="filter-label">Rented from</label>
+        <input type="date" class="form-control form-control-sm" [(ngModel)]="rentalDateFrom" />
+      </div>
+      <div class="col-sm-2">
+        <label class="filter-label">Rented to</label>
+        <input type="date" class="form-control form-control-sm" [(ngModel)]="rentalDateTo" />
+      </div>
+      <div class="col-sm-2">
+        <label class="filter-label">Due from</label>
+        <input type="date" class="form-control form-control-sm" [(ngModel)]="dueDateFrom" />
+      </div>
+      <div class="col-sm-2">
+        <label class="filter-label">Due to</label>
+        <input type="date" class="form-control form-control-sm" [(ngModel)]="dueDateTo" />
+      </div>
+    </div>
+  </div>
 </div>
 
-<div *ngIf="rentals.length > 0 && filteredRentals.length === 0" class="alert alert-secondary">
-  No rentals match your search/filter.
+<div class="d-flex align-items-center mb-2 gap-2">
+  <span class="text-muted small">
+    {{ filteredRentals.length }} of {{ rentals.length }} rentals
+  </span>
 </div>
 
-<table class="table table-hover align-middle" *ngIf="filteredRentals.length > 0">
-  <thead class="table-light">
-    <tr>
-      <th>Member</th>
-      <th>Game</th>
-      <th>Copy</th>
-      <th>Rented</th>
-      <th>Due</th>
-      <th>Returned</th>
-      <th>Status</th>
-      <th class="text-center" *ngIf="isAdmin">Handled By</th>
-      <th></th> 
-    </tr>
-  </thead>
-  <tbody>
-    <tr *ngFor="let rental of filteredRentals">
-      <td>{{ rental.member?.firstName }} {{ rental.member?.lastName }}</td>
-      <td>{{ rental.gameCopy?.game?.title || rental.gameTitleSnapshot || 'Unknown game' }}</td>
-      <td>{{ rental.gameCopy?.copyNumber || rental.copyLabelSnapshot || 'Unknown copy' }}</td>
-      <td>{{ rental.rentalDate }}</td>
-      <td>{{ rental.dueDate }}</td>
-      <td>{{ rental.returnDate || '—' }}</td>
-      <td>
-        <span class="badge" [ngClass]="statusBadgeClass(rental)">
-          <i class="bi bi-exclamation-triangle-fill me-1" *ngIf="isOverdue(rental)"></i>
-          <i class="bi bi-clock-fill me-1" *ngIf="isDueSoon(rental)"></i>
-          {{ displayStatus(rental) }}
-        </span>
-      </td>
-      <td class="text-center" *ngIf="isAdmin">
-        <span class="avatar-stack">
-          <span class="handler-avatar" [title]="'Checked out by: ' + (rental.handledBy?.email || 'Unknown')">
+<div *ngIf="rentals.length === 0" class="empty-state">
+  <i class="bi bi-journal-x"></i>
+  <p>No rentals yet. Create one to get started.</p>
+</div>
+
+<div *ngIf="rentals.length > 0 && filteredRentals.length === 0" class="empty-state">
+  <i class="bi bi-search"></i>
+  <p>No rentals match your search or filters.</p>
+  <button class="btn btn-sm btn-outline-secondary" (click)="clearFilters()">Clear filters</button>
+</div>
+
+<div class="rental-list" *ngIf="filteredRentals.length > 0">
+  <div class="rental-card" *ngFor="let rental of filteredRentals">
+
+    <div class="rental-stripe" [ngClass]="{
+      'stripe-danger': isOverdue(rental),
+      'stripe-warning': isDueSoon(rental) && !isOverdue(rental),
+      'stripe-primary': rental.status === 'active' && !isOverdue(rental) && !isDueSoon(rental),
+      'stripe-success': rental.status === 'returned',
+      'stripe-dark': rental.status === 'lost'
+    }"></div>
+
+    <div class="rental-body">
+      <div class="rental-top">
+        <div class="rental-game">
+          <span class="rental-game-title">
+            {{ rental.gameCopy?.game?.title || rental.gameTitleSnapshot || 'Unknown game' }}
+          </span>
+          <span class="rental-copy-name">
+            {{ rental.gameCopy?.copyNumber || rental.copyLabelSnapshot || '—' }}
+          </span>
+        </div>
+
+        <div class="rental-actions" *ngIf="rental.status === 'active'">
+          <button class="btn btn-sm btn-outline-success" (click)="returnRental(rental)" title="Return">
+            <i class="bi bi-box-arrow-in-left"></i> Return
+          </button>
+          <button class="btn btn-sm btn-outline-dark ms-1" *ngIf="isAdmin" (click)="markLost(rental)" title="Mark as lost">
+            <i class="bi bi-bookmark-x"></i> Lost
+          </button>
+        </div>
+      </div>
+
+      <div class="rental-bottom">
+        <div class="rental-dates">
+          <span class="rental-meta">
+            <i class="bi bi-person me-1"></i>
+            <a [routerLink]="['/members', rental.member?.id]" class="text-decoration-none rental-member-link">
+              {{ rental.member?.firstName }} {{ rental.member?.lastName }}
+            </a>
+          </span>
+          <span class="rental-meta-divider">·</span>
+          <span class="rental-meta">
+            <i class="bi bi-calendar me-1"></i>
+            {{ rental.rentalDate }}
+          </span>
+          <span class="rental-meta-divider">·</span>
+          <span class="rental-meta" [ngClass]="isOverdue(rental) ? 'text-danger fw-semibold' : ''">
+            <i class="bi bi-calendar-x me-1"></i>
+            Due {{ rental.dueDate }}
+          </span>
+          <span class="rental-meta-divider" *ngIf="rental.returnDate">·</span>
+          <span class="rental-meta" *ngIf="rental.returnDate">
+            <i class="bi bi-calendar-check me-1"></i>
+            {{ rental.status === 'lost' ? 'Lost' : 'Returned' }} {{ rental.returnDate }}
+          </span>
+        </div>
+
+        <div class="avatar-stack ms-auto flex-shrink-0" *ngIf="isAdmin">
+          <span class="handler-avatar" [title]="'Rented out by: ' + (rental.handledBy?.email || 'Unknown')">
             {{ handledByInitials(rental) }}
           </span>
           <span class="handler-avatar returned-avatar" *ngIf="rental.status === 'returned' || rental.status === 'lost'"
-            [ngClass]="{ 'lost-avatar': rental.status === 'lost' }" [title]="(rental.status === 'lost' ? 'Marked lost by: ' : 'Returned by: ') + (rental.returnedBy?.email || 'Unknown')">
-          {{ returnedByInitials(rental) }}
-        </span>
-        </span>
-      </td>
-      <td class="text-end">
-        <div class="d-flex justify-content-end gap-2" *ngIf="rental.status === 'active'">
-          <button class="btn btn-sm btn-outline-success" (click)="returnRental(rental)" title="Mark as returned">
-            <i class="bi bi-box-arrow-in-left"></i> Return
-          </button>
-          <button class="btn btn-sm btn-outline-dark" *ngIf="isAdmin" (click)="markLost(rental)" title="Mark as lost">
-            <i class="bi bi-question-diamond-fill"></i> Lost
-          </button>
+            [ngClass]="{ 'lost-avatar': rental.status === 'lost' }"
+            [title]="(rental.status === 'lost' ? 'Marked lost by: ' : 'Checked in by: ') + (rental.returnedBy?.email || 'Unknown')">
+            {{ returnedByInitials(rental) }}
+          </span>
         </div>
-      </td>
-    </tr>
-  </tbody>
-</table>
+      </div>
+    </div>
+
+  </div>
+</div>

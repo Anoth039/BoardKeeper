@@ -1,21 +1,189 @@
+.search-input {
+  max-width: 320px;
+  min-width: 200px;
+}
+
+.filter-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #dc3545;
+  color: white;
+  font-size: 0.65rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.filter-panel {
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+}
+
+.filter-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #6c757d;
+  margin-bottom: 0.25rem;
+  display: block;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: #adb5bd;
+}
+
+.empty-state i {
+  font-size: 2.5rem;
+  display: block;
+  margin-bottom: 0.75rem;
+}
+
+.empty-state p {
+  margin-bottom: 0.75rem;
+}
+
+.rental-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.rental-card {
+  display: flex;
+  background: white;
+  border: 1px solid #e9ecef;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  transition: box-shadow 0.15s;
+}
+
+.rental-card:hover {
+  box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+}
+
+.rental-stripe {
+  width: 5px;
+  flex-shrink: 0;
+}
+
+.stripe-danger  { background: #dc3545; }
+.stripe-warning { background: #ffc107; }
+.stripe-primary { background: #0d6efd; }
+.stripe-success { background: #198754; }
+.stripe-dark    { background: #212529; }
+
+.rental-body {
+  flex: 1;
+  padding: 0.65rem 0.9rem;
+  min-width: 0;
+}
+
+.rental-top {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.35rem;
+}
+
+.rental-game {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.rental-game-title {
+  font-weight: 600;
+  font-size: 0.95rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 220px;
+}
+
+.rental-copy-name {
+  font-size: 0.78rem;
+  color: #6c757d;
+  background: #f1f3f5;
+  border-radius: 0.25rem;
+  padding: 0 0.4rem;
+  white-space: nowrap;
+}
+
+.rental-actions {
+  display: flex;
+  gap: 0.25rem;
+  flex-shrink: 0;
+}
+
+.rental-bottom {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  row-gap: 0.25rem;
+}
+
+.rental-dates {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  row-gap: 0.2rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.rental-meta {
+  font-size: 0.78rem;
+  color: #6c757d;
+  white-space: nowrap;
+}
+
+.rental-meta-divider {
+  color: #ced4da;
+  font-size: 0.7rem;
+  line-height: 1;
+}
+
+.rental-member-link {
+  color: #495057;
+  font-weight: 500;
+}
+
+.rental-member-link:hover {
+  color: #0d6efd;
+}
+
 .avatar-stack {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  position: relative;
-  height: 26px;
+  align-self: flex-end;
+  flex-shrink: 0;
 }
 
 .handler-avatar {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 26px;
-  height: 26px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
-  background: #2489e2;
+  background: #6c757d;
   color: white;
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   font-weight: bold;
   cursor: default;
   border: 2px solid white;
@@ -24,9 +192,25 @@
 
 .returned-avatar {
   background: #198754;
-  margin-left: -10px;
+  margin-left: -8px;
 }
 
 .lost-avatar {
   background: #212529;
+}
+
+@media (max-width: 480px) {
+  .rental-game-title {
+    max-width: 140px;
+  }
+
+  .rental-meta-divider {
+    display: none;
+  }
+
+  .rental-dates {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.15rem;
+  }
 }

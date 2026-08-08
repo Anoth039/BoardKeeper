@@ -44,8 +44,8 @@ export const createGameCopy = async (req: Request, res: Response) => {
       return res.status(400).json({ message: "gameId is required" });
     }
 
-    if (!copyNumber || copyNumber.trim().length < 3 || copyNumber.trim().length > 40) {
-      return res.status(400).json({ message: "copyNumber must be between 3 and 40 characters" });
+    if (!copyNumber || copyNumber.trim().length < 3 || copyNumber.trim().length > 12) {
+      return res.status(400).json({ message: "copyNumber must be between 3 and 12 characters" });
     }
 
     const game = await gameRepository.findOneBy({ id: gameId });
@@ -91,8 +91,8 @@ export const updateGameCopy = async (req: Request, res: Response) => {
 
     const { copyNumber } = req.body;
 
-    if (!copyNumber || copyNumber.trim().length < 3 || copyNumber.trim().length > 40) {
-      return res.status(400).json({ message: "copyNumber must be between 3 and 40 characters" });
+    if (!copyNumber || copyNumber.trim().length < 3 || copyNumber.trim().length > 12) {
+      return res.status(400).json({ message: "copyNumber must be between 3 and 12 characters" });
     }
 
     const existingCopy = await gameCopyRepository
