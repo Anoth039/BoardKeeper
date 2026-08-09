@@ -1,56 +1,113 @@
-<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-  <div class="input-group" style="max-width: 320px;">
-    <span class="input-group-text bg-white">
-      <i class="bi bi-search"></i>
-    </span>
-    <input type="text" class="form-control" placeholder="Search by name or email..." [(ngModel)]="searchTerm"/>
-  </div>
+<app-member-form *ngIf="showForm" [memberToEdit]="editingMember" (memberSaved)="onFormSaved()" (cancelled)="onFormCancelled()"></app-member-form>
 
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+  <div class="input-group member-search">
+    <span class="input-group-text bg-white">
+      <i class="bi bi-search text-muted"></i>
+    </span>
+    <input type="text" class="form-control border-start-0" placeholder="Search by name or email..." [(ngModel)]="searchTerm"/>
+    <button *ngIf="searchTerm" class="btn btn-outline-secondary" (click)="searchTerm = ''">
+      <i class="bi bi-x"></i>
+    </button>
+  </div>
   <button class="btn btn-primary" (click)="openAddForm()" *ngIf="!showForm">
-    <i class="bi bi-plus-lg"></i> Add Member
+    <i class="bi bi-person-plus me-1"></i> Add Member
   </button>
 </div>
 
-<div *ngIf="showForm" class="mb-4">
-  <app-member-form [memberToEdit]="editingMember" (memberSaved)="onFormSaved()" (cancelled)="onFormCancelled()"></app-member-form>
+<div class="text-muted small mb-2">
+  {{ filteredMembers.length }} of {{ members.length }} members
 </div>
 
-<div *ngIf="members.length === 0" class="alert alert-secondary">
-  No members found. Add one to get started.
+<div *ngIf="members.length === 0" class="empty-state">
+  <i class="bi bi-people"></i>
+  <p>No members yet. Add one to get started.</p>
 </div>
 
-<div *ngIf="members.length > 0 && filteredMembers.length === 0" class="alert alert-secondary">
-  No members match your search.
+<div *ngIf="members.length > 0 && filteredMembers.length === 0" class="empty-state">
+  <i class="bi bi-search"></i>
+  <p>No members match your search.</p>
+  <button class="btn btn-sm btn-outline-secondary" (click)="searchTerm = ''">Clear search</button>
 </div>
 
-<table class="table table-hover align-middle" *ngIf="filteredMembers.length > 0">
-  <thead>
-    <tr>
-      <th>Name</th>
-      <th>Email</th>
-      <th>Phone</th>
-      <th>Status</th>
-      <th></th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr *ngFor="let member of filteredMembers" [class.text-muted]="!member.isActive">
-      <td>
-        <a [routerLink]="['/members', member.id]" class="text-decoration-none">
-          {{ member.firstName }} {{ member.lastName }}
-        </a>
-        <i class="bi bi-exclamation-circle-fill text-danger ms-1" *ngIf="hasOverdueRental(member)" title="Has an overdue rental"></i>
-      </td>
-      <td>{{ member.email }}</td>
-      <td>{{ member.phone || '—' }}</td>
-      <td>
-        <span class="badge" [ngClass]="member.isActive ? 'bg-success' : 'bg-secondary'">
-          {{ member.isActive ? 'Active' : 'Inactive' }}
-        </span>
-      </td>
-      <td class="text-end">
-        <div class="d-flex justify-content-end gap-2">
-          <button class="btn btn-sm btn-outline-secondary" (click)="openEditForm(member)" title="Edit">
+<ng-container *ngIf="filteredMembers.length > 0">
+
+  <div class="member-table-wrap d-none d-md-block">
+    <table class="table member-table align-middle mb-0">
+      <thead>
+        <tr>
+          <th>Member</th>
+          <th>Email</th>
+          <th>Phone</th>
+          <th>Status</th>
+          <th class="text-end">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let member of filteredMembers" [class.member-inactive]="!member.isActive">
+          <td>
+            <div class="d-flex align-items-center gap-2">
+              <div class="member-avatar-sm flex-shrink-0" [class.avatar-inactive]="!member.isActive">
+                {{ memberInitials(member) }}
+              </div>
+              <div class="d-flex align-items-center gap-1">
+                <a [routerLink]="['/members', member.id]" class="member-name-link">
+                  {{ member.firstName }} {{ member.lastName }}
+                </a>
+                <i class="bi bi-exclamation-circle-fill text-danger flex-shrink-0" *ngIf="hasOverdueRental(member)" title="Has an overdue rental"></i>
+              </div>
+            </div>
+          </td>
+          <td><span class="member-meta">{{ member.email }}</span></td>
+          <td><span class="member-meta">{{ member.phone || '—' }}</span></td>
+          <td>
+            <span class="member-status-badge" [ngClass]="member.isActive ? 'badge-active' : 'badge-inactive'">
+              {{ member.isActive ? 'Active' : 'Inactive' }}
+            </span>
+          </td>
+          <td class="text-end">
+            <div class="d-flex justify-content-end gap-1">
+              <button class="btn btn-sm btn-outline-secondary" (click)="openEditForm(member)" [disabled]="!member.isActive" title="Edit">
+                <i class="bi bi-pencil"></i>
+              </button>
+              <button class="btn btn-sm" [ngClass]="member.isActive ? 'btn-outline-warning' : 'btn-outline-success'"
+                (click)="toggleActive(member)" [title]="member.isActive ? 'Deactivate' : 'Reactivate'">
+                <i class="bi" [ngClass]="member.isActive ? 'bi-person-dash' : 'bi-person-check'"></i>
+              </button>
+              <button class="btn btn-sm btn-outline-danger" *ngIf="isAdmin" (click)="deleteMember(member)" title="Delete">
+                <i class="bi bi-trash"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="member-cards d-md-none">
+    <div class="member-card" *ngFor="let member of filteredMembers" [class.member-card-inactive]="!member.isActive">
+      <div class="member-card-left">
+        <div class="member-avatar-sm" [class.avatar-inactive]="!member.isActive">
+          {{ memberInitials(member) }}
+        </div>
+      </div>
+      <div class="member-card-body">
+        <div class="member-card-top">
+          <div>
+            <div class="d-flex align-items-center gap-1">
+              <a [routerLink]="['/members', member.id]" class="member-name-link">
+                {{ member.firstName }} {{ member.lastName }}
+              </a>
+              <i class="bi bi-exclamation-circle-fill text-danger flex-shrink-0"*ngIf="hasOverdueRental(member)" title="Has an overdue rental"></i>
+            </div>
+            <div class="member-meta">{{ member.email }}</div>
+          </div>
+          <span class="member-status-badge ms-2 flex-shrink-0" [ngClass]="member.isActive ? 'badge-active' : 'badge-inactive'">
+            {{ member.isActive ? 'Active' : 'Inactive' }}
+          </span>
+        </div>
+        <div class="member-card-actions justify-content-end gap-1 mt-2">
+          <button class="btn btn-sm btn-outline-secondary" (click)="openEditForm(member)" [disabled]="!member.isActive" title="Edit">
             <i class="bi bi-pencil"></i>
           </button>
           <button class="btn btn-sm" [ngClass]="member.isActive ? 'btn-outline-warning' : 'btn-outline-success'"
@@ -61,7 +118,8 @@
             <i class="bi bi-trash"></i>
           </button>
         </div>
-      </td>
-    </tr>
-  </tbody>
-</table>
+      </div>
+    </div>
+  </div>
+
+</ng-container>

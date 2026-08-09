@@ -96,11 +96,8 @@
 
         <div class="alert alert-danger py-2" *ngIf="errorMessage">{{ errorMessage }}</div>
 
-        <button type="submit" class="btn btn-primary" [disabled]="submitting">
+        <button type="submit" class="btn btn-primary float-end" [disabled]="submitting">
           {{ submitting ? 'Renting...' : 'Rent Out' }}
-        </button>
-        <button type="button" class="btn btn-secondary ms-2" (click)="onCancel()">
-          Cancel
         </button>
       </form>
     </div>

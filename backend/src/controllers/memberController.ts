@@ -47,6 +47,19 @@ export const createMember = async (req: Request, res: Response) => {
       return res.status(400).json({ message: "firstName, lastName, and email are required" });
     }
 
+    if (firstName.trim().length > 30) {
+      return res.status(400).json({ message: "First name cannot exceed 30 characters" });
+    }
+    if (lastName.trim().length > 30) {
+      return res.status(400).json({ message: "Last name cannot exceed 30 characters" });
+    }
+    if (email.trim().length > 50) {
+      return res.status(400).json({ message: "Email cannot exceed 50 characters" });
+    }
+    if (phone && !/^\+?[\d\s\-().]{6,20}$/.test(phone.trim())) {
+      return res.status(400).json({ message: "Phone number format is invalid" });
+    }
+
     const member = memberRepository.create({ firstName, lastName, email, phone });
     const savedMember = await memberRepository.save(member);
     res.status(201).json(savedMember);
@@ -78,6 +91,21 @@ export const updateMember = async (req: AuthenticatedRequest, res: Response) => 
           message: `Cannot deactivate this member — they have ${activeRentalCount} active rental(s). Please return them first.`,
         });
       }
+    }
+
+    const { firstName, lastName, email, phone } = req.body;
+
+    if (firstName && firstName.trim().length > 30) {
+      return res.status(400).json({ message: "First name cannot exceed 30 characters" });
+    }
+    if (lastName && lastName.trim().length > 30) {
+      return res.status(400).json({ message: "Last name cannot exceed 30 characters" });
+    }
+    if (email && email.trim().length > 50) {
+      return res.status(400).json({ message: "Email cannot exceed 50 characters" });
+    }
+    if (phone && !/^\+?[\d\s\-().]{6,20}$/.test(phone.trim())) {
+      return res.status(400).json({ message: "Phone number format is invalid" });
     }
 
     memberRepository.merge(member, req.body);

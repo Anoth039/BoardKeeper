@@ -1,46 +1,55 @@
-<div class="card mb-4">
-  <div class="card-body">
-    <h5 class="card-title">{{ isEditMode ? 'Edit Member' : 'Add a New Member' }}</h5>
+<div class="modal-backdrop-custom" (click)="onCancel()">
+  <div class="modal-box" (click)="$event.stopPropagation()">
+    <div class="modal-header-custom">
+      <h5 class="mb-0">
+        <i class="bi bi-person-plus me-2"></i>
+        {{ isEditMode ? 'Edit Member' : 'Add a New Member' }}
+      </h5>
+      <button class="btn-close" (click)="onCancel()"></button>
+    </div>
 
-    <form [formGroup]="form" (ngSubmit)="onSubmit()">
-      <div class="row">
-        <div class="col mb-3">
-          <label class="form-label">First Name *</label>
-          <input type="text" class="form-control" formControlName="firstName" />
-          <div class="text-danger small" *ngIf="form.get('firstName')?.invalid && form.get('firstName')?.touched">
-            First name is required.
+    <div class="modal-body-custom">
+      <form [formGroup]="form" (ngSubmit)="onSubmit()">
+        <div class="row">
+          <div class="col mb-3">
+            <label class="form-label">First Name *</label>
+            <input type="text" class="form-control" formControlName="firstName" maxlength="30"/>
+            <div class="text-danger small" *ngIf="form.get('firstName')?.invalid && form.get('firstName')?.touched">
+              <span *ngIf="form.get('firstName')?.errors?.['required']">First name is required.</span>
+            </div>
+          </div>
+          <div class="col mb-3">
+            <label class="form-label">Last Name *</label>
+            <input type="text" class="form-control" formControlName="lastName" maxlength="30"/>
+            <div class="text-danger small" *ngIf="form.get('lastName')?.invalid && form.get('lastName')?.touched">
+              <span *ngIf="form.get('lastName')?.errors?.['required']">Last name is required.</span>
+            </div>
           </div>
         </div>
-        <div class="col mb-3">
-          <label class="form-label">Last Name *</label>
-          <input type="text" class="form-control" formControlName="lastName" />
-          <div class="text-danger small" *ngIf="form.get('lastName')?.invalid && form.get('lastName')?.touched">
-            Last name is required.
+
+        <div class="mb-3">
+          <label class="form-label">Email *</label>
+          <input type="email" class="form-control" formControlName="email" maxlength="50"/>
+          <div class="text-danger small" *ngIf="form.get('email')?.invalid && form.get('email')?.touched">
+            <span *ngIf="form.get('email')?.errors?.['required']">Email is required.</span>
+            <span *ngIf="form.get('email')?.errors?.['email']">Enter a valid email address.</span>
           </div>
         </div>
-      </div>
 
-      <div class="mb-3">
-        <label class="form-label">Email *</label>
-        <input type="email" class="form-control" formControlName="email" />
-        <div class="text-danger small" *ngIf="form.get('email')?.invalid && form.get('email')?.touched">
-          A valid email is required.
+        <div class="mb-3">
+          <label class="form-label">Phone</label>
+          <input type="text" class="form-control" formControlName="phone" placeholder="e.g. +36 30 123 4567" maxlength="20"/>
+          <div class="text-danger small" *ngIf="form.get('phone')?.invalid && form.get('phone')?.touched">
+            <span *ngIf="form.get('phone')?.errors?.['pattern']">Invalid phone number format.</span>
+          </div>
         </div>
-      </div>
 
-      <div class="mb-3">
-        <label class="form-label">Phone</label>
-        <input type="text" class="form-control" formControlName="phone" />
-      </div>
+        <div class="alert alert-danger py-2" *ngIf="errorMessage">{{ errorMessage }}</div>
 
-      <div class="alert alert-danger" *ngIf="errorMessage">{{ errorMessage }}</div>
-
-      <button type="submit" class="btn btn-primary" [disabled]="submitting">
-        {{ submitting ? 'Saving...' : (isEditMode ? 'Save Changes' : 'Add Member') }}
-      </button>
-      <button type="button" class="btn btn-secondary ms-2" (click)="onCancel()">
-        Cancel
-      </button>
-    </form>
+        <button type="submit" class="btn btn-primary float-end" [disabled]="submitting">
+          {{ submitting ? 'Saving...' : (isEditMode ? 'Save Changes' : 'Add Member') }}
+        </button>
+      </form>
+    </div>
   </div>
 </div>

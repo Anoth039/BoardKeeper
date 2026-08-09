@@ -67,6 +67,10 @@ export class MemberListComponent implements OnInit {
     return member.rentals?.some(r => isRentalOverdue(r)) ?? false;
   }
 
+  memberInitials(member: Member): string {
+    return `${member.firstName.charAt(0)}${member.lastName.charAt(0)}`.toUpperCase();
+  }
+
   openAddForm(): void {
     this.editingMember = null;
     this.showForm = true;

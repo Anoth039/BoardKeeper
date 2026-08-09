@@ -122,6 +122,12 @@ export const getStats = async (req: Request, res: Response) => {
       relations: { copies: { rentals: true } },
     });
 
+    const twoWeeksAgo = toLocalDate((() => {
+      const d = new Date();
+      d.setDate(d.getDate() - 14);
+      return d;
+    })());
+
     const unusedGames = allGames
       .map((g) => {
         const dates = (g.copies ?? [])
@@ -136,9 +142,21 @@ export const getStats = async (req: Request, res: Response) => {
           createdAt: g.createdAt,
         };
       })
+      .filter((g) => {
+        const createdDaysAgo = Math.floor(
+          (Date.now() - new Date(g.createdAt).getTime()) / 86400000
+        );
+
+        if (!g.lastRentedDate) {
+          return createdDaysAgo > 7;
+        }
+
+        return g.lastRentedDate < twoWeeksAgo;
+      })
       .sort((a, b) => {
-        if (!a.lastRentedDate && !b.lastRentedDate)
+        if (!a.lastRentedDate && !b.lastRentedDate) {
           return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        }
         if (!a.lastRentedDate) return -1;
         if (!b.lastRentedDate) return 1;
         return a.lastRentedDate.localeCompare(b.lastRentedDate);

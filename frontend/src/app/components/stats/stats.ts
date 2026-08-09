@@ -194,10 +194,7 @@ export class StatsPage implements OnInit, AfterViewInit, OnDestroy {
 
   unusedGameLabel(game: UnusedGame): string {
     if (game.lastRentedDate) return this.timeAgo(game.lastRentedDate);
-    const days = Math.floor(
-      (Date.now() - new Date(game.createdAt).getTime()) / 86400000
-    );
-    return days <= 7 ? 'Recently added' : 'Not rented yet';
+    return 'Never rented';
   }
 
   private shortDate(d: string): string {
@@ -214,5 +211,11 @@ export class StatsPage implements OnInit, AfterViewInit, OnDestroy {
     if (months < 12) return `${months} months ago`;
     const years = Math.floor(months / 12);
     return years === 1 ? '1 year ago' : `${years} years ago`;
+  }
+
+  get totalRentalsThisMonth(): number {
+    if (!this.stats?.monthlyBreakdown) return 0;
+    const b = this.stats.monthlyBreakdown;
+    return b.active + b.overdue + b.returned + b.lost;
   }
 }

@@ -25,7 +25,7 @@ export class MemberForm implements OnInit, OnChanges {
       firstName: ['', Validators.required],
       lastName: ['', Validators.required],
       email: ['', [Validators.required, Validators.email]],
-      phone: ['']
+      phone: ['', Validators.pattern(/^\+?[\d\s\-().]{6,20}$/)]
     });
   }
 
