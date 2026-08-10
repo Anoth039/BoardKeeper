@@ -27,6 +27,8 @@ export class ForgotPassword {
   submitting = false;
   errorMessage = '';
   successMessage = '';
+  showNewPassword = false;
+  showConfirmPassword = false;
 
   cooldownSeconds = 0;
   private cooldownInterval: any;

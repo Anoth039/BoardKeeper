@@ -103,7 +103,7 @@
             <i class="bi bi-box-arrow-in-left"></i> Return
           </button>
           <button class="btn btn-sm btn-outline-dark ms-1" *ngIf="isAdmin" (click)="markLost(rental)" title="Mark as lost">
-            <i class="bi bi-bookmark-x"></i> Lost
+            <i class="bi bi-bookmark-x"></i>
           </button>
         </div>
       </div>
@@ -122,7 +122,7 @@
             {{ rental.rentalDate }}
           </span>
           <span class="rental-meta-divider">·</span>
-          <span class="rental-meta" [ngClass]="isOverdue(rental) ? 'text-danger fw-semibold' : ''">
+          <span class="rental-meta" [ngClass]="isOverdue(rental) ? 'text-danger fw-semibold' : (isDueSoon(rental) ? 'text-warning fw-semibold' : '')">
             <i class="bi bi-calendar-x me-1"></i>
             Due {{ rental.dueDate }}
           </span>

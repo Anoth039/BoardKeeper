@@ -14,7 +14,12 @@
 
         <div class="mb-3">
           <label class="form-label">Password</label>
-          <input type="password" class="form-control" formControlName="password" />
+          <div class="input-group">
+            <input [type]="showPassword ? 'text' : 'password'" class="form-control" formControlName="password"/>
+            <button type="button" class="btn btn-outline-secondary" (click)="showPassword = !showPassword" tabindex="-1">
+              <i class="bi" [ngClass]="showPassword ? 'bi-eye-slash' : 'bi-eye'"></i>
+            </button>
+          </div>
           <div class="text-danger small" *ngIf="form.get('password')?.invalid && form.get('password')?.touched">
             Password must be at least 8 characters.
           </div>
@@ -22,7 +27,12 @@
 
         <div class="mb-3">
           <label class="form-label">Confirm Password</label>
-          <input type="password" class="form-control" formControlName="confirmPassword" />
+          <div class="input-group">
+            <input [type]="showConfirmPassword ? 'text' : 'password'" class="form-control" formControlName="confirmPassword"/>
+            <button type="button" class="btn btn-outline-secondary" (click)="showConfirmPassword = !showConfirmPassword" tabindex="-1">
+              <i class="bi" [ngClass]="showConfirmPassword ? 'bi-eye-slash' : 'bi-eye'"></i>
+            </button>
+          </div>
           <div class="text-danger small" *ngIf="form.errors?.['passwordsMismatch'] && form.get('confirmPassword')?.touched">
             Passwords do not match.
           </div>

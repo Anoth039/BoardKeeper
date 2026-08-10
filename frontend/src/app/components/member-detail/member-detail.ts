@@ -1,9 +1,9 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { MemberService } from '../../services/member';
 import { Member } from '../../models/member.model';
-import { isRentalDueSoon, isRentalOverdue, rentalDisplayStatus, RentalStatus, rentalStatusBadgeClass } from '../../models/rental.model';
+import { Rental, RentalStatus, isRentalOverdue, isRentalDueSoon } from '../../models/rental.model';
 
 @Component({
   selector: 'app-member-detail',
@@ -17,17 +17,13 @@ export class MemberDetail implements OnInit {
   loading = true;
   notFound = false;
 
-  statusBadgeClass = rentalStatusBadgeClass;
-  displayStatus = rentalDisplayStatus;
   isOverdue = isRentalOverdue;
   isDueSoon = isRentalDueSoon;
 
-  constructor(private route: ActivatedRoute, private router: Router, private memberService: MemberService, 
-    private cdr: ChangeDetectorRef) {}
+  constructor(private route: ActivatedRoute, private memberService: MemberService, private cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
     const id = Number(this.route.snapshot.paramMap.get('id'));
-
     this.memberService.getById(id).subscribe({
       next: (data) => {
         this.member = data;
@@ -43,17 +39,9 @@ export class MemberDetail implements OnInit {
     });
   }
 
-  get activeRentals() {
-    return this.member?.rentals?.filter(r => r.status === RentalStatus.ACTIVE) || [];
-  }
-
-  get pastRentals() {
-    return this.member?.rentals?.filter(r => r.status !== RentalStatus.ACTIVE) || [];
-  }
-
   get initials(): string {
-  if (!this.member) return '';
-  return `${this.member.firstName.charAt(0)}${this.member.lastName.charAt(0)}`.toUpperCase();
+    if (!this.member) return '';
+    return `${this.member.firstName.charAt(0)}${this.member.lastName.charAt(0)}`.toUpperCase();
   }
 
   get memberSince(): string {
@@ -61,5 +49,13 @@ export class MemberDetail implements OnInit {
     return new Date(this.member.createdAt).toLocaleDateString(undefined, {
       year: 'numeric', month: 'long'
     });
+  }
+
+  get activeRentals(): Rental[] {
+    return this.member?.rentals?.filter(r => r.status === RentalStatus.ACTIVE) || [];
+  }
+
+  get pastRentals(): Rental[] {
+    return this.member?.rentals?.filter(r => r.status !== RentalStatus.ACTIVE) || [];
   }
 }

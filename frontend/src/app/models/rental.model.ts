@@ -38,20 +38,3 @@ export function isRentalDueSoon(rental: Rental): boolean {
 
   return diffDays >= 0 && diffDays <= 2;
 }
-
-export function rentalStatusBadgeClass(rental: Rental): string {
-  if (isRentalOverdue(rental)) return 'bg-danger';
-  if (isRentalDueSoon(rental)) return 'bg-warning text-dark';
-  switch (rental.status) {
-    case RentalStatus.ACTIVE: return 'bg-primary';
-    case RentalStatus.RETURNED: return 'bg-success';
-    case RentalStatus.LOST: return 'bg-dark';
-    default: return 'bg-secondary';
-  }
-}
-
-export function rentalDisplayStatus(rental: Rental): string {
-  if (isRentalOverdue(rental)) return 'overdue';
-  if (isRentalDueSoon(rental)) return 'due soon';
-  return rental.status;
-}

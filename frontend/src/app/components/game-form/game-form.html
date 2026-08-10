@@ -1,77 +1,106 @@
-<div class="card mb-4">
-  <div class="card-body">
-    <h5 class="card-title">{{ isEditMode ? 'Edit Game' : 'Add a New Game' }}</h5>
+<div class="modal-backdrop-custom" (click)="onCancel()">
+  <div class="modal-box modal-box-game" (click)="$event.stopPropagation()">
+    <div class="modal-header-custom">
+      <h5 class="mb-0">
+        <i class="bi me-2" [ngClass]="isEditMode ? 'bi-pencil-square' : 'bi-plus-circle'"></i>
+        {{ isEditMode ? 'Edit Game' : 'Add a New Game' }}
+      </h5>
+      <button class="btn-close" (click)="onCancel()"></button>
+    </div>
 
-    <form [formGroup]="form" (ngSubmit)="onSubmit()">
-      <div class="mb-3">
-        <label class="form-label">Title *</label>
-        <input type="text" class="form-control" formControlName="title" />
-        <div class="text-danger small" *ngIf="form.get('title')?.invalid && form.get('title')?.touched">
-          Title is required.
-        </div>
-      </div>
+    <div class="modal-body-custom">
+      <form [formGroup]="form" (ngSubmit)="onSubmit()">
 
-      <div class="mb-3">
-        <label class="form-label">Description</label>
-        <textarea class="form-control" formControlName="description" rows="2"></textarea>
-      </div>
-
-      <div class="row">
-        <div class="col mb-3">
-          <label class="form-label">Min Players *</label>
-          <input type="number" class="form-control" formControlName="minPlayers" min="1" />
-          <div class="text-danger small" *ngIf="form.get('minPlayers')?.invalid && form.get('minPlayers')?.touched">
-            Must be at least 1 player.
+        <div class="mb-3">
+          <label class="form-label">Title *</label>
+          <input type="text" class="form-control" formControlName="title" placeholder="e.g. Catan"/>
+          <div class="text-danger small" *ngIf="form.get('title')?.invalid && form.get('title')?.touched">
+            Title is required.
           </div>
         </div>
-        <div class="col mb-3">
-          <label class="form-label">Max Players *</label>
-          <input type="number" class="form-control" formControlName="maxPlayers" min="1" />
-          <div class="text-danger small" *ngIf="form.get('maxPlayers')?.invalid && form.get('maxPlayers')?.touched">
-            Must be at least 1 player.
+
+        <div class="mb-3">
+          <label class="form-label">Description</label>
+          <textarea class="form-control" formControlName="description" rows="2" placeholder="Short description..."></textarea>
+        </div>
+
+        <div class="row g-2 mb-1">
+          <div class="col">
+            <label class="form-label">Min Players *</label>
+            <input type="number" class="form-control" formControlName="minPlayers" min="1"/>
+            <div class="text-danger small" *ngIf="form.get('minPlayers')?.invalid && form.get('minPlayers')?.touched">
+              At least 1 player.
+            </div>
+          </div>
+          <div class="col">
+            <label class="form-label">Max Players *</label>
+            <input type="number" class="form-control" formControlName="maxPlayers" min="1"/>
+            <div class="text-danger small" *ngIf="form.get('maxPlayers')?.invalid && form.get('maxPlayers')?.touched">
+              At least 1 player.
+            </div>
           </div>
         </div>
-      </div>
 
-      <div class="text-danger small mb-2" *ngIf="form.errors?.['maxLessThanMin'] && (form.get('minPlayers')?.touched || form.get('maxPlayers')?.touched)">
-        Max players cannot be less than min players.
-      </div>
+        <div class="text-danger small mb-3" *ngIf="form.errors?.['maxLessThanMin'] && (form.get('minPlayers')?.touched || form.get('maxPlayers')?.touched)">
+          Max players cannot be less than min players.
+        </div>
 
-      <div class="mb-3">
-        <label class="form-label">Category</label>
-        <input type="text" class="form-control" formControlName="category" placeholder="e.g. Strategy, Party, Family" />
-      </div>
+        <div class="row g-2 mb-3">
+          <div class="col">
+            <label class="form-label">Age Rating</label>
+            <select class="form-select" formControlName="ageRating">
+              <option [ngValue]="null">Not rated</option>
+              <option [ngValue]="3">3+</option>
+              <option [ngValue]="7">7+</option>
+              <option [ngValue]="12">12+</option>
+              <option [ngValue]="16">16+</option>
+              <option [ngValue]="18">18+</option>
+            </select>
+          </div>
+          <div class="col">
+            <label class="form-label">Est. Time (minutes)</label>
+            <input type="number" class="form-control" formControlName="estimatedTimeMinutes" placeholder="e.g. 45" min="1"/>
+          </div>
+        </div>
 
-       <div class="col mb-3">
-        <label class="form-label">Age Rating</label>
-        <select class="form-select" formControlName="ageRating">
-          <option [ngValue]="null">Not rated</option>
-          <option [ngValue]="3">3+</option>
-          <option [ngValue]="7">7+</option>
-          <option [ngValue]="12">12+</option>
-          <option [ngValue]="16">16+</option>
-          <option [ngValue]="18">18+</option>
-        </select>
-      </div>
-      
-      <div class="col mb-3">
-        <label class="form-label">Estimated Time (minutes)</label>
-        <input type="number" class="form-control" formControlName="estimatedTimeMinutes" placeholder="e.g. 45" min="1" />
-      </div>
+        <div class="mb-3">
+          <label class="form-label">Category</label>
 
-      <div class="mb-3">
-        <label class="form-label">Image URL</label>
-        <input type="text" class="form-control" formControlName="imageUrl" placeholder="https://..." />
-      </div>
+          <div *ngIf="!useCustomCategory">
+            <select
+              class="form-select"
+              [(ngModel)]="selectedPresetCategory"
+              [ngModelOptions]="{ standalone: true }"
+              (ngModelChange)="onPresetCategoryChange($event)"
+            >
+              <option value="">No category</option>
+              <option *ngFor="let cat of presetCategories" [value]="cat">{{ cat }}</option>
+              <option value="__custom__">Other (type your own...)</option>
+            </select>
+          </div>
 
-      <div class="alert alert-danger" *ngIf="errorMessage">{{ errorMessage }}</div>
+          <div *ngIf="useCustomCategory" class="input-group">
+            <input type="text" class="form-control" formControlName="category" placeholder="Type a custom category..." autofocus/>
+            <button type="button" class="btn btn-outline-secondary" (click)="backToPreset()" title="Back to list">
+              <i class="bi bi-x"></i>
+            </button>
+          </div>
+        </div>
 
-      <button type="submit" class="btn btn-primary" [disabled]="submitting">
-        {{ submitting ? 'Saving...' : (isEditMode ? 'Save Changes' : 'Add Game') }}
-      </button>
-      <button type="button" class="btn btn-secondary ms-2" (click)="onCancel()">
-        Cancel
-      </button>
-    </form>
+        <div class="mb-3">
+          <label class="form-label">Image URL</label>
+          <input type="text" class="form-control" formControlName="imageUrl" placeholder="https://..."/>
+        </div>
+
+        <div class="alert alert-danger py-2" *ngIf="errorMessage">{{ errorMessage }}</div>
+
+        <div class="d-flex gap-2 justify-content-end">
+          <button type="submit" class="btn btn-primary" [disabled]="submitting">
+            {{ submitting ? 'Saving...' : (isEditMode ? 'Save Changes' : 'Add Game') }}
+          </button>
+        </div>
+
+      </form>
+    </div>
   </div>
 </div>

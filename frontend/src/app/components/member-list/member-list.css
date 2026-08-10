@@ -51,8 +51,12 @@
   border-bottom: none;
 }
 
-.member-table tbody tr:hover {
-  background: #fafafa;
+.member-table tbody tr:hover td {
+  background: #e9ecef;
+}
+
+.member-table tbody tr:not(.member-inactive):hover td {
+  background: #f1f3f5;
 }
 
 .member-inactive td {
@@ -128,6 +132,13 @@
   border-radius: 0.75rem;
   padding: 0.85rem 1rem;
   box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  transition: transform 0.15s ease-in-out, box-shadow 0.15s ease-in-out, border-color 0.15s ease-in-out;
+}
+
+.member-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  border-color: #ced4da;
 }
 
 .member-card-inactive {

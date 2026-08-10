@@ -134,7 +134,7 @@ export class RentalListComponent implements OnInit {
   }
 
   returnRental(rental: Rental): void {
-    if (!confirm(`Mark "${rental.gameCopy?.game?.title || rental.gameTitleSnapshot}" as returned by ${rental.member?.firstName}?`)) return;
+    if (!confirm(`Mark "${rental.gameCopy?.game?.title || rental.gameTitleSnapshot}" (${rental.gameCopy?.copyNumber || rental.copyLabelSnapshot}) as returned by ${rental.member?.firstName}?`)) return;
 
     this.rentalService.return(rental.id).subscribe({
       next: (updated) => {
@@ -150,7 +150,7 @@ export class RentalListComponent implements OnInit {
   }
 
   markLost(rental: Rental): void {
-    if (!confirm(`Mark "${rental.gameCopy?.game?.title || rental.gameTitleSnapshot}" as lost?`)) return;
+    if (!confirm(`Mark "${rental.gameCopy?.game?.title || rental.gameTitleSnapshot}" (${rental.gameCopy?.copyNumber || rental.copyLabelSnapshot}) as lost?`)) return;
 
     this.rentalService.markLost(rental.id).subscribe({
       next: (updated) => {
