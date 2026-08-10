@@ -98,12 +98,19 @@
           </span>
         </div>
 
-        <div class="rental-actions" *ngIf="rental.status === 'active'">
-          <button class="btn btn-sm btn-outline-success" (click)="returnRental(rental)" title="Return">
-            <i class="bi bi-box-arrow-in-left"></i> Return
-          </button>
-          <button class="btn btn-sm btn-outline-dark ms-1" *ngIf="isAdmin" (click)="markLost(rental)" title="Mark as lost">
-            <i class="bi bi-bookmark-x"></i>
+        <div class="d-flex align-items-center gap-1 flex-shrink-0">
+
+          <div class="rental-actions" *ngIf="rental.status === 'active'">
+            <button class="btn btn-sm btn-outline-success" (click)="returnRental(rental)" title="Return">
+              <i class="bi bi-box-arrow-in-left"></i> Return
+            </button>
+            <button class="btn btn-sm btn-outline-dark ms-1" *ngIf="isAdmin" (click)="markLost(rental)" title="Mark as lost">
+              <i class="bi bi-bookmark-x"></i>
+            </button>
+          </div>
+
+          <button class="btn btn-sm btn-outline-secondary ms-1" (click)="downloadReceipt(rental)" title="Download receipt">
+            <i class="bi bi-file-earmark-pdf"></i>
           </button>
         </div>
       </div>

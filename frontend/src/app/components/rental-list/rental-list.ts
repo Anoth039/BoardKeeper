@@ -6,6 +6,7 @@ import { RentalService } from '../../services/rental';
 import { AuthService } from '../../services/auth';
 import { Rental, RentalStatus, isRentalOverdue, isRentalDueSoon } from '../../models/rental.model';
 import { RentalForm } from '../rental-form/rental-form';
+import { PdfService } from '../../services/pdf';
 
 @Component({
   selector: 'app-rental-list',
@@ -29,7 +30,7 @@ export class RentalListComponent implements OnInit {
   isOverdue = isRentalOverdue;
   isDueSoon = isRentalDueSoon;
 
-  constructor(private rentalService: RentalService, public authService: AuthService, private cdr: ChangeDetectorRef) {}
+  constructor(private rentalService: RentalService, public authService: AuthService, private pdfService: PdfService, private cdr: ChangeDetectorRef) {}
 
   get isAdmin(): boolean {
     return this.authService.getCurrentUser()?.role === 'admin';
@@ -171,5 +172,9 @@ export class RentalListComponent implements OnInit {
 
   returnedByInitials(rental: Rental): string {
     return rental.returnedBy?.email?.charAt(0).toUpperCase() || '?';
+  }
+
+  downloadReceipt(rental: Rental): void {
+    this.pdfService.generateRentalReceipt(rental);
   }
 }
