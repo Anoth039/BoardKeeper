@@ -1,5 +1,5 @@
 <div class="modal-backdrop-custom" (click)="onCancel()">
-  <div class="modal-box modal-box-game" (click)="$event.stopPropagation()">
+  <div class="modal-box" (click)="$event.stopPropagation()">
     <div class="modal-header-custom">
       <h5 class="mb-0">
         <i class="bi me-2" [ngClass]="isEditMode ? 'bi-pencil-square' : 'bi-plus-circle'"></i>
@@ -67,12 +67,7 @@
           <label class="form-label">Category</label>
 
           <div *ngIf="!useCustomCategory">
-            <select
-              class="form-select"
-              [(ngModel)]="selectedPresetCategory"
-              [ngModelOptions]="{ standalone: true }"
-              (ngModelChange)="onPresetCategoryChange($event)"
-            >
+            <select class="form-select" [(ngModel)]="selectedPresetCategory" [ngModelOptions]="{ standalone: true }" (ngModelChange)="onPresetCategoryChange($event)">
               <option value="">No category</option>
               <option *ngFor="let cat of presetCategories" [value]="cat">{{ cat }}</option>
               <option value="__custom__">Other (type your own...)</option>
