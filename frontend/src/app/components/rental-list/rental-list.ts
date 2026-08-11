@@ -7,6 +7,7 @@ import { AuthService } from '../../services/auth';
 import { Rental, RentalStatus, isRentalOverdue, isRentalDueSoon } from '../../models/rental.model';
 import { RentalForm } from '../rental-form/rental-form';
 import { PdfService } from '../../services/pdf';
+import * as XLSX from 'xlsx';
 
 @Component({
   selector: 'app-rental-list',
@@ -176,5 +177,42 @@ export class RentalListComponent implements OnInit {
 
   downloadReceipt(rental: Rental): void {
     this.pdfService.generateRentalReceipt(rental);
+  }
+
+  private rentalStatusLabel(rental: Rental): string {
+    if (isRentalOverdue(rental)) return 'overdue';
+    if (isRentalDueSoon(rental)) return 'due soon';
+    return rental.status;
+  }
+
+  exportToExcel(): void {
+    if (!this.isAdmin) return;
+    
+    const rows = this.filteredRentals.map(r => ({
+      'Member': r.member ? `${r.member.firstName} ${r.member.lastName}` : 'Unknown',
+      'Email': r.member?.email || '—',
+      'Game': r.gameCopy?.game?.title || r.gameTitleSnapshot || 'Unknown',
+      'Copy': r.gameCopy?.copyNumber || r.copyLabelSnapshot || '—',
+      'Status': this.rentalStatusLabel(r),
+      'Rental Date': r.rentalDate,
+      'Due Date': r.dueDate,
+      'Return Date': r.returnDate || '—',
+      'Rented out by': r.handledBy?.email || '—',
+      'Checked in by': r.returnedBy?.email || '—',
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Rentals');
+
+    const colWidths = [
+      { wch: 22 }, { wch: 28 }, { wch: 24 }, { wch: 14 },
+      { wch: 12 }, { wch: 14 }, { wch: 14 }, { wch: 14 },
+      { wch: 26 }, { wch: 26 },
+    ];
+    ws['!cols'] = colWidths;
+
+    const date = new Date().toISOString().split('T')[0];
+    XLSX.writeFile(wb, `rentals-export-${date}.xlsx`);
   }
 }

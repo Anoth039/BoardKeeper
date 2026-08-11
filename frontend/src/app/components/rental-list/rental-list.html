@@ -21,8 +21,12 @@
       Clear all
     </button>
 
-    <div class="ms-auto">
-      <button class="btn btn-primary" (click)="openForm()" *ngIf="!showForm">
+    <div class="ms-auto d-flex gap-2">
+      <button *ngIf="isAdmin" class="btn btn-outline-success btn-sm" (click)="exportToExcel()" 
+        [disabled]="filteredRentals.length === 0" title="Export current view to Excel">
+        <i class="bi bi-file-earmark-excel me-1"></i> Export
+      </button>
+      <button class="btn btn-primary" (click)="openForm()">
         <i class="bi bi-plus-lg me-1"></i> New Rental
       </button>
     </div>
