@@ -65,14 +65,32 @@
 
           <div class="mt-2" *ngIf="selectedGame">
             <label class="form-label small">Copy *</label>
-            <select class="form-select" [(ngModel)]="selectedCopyId" name="copyId" required>
-              <option [ngValue]="null" disabled>Select a copy</option>
-              <option *ngFor="let copy of availableCopiesForSelectedGame" [ngValue]="copy.id">
-                {{ copy.copyNumber }} ({{ copy.condition }})
-              </option>
-            </select>
-            <div class="form-text" *ngIf="availableCopiesForSelectedGame.length === 0">
-              No available copies of this game right now.
+
+            <div *ngIf="selectedCopy" class="d-flex align-items-center justify-content-between border rounded p-2 bg-light">
+              <span>
+                <strong>{{ selectedCopy.copyNumber }}</strong>
+                <span class="ms-2 text-muted small">({{ selectedCopy.condition }})</span>
+              </span>
+              <button type="button" class="btn btn-sm btn-outline-secondary" (click)="clearCopySelection()">
+                Change
+              </button>
+            </div>
+
+            <div *ngIf="!selectedCopy" class="position-relative">
+              <input type="text" class="form-control" placeholder="Search copies..." [(ngModel)]="copySearchTerm" name="copySearch" 
+                (focus)="copySearchTerm = copySearchTerm"/>
+              <div class="dropdown-list" *ngIf="availableCopiesForSelectedGame.length > 0">
+                <div class="dropdown-list-item" *ngFor="let copy of filteredCopiesForSelectedGame" (click)="selectCopy(copy.id)">
+                  {{ copy.copyNumber }}
+                  <small class="text-muted ms-1">({{ copy.condition }})</small>
+                </div>
+                <div class="dropdown-list-item text-muted" *ngIf="filteredCopiesForSelectedGame.length === 0">
+                  No copies match your search.
+                </div>
+              </div>
+              <div class="form-text" *ngIf="availableCopiesForSelectedGame.length === 0">
+                No available copies of this game right now.
+              </div>
             </div>
           </div>
         </div>

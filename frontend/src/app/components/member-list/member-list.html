@@ -74,7 +74,7 @@
                 (click)="toggleActive(member)" [title]="member.isActive ? 'Deactivate' : 'Reactivate'">
                 <i class="bi" [ngClass]="member.isActive ? 'bi-person-dash' : 'bi-person-check'"></i>
               </button>
-              <button class="btn btn-sm btn-outline-danger" *ngIf="isAdmin" (click)="deleteMember(member)" title="Delete">
+              <button class="btn btn-sm btn-outline-danger" *ngIf="isAdmin && (!member.rentals || member.rentals.length === 0)" (click)="deleteMember(member)" title="Delete">
                 <i class="bi bi-trash"></i>
               </button>
             </div>
@@ -114,7 +114,7 @@
             (click)="toggleActive(member)" [title]="member.isActive ? 'Deactivate' : 'Reactivate'">
             <i class="bi" [ngClass]="member.isActive ? 'bi-person-dash' : 'bi-person-check'"></i>
           </button>
-          <button class="btn btn-sm btn-outline-danger" *ngIf="isAdmin" (click)="deleteMember(member)" title="Delete">
+          <button class="btn btn-sm btn-outline-danger" *ngIf="isAdmin && (!member.rentals || member.rentals.length === 0)" (click)="deleteMember(member)" title="Delete">
             <i class="bi bi-trash"></i>
           </button>
         </div>

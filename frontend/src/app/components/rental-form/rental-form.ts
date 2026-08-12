@@ -31,6 +31,8 @@ export class RentalForm implements OnInit {
   gameSearchTerm = '';
   showGameDropdown = false;
 
+  copySearchTerm = '';
+
   rentalDate = this.today();
   dueDate = this.inOneWeek();
 
@@ -82,6 +84,16 @@ export class RentalForm implements OnInit {
     return this.games.filter(g => g.title.toLowerCase().includes(term));
   }
 
+  get filteredCopiesForSelectedGame(): GameCopy[] {
+    const copies = this.availableCopiesForSelectedGame;
+    if (!this.copySearchTerm.trim()) return copies;
+    const term = this.copySearchTerm.trim().toLowerCase();
+    return copies.filter(c =>
+      c.copyNumber.toLowerCase().includes(term)
+      || c.condition.toLowerCase().includes(term)
+    );
+  }
+
   get selectedMember(): Member | null {
     return this.members.find(m => m.id === this.selectedMemberId) || null;
   }
@@ -92,6 +104,10 @@ export class RentalForm implements OnInit {
 
   get availableCopiesForSelectedGame(): GameCopy[] {
     return this.selectedGame?.copies?.filter(c => c.isAvailable && c.condition !== 'lost') || [];
+  }
+
+  get selectedCopy(): GameCopy | null {
+    return this.availableCopiesForSelectedGame.find(c => c.id === this.selectedCopyId) || null;
   }
 
   selectMember(member: Member): void {
@@ -105,7 +121,14 @@ export class RentalForm implements OnInit {
     this.selectedGameId = game.id;
     this.selectedCopyId = null;
     this.gameSearchTerm = '';
+    this.copySearchTerm = '';
     this.showGameDropdown = false;
+    this.cdr.detectChanges();
+  }
+
+  selectCopy(copyId: number): void {
+    this.selectedCopyId = copyId;
+    this.copySearchTerm = '';
     this.cdr.detectChanges();
   }
 
@@ -117,6 +140,13 @@ export class RentalForm implements OnInit {
   clearGameSelection(): void {
     this.selectedGameId = null;
     this.selectedCopyId = null;
+    this.copySearchTerm = '';
+    this.cdr.detectChanges();
+  }
+
+  clearCopySelection(): void {
+    this.selectedCopyId = null;
+    this.copySearchTerm = '';
     this.cdr.detectChanges();
   }
 
