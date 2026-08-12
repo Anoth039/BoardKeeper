@@ -3,23 +3,58 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { AppDataSource } from "../data-source";
 import { User } from "../entities/User";
-import { sendResetCodeEmail } from "../mailer";
+import { sendResetCodeEmail, sendVerificationCodeEmail } from "../mailer";
 
 const userRepository = AppDataSource.getRepository(User);
 
 const JWT_SECRET = process.env.JWT_SECRET as string;
-const REGISTER_INVITE_CODE = process.env.REGISTER_INVITE_CODE as string;
+const verificationCodes = new Map<string, { code: string; expiresAt: Date }>();
+const verificationCooldowns = new Map<string, number>();
+
+export const sendVerificationCode = async (req: Request, res: Response) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ message: "email is required" });
+    }
+
+    const existingUser = await userRepository.findOneBy({ email });
+    if (existingUser) {
+      return res.status(409).json({ message: "An account with this email already exists" });
+    }
+
+    const now = Date.now();
+    const lastRequest = verificationCooldowns.get(email);
+    if (lastRequest && (now - lastRequest) < 60000) {
+      const waitSeconds = Math.ceil((60000 - (now - lastRequest)) / 1000);
+      return res.status(429).json({
+        message: `Please wait ${waitSeconds} seconds before requesting another code`,
+        retryAfterSeconds: waitSeconds,
+      });
+    }
+
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    verificationCooldowns.set(email, now);
+    verificationCodes.set(email, {
+      code,
+      expiresAt: new Date(now + 10 * 60 * 1000)
+    });
+
+    await sendVerificationCodeEmail(email, code);
+
+    res.json({ message: "A verification code has been sent to your email" });
+  } catch (error) {
+    res.status(500).json({ message: "Failed to send verification code", error });
+  }
+};
 
 export const register = async (req: Request, res: Response) => {
   try {
-    const { email, password, inviteCode } = req.body;
+    const { email, password, verificationCode } = req.body;
 
-    if (!email || !password || !inviteCode) {
-      return res.status(400).json({ message: "email, password, and inviteCode are required" });
-    }
-
-    if (inviteCode !== REGISTER_INVITE_CODE) {
-      return res.status(403).json({ message: "Invalid invite code" });
+    if (!email || !password || !verificationCode) {
+      return res.status(400).json({ message: "email, password, and verificationCode are required" });
     }
 
     if (password.length < 8) {
@@ -31,10 +66,20 @@ export const register = async (req: Request, res: Response) => {
       return res.status(409).json({ message: "An account with this email already exists" });
     }
 
-    const passwordHash = await bcrypt.hash(password, 10);
+    const stored = verificationCodes.get(email);
+    if (!stored || stored.code !== verificationCode) {
+      return res.status(400).json({ message: "Invalid verification code" });
+    }
+    if (stored.expiresAt < new Date()) {
+      return res.status(400).json({ message: "Verification code has expired. Please request a new one." });
+    }
 
+    const passwordHash = await bcrypt.hash(password, 10);
     const user = userRepository.create({ email, passwordHash });
     await userRepository.save(user);
+
+    verificationCodes.delete(email);
+    verificationCooldowns.delete(email);
 
     res.status(201).json({ message: "Account created successfully" });
   } catch (error) {

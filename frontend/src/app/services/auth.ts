@@ -13,8 +13,12 @@ export class AuthService {
 
   constructor(private http: HttpClient) {}
 
-  register(email: string, password: string, inviteCode: string): Observable<{ message: string }> {
-    return this.http.post<{ message: string }>(`${this.apiUrl}/register`, { email, password, inviteCode });
+  sendVerificationCode(email: string): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${this.apiUrl}/send-verification-code`, { email });
+  }
+
+  register(email: string, password: string, verificationCode: string): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${this.apiUrl}/register`, { email, password, verificationCode });
   }
 
   login(email: string, password: string): Observable<LoginResponse> {

@@ -1,21 +1,36 @@
-<div class="auth-wrapper d-flex justify-content-center align-items-center">
-  <div class="card shadow-sm" style="width: 100%; max-width: 400px;">
+<div class="auth-wrapper d-flex justify-content-center align-items-center w-100">
+  <div class="card shadow-sm" style="width: 100%; max-width: 420px;">
     <div class="card-body p-4">
       <h4 class="card-title text-center mb-4">Create an Account</h4>
 
       <form [formGroup]="form" (ngSubmit)="onSubmit()">
+
         <div class="mb-3">
-          <label class="form-label">Email</label>
-          <input type="email" class="form-control" formControlName="email" />
+          <label class="form-label">Email *</label>
+          <div class="input-group">
+            <input type="email" class="form-control" formControlName="email" />
+            <button type="button" class="btn btn-outline-secondary" (click)="sendCode()" [disabled]="!canSendCode || sendingCode">
+              {{ sendingCode ? '...' : cooldownSeconds > 0 ? cooldownSeconds + 's' : codeSent ? 'Resend' : 'Send Code' }}
+            </button>
+          </div>
           <div class="text-danger small" *ngIf="form.get('email')?.invalid && form.get('email')?.touched">
             A valid email is required.
           </div>
         </div>
 
         <div class="mb-3">
-          <label class="form-label">Password</label>
+          <label class="form-label">Verification Code *</label>
+          <input type="text" class="form-control text-center" style="letter-spacing: 0.3em; font-size: 1.1rem;"
+            formControlName="verificationCode" maxlength="6" placeholder="000000"/>
+          <div class="text-danger small" *ngIf="form.get('verificationCode')?.invalid && form.get('verificationCode')?.touched">
+            Enter the 6-digit code from your email.
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Password *</label>
           <div class="input-group">
-            <input [type]="showPassword ? 'text' : 'password'" class="form-control" formControlName="password"/>
+            <input [type]="showPassword ? 'text' : 'password'" class="form-control" formControlName="password" />
             <button type="button" class="btn btn-outline-secondary" (click)="showPassword = !showPassword" tabindex="-1">
               <i class="bi" [ngClass]="showPassword ? 'bi-eye-slash' : 'bi-eye'"></i>
             </button>
@@ -26,9 +41,9 @@
         </div>
 
         <div class="mb-3">
-          <label class="form-label">Confirm Password</label>
+          <label class="form-label">Confirm Password *</label>
           <div class="input-group">
-            <input [type]="showConfirmPassword ? 'text' : 'password'" class="form-control" formControlName="confirmPassword"/>
+            <input [type]="showConfirmPassword ? 'text' : 'password'" class="form-control" formControlName="confirmPassword" />
             <button type="button" class="btn btn-outline-secondary" (click)="showConfirmPassword = !showConfirmPassword" tabindex="-1">
               <i class="bi" [ngClass]="showConfirmPassword ? 'bi-eye-slash' : 'bi-eye'"></i>
             </button>
@@ -38,18 +53,10 @@
           </div>
         </div>
 
-        <div class="mb-3">
-          <label class="form-label">Security Code</label>
-          <input type="text" class="form-control" formControlName="inviteCode" />
-          <div class="text-danger small" *ngIf="form.get('inviteCode')?.invalid && form.get('inviteCode')?.touched">
-            An invite code is required.
-          </div>
-        </div>
-
         <div class="alert alert-danger py-2" *ngIf="errorMessage">{{ errorMessage }}</div>
         <div class="alert alert-success py-2" *ngIf="successMessage">{{ successMessage }}</div>
 
-        <button type="submit" class="btn btn-primary w-100" [disabled]="submitting">
+        <button type="submit" class="btn btn-primary w-100" [disabled]="submitting || !codeSent">
           {{ submitting ? 'Creating account...' : 'Register' }}
         </button>
       </form>

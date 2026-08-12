@@ -8,6 +8,16 @@ export const transporter = nodemailer.createTransport({
   },
 });
 
+export const sendVerificationCodeEmail = async (to: string, code: string) => {
+  await transporter.sendMail({
+    from: `"BoardKeeper" <${process.env.GMAIL_USER}>`,
+    to,
+    subject: "Your BoardKeeper registration code",
+    text: `Your registration verification code is: ${code}\n\nThis code expires in 10 minutes.`,
+    html: `<p>Your registration verification code is:</p><h2 style="letter-spacing:4px;">${code}</h2><p>This code expires in 10 minutes.</p>`,
+  });
+};
+
 export const sendResetCodeEmail = async (to: string, code: string) => {
   await transporter.sendMail({
     from: `"BoardKeeper" <${process.env.GMAIL_USER}>`,
