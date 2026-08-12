@@ -42,8 +42,16 @@ export const createGame = async (req: Request, res: Response) => {
       return res.status(400).json({ message: "title, minPlayers, and maxPlayers are required" });
     }
 
+    const existing = await gameRepository.findOne({
+      where: { title: title.trim() }
+    });
+
+    if (existing) {
+      return res.status(409).json({ message: `A game named "${title.trim()}" already exists` });
+    }
+
     const game = gameRepository.create({
-      title,
+      title: title.trim(),
       description,
       minPlayers,
       maxPlayers,
@@ -68,6 +76,16 @@ export const updateGame = async (req: Request, res: Response) => {
 
     if (!game) {
       return res.status(404).json({ message: "Game not found" });
+    }
+
+    if (req.body.title && req.body.title.trim() !== game.title) {
+      const existing = await gameRepository.findOne({
+        where: { title: req.body.title.trim() }
+      });
+      if (existing) {
+        return res.status(409).json({ message: `A game named "${req.body.title.trim()}" already exists` });
+      }
+      req.body.title = req.body.title.trim();
     }
 
     gameRepository.merge(game, req.body);

@@ -134,7 +134,7 @@ export class GameForm implements OnInit, OnChanges {
       },
       error: (err) => {
         this.submitting = false;
-        this.errorMessage = 'Failed to save game. Please check the fields and try again.';
+        this.errorMessage = err.error?.message || 'Failed to save game. Please check the fields and try again.';
         console.error(err);
         this.cdr.detectChanges();
       }

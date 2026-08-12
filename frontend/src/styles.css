@@ -66,7 +66,7 @@
   flex-direction: column;
   flex: 1;
   min-height: 0;
-  overflow: hidden;
+  overflow: auto;
 }
 
 .stripe-danger  { background: #dc3545; }
@@ -118,4 +118,22 @@
   color: #ced4da;
   font-size: 0.7rem;
   line-height: 1;
+}
+
+.toast-container-fixed {
+  position: fixed;
+  bottom: 0;
+  right: 0;
+  padding: 1rem;
+  z-index: 1080;
+}
+
+.toast.toast-danger {
+  background-color: var(--bs-danger, #dc3545);
+  color: #ffffff;
+}
+
+.toast.toast-success {
+  background-color: var(--bs-success, #198754);
+  color: #ffffff;
 }
