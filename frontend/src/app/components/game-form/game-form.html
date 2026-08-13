@@ -64,21 +64,31 @@
         </div>
 
         <div class="mb-3">
-          <label class="form-label">Category</label>
+          <label class="form-label d-block">Categories</label>
 
-          <div *ngIf="!useCustomCategory">
-            <select class="form-select" [(ngModel)]="selectedPresetCategory" [ngModelOptions]="{ standalone: true }" (ngModelChange)="onPresetCategoryChange($event)">
-              <option value="">No category</option>
-              <option *ngFor="let cat of presetCategories" [value]="cat">{{ cat }}</option>
-              <option value="__custom__">Other (type your own...)</option>
-            </select>
+          <div class="d-flex flex-wrap gap-2 mb-2">
+            <button type="button" *ngFor="let cat of presetCategories" class="btn btn-sm"
+              [ngClass]="isCategorySelected(cat) ? 'btn-primary' : 'btn-outline-secondary'" (click)="toggleCategory(cat)">
+              <i class="bi" [ngClass]="isCategorySelected(cat) ? 'bi-check-lg' : 'bi-plus-lg'"></i> {{ cat }}
+            </button>
           </div>
 
-          <div *ngIf="useCustomCategory" class="input-group">
-            <input type="text" class="form-control" formControlName="category" placeholder="Type a custom category..." autofocus/>
-            <button type="button" class="btn btn-outline-secondary" (click)="backToPreset()" title="Back to list">
-              <i class="bi bi-x"></i>
+          <div class="input-group input-group-sm mb-2">
+            <input type="text" class="form-control" placeholder="Add custom category..." [(ngModel)]="customCategoryInput"
+              [ngModelOptions]="{ standalone: true }"/>
+            <button type="button" class="btn btn-outline-secondary" (click)="addCustomCategory()">
+              Add
             </button>
+          </div>
+
+          <div *ngIf="selectedCategories.length > 0" class="mt-2">
+            <small class="text-muted d-block mb-1">Selected:</small>
+            <div class="d-flex flex-wrap gap-1">
+              <span *ngFor="let cat of selectedCategories" class="badge bg-secondary d-inline-flex align-items-center gap-1">
+                {{ cat }}
+                <button type="button" class="btn-close btn-close-white ms-1" style="font-size: 0.5rem;" (click)="removeCategory(cat)"></button>
+              </span>
+            </div>
           </div>
         </div>
 

@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { AppDataSource } from "../data-source";
 import { Game } from "../entities/Game";
+import { ILike } from "typeorm";
 
 const gameRepository = AppDataSource.getRepository(Game);
 
@@ -43,11 +44,19 @@ export const createGame = async (req: Request, res: Response) => {
     }
 
     const existing = await gameRepository.findOne({
-      where: { title: title.trim() }
+      where: { title: ILike(title.trim()) }
     });
 
     if (existing) {
-      return res.status(409).json({ message: `A game named "${title.trim()}" already exists` });
+      return res.status(409).json({ message: `A game named "${existing.title}" already exists` });
+    }
+
+    if (category) {
+      const items = category.split(',').map((s: string) => s.trim().toLowerCase().replace(/\s+/g, '')).filter(Boolean);
+
+      if (new Set(items).size !== items.length) {
+        return res.status(400).json({ message: "Duplicate categories are not allowed" });
+      }
     }
 
     const game = gameRepository.create({
@@ -80,12 +89,20 @@ export const updateGame = async (req: Request, res: Response) => {
 
     if (req.body.title && req.body.title.trim() !== game.title) {
       const existing = await gameRepository.findOne({
-        where: { title: req.body.title.trim() }
+        where: { title: ILike(req.body.title.trim()) }
       });
       if (existing) {
-        return res.status(409).json({ message: `A game named "${req.body.title.trim()}" already exists` });
+        return res.status(409).json({ message: `A game named "${existing.title}" already exists` });
       }
       req.body.title = req.body.title.trim();
+    }
+
+    if (req.body.category) {
+      const items = req.body.category.split(',').map((s: string) => s.trim().toLowerCase().replace(/\s+/g, '')).filter(Boolean);
+
+      if (new Set(items).size !== items.length) {
+        return res.status(400).json({ message: "Duplicate categories are not allowed" });
+      }
     }
 
     gameRepository.merge(game, req.body);
