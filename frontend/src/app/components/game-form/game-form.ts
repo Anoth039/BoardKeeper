@@ -1,13 +1,17 @@
-import { Component, EventEmitter, Input, Output, OnChanges, SimpleChanges, ChangeDetectorRef } from '@angular/core';
+import { Component, EventEmitter, Input, Output, OnInit, OnChanges, SimpleChanges, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormsModule, FormBuilder, FormGroup, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
+import { ReactiveFormsModule, FormBuilder, FormGroup, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
+import { FormsModule } from '@angular/forms';
 import { GameService } from '../../services/game';
 import { Game } from '../../models/game.model';
 
 function maxNotLessThanMinValidator(group: AbstractControl): ValidationErrors | null {
   const min = group.get('minPlayers')?.value;
   const max = group.get('maxPlayers')?.value;
-  return min != null && max != null && max < min ? { maxLessThanMin: true } : null;
+  if (min != null && max != null && max < min) {
+    return { maxLessThanMin: true };
+  }
+  return null;
 }
 
 const PRESET_CATEGORIES = ['Strategy', 'Party', 'Family', 'Cooperative', 'Card Game', 'RPG', 'Trivia', 'Economic', 'Puzzle'];
@@ -19,7 +23,7 @@ const PRESET_CATEGORIES = ['Strategy', 'Party', 'Family', 'Cooperative', 'Card G
   templateUrl: './game-form.html',
   styleUrl: './game-form.css'
 })
-export class GameForm implements OnChanges {
+export class GameForm implements OnInit, OnChanges {
   @Input() gameToEdit: Game | null = null;
   @Output() gameSaved = new EventEmitter<void>();
   @Output() cancelled = new EventEmitter<void>();
@@ -27,6 +31,7 @@ export class GameForm implements OnChanges {
   form: FormGroup;
   submitting = false;
   errorMessage = '';
+
   presetCategories = PRESET_CATEGORIES;
   customCategoryInput = '';
 
@@ -43,6 +48,10 @@ export class GameForm implements OnChanges {
     }, { validators: maxNotLessThanMinValidator });
   }
 
+  ngOnInit(): void {
+    this.populateFormIfEditing();
+  }
+
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['gameToEdit']) {
       this.populateFormIfEditing();
@@ -53,25 +62,32 @@ export class GameForm implements OnChanges {
     return this.form.get('categories')?.value || [];
   }
 
-  get isEditMode(): boolean {
-    return !!this.gameToEdit;
+  private populateFormIfEditing(): void {
+    if (this.gameToEdit) {
+      let initialCategories: string[] = [];
+      if (Array.isArray((this.gameToEdit as any).categories)) {
+        initialCategories = (this.gameToEdit as any).categories;
+      } else if (this.gameToEdit.category) {
+        initialCategories = this.gameToEdit.category.split(',').map(c => c.trim()).filter(Boolean);
+      }
+
+      this.form.patchValue({
+        title: this.gameToEdit.title,
+        description: this.gameToEdit.description,
+        minPlayers: this.gameToEdit.minPlayers,
+        maxPlayers: this.gameToEdit.maxPlayers,
+        categories: initialCategories,
+        ageRating: this.gameToEdit.ageRating,
+        estimatedTimeMinutes: this.gameToEdit.estimatedTimeMinutes,
+        imageUrl: this.gameToEdit.imageUrl
+      });
+    } else {
+      this.form.patchValue({ categories: [] });
+    }
   }
 
-  private populateFormIfEditing(): void {
-    if (!this.gameToEdit) {
-      this.form.patchValue({ categories: [] });
-      return;
-    }
-
-    const rawCats = (this.gameToEdit as any).categories;
-    const initialCategories = Array.isArray(rawCats)
-      ? rawCats
-      : (this.gameToEdit.category || '').split(',').map(c => c.trim()).filter(Boolean);
-
-    this.form.patchValue({
-      ...this.gameToEdit,
-      categories: initialCategories
-    });
+  get isEditMode(): boolean {
+    return !!this.gameToEdit;
   }
 
   isCategorySelected(cat: string): boolean {
@@ -79,10 +95,18 @@ export class GameForm implements OnChanges {
   }
 
   toggleCategory(cat: string): void {
-    const current = this.selectedCategories;
-    const updated = current.includes(cat) ? current.filter(c => c !== cat) : [...current, cat];
+    const current = [...this.selectedCategories];
+    const index = current.indexOf(cat);
+
+    if (index > -1) {
+      current.splice(index, 1);
+    } else {
+      current.push(cat);
+    }
+
     this.errorMessage = '';
-    this.form.patchValue({ categories: updated });
+    this.form.patchValue({ categories: current });
+    this.cdr.detectChanges();
   }
 
   addCustomCategory(): void {
@@ -90,31 +114,37 @@ export class GameForm implements OnChanges {
     if (!trimmed) return;
 
     const normalize = (str: string) => str.toLowerCase().replace(/\s+/g, '');
-    const existingCategory = this.selectedCategories.find(cat => normalize(cat) === normalize(trimmed));
+
+    const existingCategory = this.selectedCategories.find(
+      cat => normalize(cat) === normalize(trimmed)
+    );
 
     if (existingCategory) {
       this.errorMessage = `Category "${existingCategory}" has already been added.`;
+      this.cdr.detectChanges();
       return;
     }
 
-    const formatted = trimmed
-      .split(/\s+/)
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-      .join(' ');
+    const formatted = trimmed.split(/\s+/).map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ');
 
-    this.form.patchValue({ categories: [...this.selectedCategories, formatted] });
+    const updated = [...this.selectedCategories, formatted];
+    this.form.patchValue({ categories: updated });
     this.customCategoryInput = '';
     this.errorMessage = '';
+    this.cdr.detectChanges();
   }
 
   removeCategory(cat: string): void {
-    this.form.patchValue({ categories: this.selectedCategories.filter(c => c !== cat) });
+    const current = this.selectedCategories.filter(c => c !== cat);
+    this.form.patchValue({ categories: current });
     this.errorMessage = '';
+    this.cdr.detectChanges();
   }
 
   onSubmit(): void {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
+      this.cdr.detectChanges();
       return;
     }
 
@@ -122,6 +152,7 @@ export class GameForm implements OnChanges {
     this.errorMessage = '';
 
     const { categories, ...formValues } = this.form.value;
+
     const payload = {
       ...formValues,
       category: (categories || []).join(', ')
@@ -136,10 +167,12 @@ export class GameForm implements OnChanges {
           this.form.reset({ minPlayers: 1, maxPlayers: 4, categories: [] });
         }
         this.gameSaved.emit();
+        this.cdr.detectChanges();
       },
       error: (err) => {
         this.submitting = false;
         this.errorMessage = err.error?.message || 'Failed to save game. Please check the fields and try again.';
+        console.error(err);
         this.cdr.detectChanges();
       }
     });

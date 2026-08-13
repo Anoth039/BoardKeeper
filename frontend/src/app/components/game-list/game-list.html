@@ -2,16 +2,14 @@
 
 <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
   <div class="input-group search-input">
-    <span class="input-group-text bg-white">
-      <i class="bi bi-search text-muted"></i>
-    </span>
+    <span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span>
     <input type="text" class="form-control border-start-0" placeholder="Search by name or category..." [(ngModel)]="gameSearchTerm"/>
     <button *ngIf="gameSearchTerm" class="btn btn-outline-secondary" (click)="gameSearchTerm = ''">
       <i class="bi bi-x"></i>
     </button>
   </div>
 
-  <button class="btn btn-primary" (click)="openAddForm()" *ngIf="!showForm && isAdmin">
+  <button *ngIf="!showForm && isAdmin" class="btn btn-primary" (click)="openAddForm()">
     <i class="bi bi-plus-lg"></i> Add Game
   </button>
 </div>
@@ -30,26 +28,23 @@
 <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3">
   <div class="col" *ngFor="let game of filteredGames">
     <div class="card game-card h-100 shadow-sm">
-      <img *ngIf="game.imageUrl" [src]="game.imageUrl" class="card-img-top game-card-img" alt="{{ game.title }} cover"/>
+      <img *ngIf="game.imageUrl" [src]="game.imageUrl" class="card-img-top game-card-img" [alt]="game.title + ' cover'"/>
+      
       <div class="card-body d-flex flex-column">
-        <div class="d-flex justify-content-between align-items-start">
+        <div class="d-flex justify-content-between align-items-start gap-2">
           <div class="flex-grow-1" style="min-width: 0;">
             <div class="d-flex align-items-center gap-2">
-              <h6 class="card-title mb-0">{{ game.title }}</h6>
-              <span class="age-rating-badge" *ngIf="game.ageRating" [style.color]="ageRatingColor(game.ageRating)" 
-                [style.border-color]="ageRatingColor(game.ageRating)">
+              <h6 class="card-title mb-0 text-truncate" [title]="game.title">{{ game.title }}</h6>
+              <span *ngIf="game.ageRating" class="age-rating-badge" [style.color]="ageRatingColor(game.ageRating)" [style.borderColor]="ageRatingColor(game.ageRating)">
                 {{ game.ageRating }}+
               </span>
             </div>
             <small class="text-muted d-block text-truncate" [title]="game.category">{{ game.category }}</small>
           </div>
-          <div class="d-flex" style="gap: 0.25rem;" *ngIf="isAdmin">
-            <button class="btn btn-sm btn-outline-secondary" (click)="openEditForm(game)" title="Edit">
-              <i class="bi bi-pencil"></i>
-            </button>
-            <button class="btn btn-sm btn-outline-danger" (click)="deleteGame(game)" title="Delete">
-              <i class="bi bi-trash"></i>
-            </button>
+
+          <div *ngIf="isAdmin" class="d-flex gap-1">
+            <button class="btn btn-sm btn-outline-secondary" (click)="openEditForm(game)" title="Edit"><i class="bi bi-pencil"></i></button>
+            <button class="btn btn-sm btn-outline-danger" (click)="deleteGame(game)" title="Delete"><i class="bi bi-trash"></i></button>
           </div>
         </div>
 
@@ -61,13 +56,11 @@
             <span *ngIf="game.estimatedTimeMinutes"> · <i class="bi bi-clock"></i> {{ formatPlayTime(game.estimatedTimeMinutes) }}</span>
           </small>
 
-          <div class="d-flex justify-content-between align-items-center">
+          <div class="d-flex justify-content-between align-items-center mt-1">
             <span class="badge" [ngClass]="availableCount(game) === 0 && (game.copies?.length || 0) > 0 ? 'bg-secondary' : 'bg-primary'">
               {{ availableCount(game) === 0 && (game.copies?.length || 0) > 0 ? 'Unavailable' : availableCount(game) + ' / ' + (game.copies?.length || 0) + ' available' }}
             </span>
-            <button class="btn btn-sm btn-outline-primary" (click)="openCopiesModal(game)">
-              View Copies
-            </button>
+            <button class="btn btn-sm btn-outline-primary" (click)="openCopiesModal(game)">View Copies</button>
           </div>
         </div>
       </div>
@@ -75,7 +68,7 @@
   </div>
 </div>
 
-<div class="modal-backdrop-custom" *ngIf="selectedGameForCopies" (click)="closeCopiesModal()">
+<div *ngIf="selectedGameForCopies" class="modal-backdrop-custom" (click)="closeCopiesModal()">
   <div class="modal-box" (click)="$event.stopPropagation()">
     <div class="modal-header-custom">
       <h5 class="mb-0">{{ selectedGameForCopies.title }} — Copies</h5>
@@ -107,10 +100,10 @@
       </div>
 
       <div class="copies-scroll-area">
-        <ul class="list-group mb-0" *ngIf="filteredCopies.length > 0">
-          <li class="list-group-item" *ngFor="let copy of filteredCopies">
+        <ul *ngIf="filteredCopies.length > 0" class="list-group mb-0">
+          <li *ngFor="let copy of filteredCopies" class="list-group-item">
 
-            <div class="d-flex justify-content-between align-items-center" *ngIf="editingCopyId !== copy.id">
+            <div *ngIf="editingCopyId !== copy.id" class="d-flex justify-content-between align-items-center">
               <span>
                 <span class="copy-name-text" [class.text-muted]="copy.condition === 'lost'" [title]="copy.copyNumber">
                   {{ copy.copyNumber }}
@@ -118,27 +111,22 @@
                 <span class="badge ms-2" [ngClass]="conditionBadgeClass(copy.condition)">
                   {{ capitalize(copy.condition) }}
                 </span>
-                <span class="badge ms-1" *ngIf="copy.condition !== 'lost'" [ngClass]="copy.isAvailable ? 'bg-info' : 'bg-secondary'">
+                <span *ngIf="copy.condition !== 'lost'" class="badge ms-1" [ngClass]="copy.isAvailable ? 'bg-info' : 'bg-secondary'">
                   {{ copy.isAvailable ? 'Available' : 'Rented out' }}
                 </span>
               </span>
 
               <ng-container *ngIf="isAdmin">
                 <div *ngIf="copy.isAvailable">
-                  <button class="btn btn-sm btn-outline-secondary" (click)="startEditCopy(copy)">
-                    <i class="bi bi-pencil"></i>
-                  </button>
-                  <button class="btn btn-sm btn-outline-danger ms-1" (click)="deleteCopy(copy.id)">
-                    <i class="bi bi-trash"></i>
-                  </button>
+                  <button class="btn btn-sm btn-outline-secondary" (click)="startEditCopy(copy)"><i class="bi bi-pencil"></i></button>
+                  <button class="btn btn-sm btn-outline-danger ms-1" (click)="deleteCopy(copy.id)"><i class="bi bi-trash"></i></button>
                 </div>
                 <span *ngIf="!copy.isAvailable" class="text-muted small fst-italic">Locked while rented</span>
               </ng-container>
             </div>
 
             <div *ngIf="editingCopyId === copy.id" class="d-flex align-items-center gap-2">
-              <input type="text" class="form-control form-control-sm" placeholder="Copy #" style="max-width: 120px;"
-                [(ngModel)]="editCopyNumber" required minlength="3" maxlength="12"/>
+              <input type="text" class="form-control form-control-sm" placeholder="Copy #" style="max-width: 120px;" [(ngModel)]="editCopyNumber" required minlength="3" maxlength="12"/>
               <select class="form-select form-select-sm" style="max-width: 110px;" [(ngModel)]="editCopyCondition">
                 <option value="new">New</option>
                 <option value="good">Good</option>
@@ -156,32 +144,41 @@
         </ul>
 
         <p *ngIf="filteredCopies.length === 0" class="text-muted fst-italic mb-0">
-          {{ selectedGameForCopies!.copies && selectedGameForCopies!.copies.length > 0 ? 'No copies match your search/filters.' : 'No copies added yet.' }}
+          {{ selectedGameForCopies!.copies?.length ? 'No copies match your search/filters.' : 'No copies added yet.' }}
         </p>
       </div>
-      <br>
-      <div *ngIf="isAdmin">
+
+      <div *ngIf="isAdmin" class="mt-3">
         <h6>Add a Copy</h6>
         <div class="row g-2 align-items-center">
           <div class="col-5">
-            <input type="text" class="form-control form-control-sm" placeholder="Copy name/number *" 
-              [(ngModel)]="newCopyNumber" required minlength="3" maxlength="12"/>
-        </div>
-        <div class="col-4">
-          <select class="form-select form-select-sm" [(ngModel)]="newCopyCondition">
-            <option value="new">New</option>
-            <option value="good">Good</option>
-            <option value="worn">Worn</option>
-            <option value="damaged">Damaged</option>
-          </select>
-        </div>
-        <div class="col-3">
-          <button class="btn btn-sm btn-primary w-100" (click)="addCopy()" [disabled]="addingCopy">
-            {{ addingCopy ? 'Adding...' : 'Add' }}
-          </button>
+            <input type="text" class="form-control form-control-sm" placeholder="Copy name/number *" [(ngModel)]="newCopyNumber" required minlength="3" maxlength="12"/>
+          </div>
+          <div class="col-4">
+            <select class="form-select form-select-sm" [(ngModel)]="newCopyCondition">
+              <option value="new">New</option>
+              <option value="good">Good</option>
+              <option value="worn">Worn</option>
+              <option value="damaged">Damaged</option>
+            </select>
+          </div>
+          <div class="col-3">
+            <button class="btn btn-sm btn-primary w-100" (click)="addCopy()" [disabled]="addingCopy">
+              {{ addingCopy ? 'Adding...' : 'Add' }}
+            </button>
+          </div>
         </div>
       </div>
-      <div class="text-danger small mt-1" *ngIf="copyErrorMessage">{{ copyErrorMessage }}</div>
+
+      <div class="toast-container-fixed">
+        <div class="toast show align-items-center toast-danger border-0 shadow-lg" role="alert" *ngIf="errorMessage">
+          <div class="d-flex">
+            <div class="toast-body">{{ errorMessage }}</div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" (click)="errorMessage = ''"></button>
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
 </div>

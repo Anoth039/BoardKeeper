@@ -82,11 +82,19 @@ export const updateGameCopy = async (req: Request, res: Response) => {
     const id = Number(req.params.id);
     const copy = await gameCopyRepository.findOne({
       where: { id },
-      relations: { game: true },
+      relations: { game: true, rentals: true },
     });
 
     if (!copy) {
       return res.status(404).json({ message: "Game copy not found" });
+    }
+
+    const hasActiveRental = copy.rentals?.some((rental) => rental.status === "active");
+
+    if (hasActiveRental) {
+      return res.status(409).json({
+        message: "Cannot update this copy — it is currently rented out.",
+      });
     }
 
     const { copyNumber } = req.body;

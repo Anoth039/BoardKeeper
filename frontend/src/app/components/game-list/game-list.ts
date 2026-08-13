@@ -24,7 +24,7 @@ export class GameListComponent implements OnInit {
   newCopyCondition = 'new';
   newCopyNumber = '';
   addingCopy = false;
-  copyErrorMessage = '';
+  errorMessage = '';
 
   editingCopyId: number | null = null;
   editCopyCondition = 'good';
@@ -34,8 +34,8 @@ export class GameListComponent implements OnInit {
   copyFilterCondition = 'all';
   copyFilterAvailability = 'all';
 
-  constructor(private gameService: GameService, private gameCopyService: GameCopyService, 
-    private cdr: ChangeDetectorRef, public authService: AuthService) {}
+  constructor(private gameService: GameService, private gameCopyService: GameCopyService, private cdr: ChangeDetectorRef, 
+    public authService: AuthService) {}
 
   ngOnInit(): void {
     this.loadGames();
@@ -91,7 +91,7 @@ export class GameListComponent implements OnInit {
   resetNewCopyForm(): void {
     this.newCopyCondition = 'new';
     this.newCopyNumber = '';
-    this.copyErrorMessage = '';
+    this.errorMessage = '';
   }
 
   addCopy(): void {
@@ -99,8 +99,8 @@ export class GameListComponent implements OnInit {
 
     const trimmedNumber = this.newCopyNumber.trim();
 
-    if (trimmedNumber.length < 3 || trimmedNumber.length > 40) {
-      this.copyErrorMessage = 'Copy name/number must be between 3 and 40 characters.';
+    if (trimmedNumber.length < 3 || trimmedNumber.length > 12) {
+      this.errorMessage = 'Copy name/number must be between 3 and 12 characters.';
       this.cdr.detectChanges();
       return;
     }
@@ -110,13 +110,13 @@ export class GameListComponent implements OnInit {
     );
 
     if (isDuplicate) {
-      this.copyErrorMessage = 'A copy with this name already exists for this game.';
+      this.errorMessage = 'A copy with this name already exists for this game.';
       this.cdr.detectChanges();
       return;
     }
 
     this.addingCopy = true;
-    this.copyErrorMessage = '';
+    this.errorMessage = '';
 
     this.gameCopyService.create({
       gameId: this.selectedGameForCopies.id,
@@ -131,7 +131,7 @@ export class GameListComponent implements OnInit {
       },
       error: (err) => {
         this.addingCopy = false;
-        this.copyErrorMessage = err.error?.message || 'Failed to add copy.';
+        this.errorMessage = err.error?.message || 'Failed to add copy.';
         console.error(err);
         this.cdr.detectChanges();
       }
@@ -139,12 +139,14 @@ export class GameListComponent implements OnInit {
   }
 
   startEditCopy(copy: GameCopy): void {
+    this.errorMessage = '';
     this.editingCopyId = copy.id;
     this.editCopyCondition = copy.condition;
     this.editCopyNumber = copy.copyNumber || '';
   }
 
   cancelEditCopy(): void {
+    this.errorMessage = '';
     this.editingCopyId = null;
   }
 
@@ -152,7 +154,8 @@ export class GameListComponent implements OnInit {
     const trimmedNumber = this.editCopyNumber.trim();
 
     if (trimmedNumber.length < 3 || trimmedNumber.length > 12) {
-      alert('Copy name/number must be between 3 and 12 characters.');
+      this.errorMessage = 'Copy name/number must be between 3 and 12 characters.';
+      this.cdr.detectChanges();
       return;
     }
 
@@ -161,9 +164,12 @@ export class GameListComponent implements OnInit {
     );
 
     if (isDuplicate) {
-      alert('A copy with this name already exists for this game.');
+      this.errorMessage = 'A copy with this name already exists for this game.';
+      this.cdr.detectChanges();
       return;
     }
+
+    this.errorMessage = '';
 
     this.gameCopyService.update(copyId, {
       condition: this.editCopyCondition as any,
@@ -175,7 +181,7 @@ export class GameListComponent implements OnInit {
         this.cdr.detectChanges();
       },
       error: (err) => {
-        alert(err.error?.message || 'Failed to update copy.');
+        this.errorMessage = err.error?.message || 'Failed to update copy.';
         console.error(err);
         this.cdr.detectChanges();
       }
@@ -185,7 +191,7 @@ export class GameListComponent implements OnInit {
   deleteCopy(copyId: number): void {
     const copy = this.selectedGameForCopies?.copies?.find(c => c.id === copyId);
     if (copy && !copy.isAvailable) {
-      alert('This copy is currently rented out and cannot be deleted.');
+      this.errorMessage = 'Cannot delete a copy that is currently rented out.';
       return;
     }
 
