@@ -104,7 +104,7 @@
           <li *ngFor="let copy of filteredCopies" class="list-group-item">
 
             <div *ngIf="editingCopyId !== copy.id" class="d-flex justify-content-between align-items-center">
-              <span>
+              <div class="flex-grow-1" style="min-width: 0;">
                 <span class="copy-name-text" [class.text-muted]="copy.condition === 'lost'" [title]="copy.copyNumber">
                   {{ copy.copyNumber }}
                 </span>
@@ -114,10 +114,14 @@
                 <span *ngIf="copy.condition !== 'lost'" class="badge ms-1" [ngClass]="copy.isAvailable ? 'bg-info' : 'bg-secondary'">
                   {{ copy.isAvailable ? 'Available' : 'Rented out' }}
                 </span>
-              </span>
+
+                <div *ngIf="copy.notes" class="copy-notes small text-muted text-truncate mt-1" [title]="copy.notes">
+                  <i class="bi bi-sticky me-1"></i>{{ copy.notes }}
+                </div>
+              </div>
 
               <ng-container *ngIf="isAdmin">
-                <div *ngIf="copy.isAvailable">
+                <div *ngIf="copy.isAvailable" class="flex-shrink-0">
                   <button class="btn btn-sm btn-outline-secondary" (click)="startEditCopy(copy)"><i class="bi bi-pencil"></i></button>
                   <button class="btn btn-sm btn-outline-danger ms-1" (click)="deleteCopy(copy.id)"><i class="bi bi-trash"></i></button>
                 </div>
@@ -125,19 +129,23 @@
               </ng-container>
             </div>
 
-            <div *ngIf="editingCopyId === copy.id" class="d-flex align-items-center gap-2">
-              <input type="text" class="form-control form-control-sm" placeholder="Copy #" style="max-width: 120px;" [(ngModel)]="editCopyNumber" required minlength="3" maxlength="12"/>
-              <select class="form-select form-select-sm" style="max-width: 110px;" [(ngModel)]="editCopyCondition">
-                <option value="new">New</option>
-                <option value="good">Good</option>
-                <option value="worn">Worn</option>
-                <option value="damaged">Damaged</option>
-                <option value="lost">Lost</option>
-              </select>
-              <div class="ms-auto d-flex gap-1">
-                <button class="btn btn-sm btn-success" (click)="saveEditCopy(copy.id)">Save</button>
-                <button class="btn btn-sm btn-outline-secondary" (click)="cancelEditCopy()">✕</button>
+            <div *ngIf="editingCopyId === copy.id" class="d-flex flex-column gap-2">
+              <div class="d-flex align-items-center gap-2">
+                <input type="text" class="form-control form-control-sm" placeholder="Copy #" style="max-width: 120px;" [(ngModel)]="editCopyNumber" required minlength="3" maxlength="12"/>
+                <select class="form-select form-select-sm" style="max-width: 110px;" [(ngModel)]="editCopyCondition">
+                  <option value="new">New</option>
+                  <option value="good">Good</option>
+                  <option value="worn">Worn</option>
+                  <option value="damaged">Damaged</option>
+                  <option value="lost">Lost</option>
+                </select>
+                <div class="ms-auto d-flex gap-1">
+                  <button class="btn btn-sm btn-success" (click)="saveEditCopy(copy.id)">Save</button>
+                  <button class="btn btn-sm btn-outline-secondary" (click)="cancelEditCopy()">✕</button>
+                </div>
               </div>
+              <input type="text" class="form-control form-control-sm" placeholder="Internal note (optional) — e.g. missing 2 cards" 
+                [(ngModel)]="editCopyNotes" maxlength="100"/>
             </div>
 
           </li>

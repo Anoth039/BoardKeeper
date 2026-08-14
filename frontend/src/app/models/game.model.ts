@@ -27,6 +27,7 @@ export interface GameCopy {
   condition: string;
   copyNumber: string;
   isAvailable: boolean;
+  notes: string | null;
   game?: Game;
   rentals?: Rental[];
   createdAt: string;

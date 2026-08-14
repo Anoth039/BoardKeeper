@@ -37,4 +37,7 @@ export class GameCopy {
 
   @CreateDateColumn({ name: "created_at" })
   createdAt!: Date;
+
+  @Column({ type: "text", nullable: true, name: "notes" })
+  notes!: string | null;
 }

@@ -67,6 +67,14 @@ export const createRental = async (req: AuthenticatedRequest, res: Response) => 
         throw new Error("MEMBER_NOT_FOUND");
       }
 
+      const activeRentalCount = await rentalRepo.count({
+        where: { member: { id: memberId }, status: RentalStatus.ACTIVE }
+      });
+
+      if (activeRentalCount >= 3) {
+        throw new Error("RENTAL_LIMIT_REACHED");
+      }
+
       const gameCopy = await gameCopyRepo.findOne({
         where: { id: gameCopyId },
         relations: { game: true },
@@ -107,6 +115,9 @@ export const createRental = async (req: AuthenticatedRequest, res: Response) => 
   } catch (error: any) {
     if (error.message === "MEMBER_NOT_FOUND") {
       return res.status(404).json({ message: "Member not found" });
+    }
+    if (error.message === "RENTAL_LIMIT_REACHED") {
+      return res.status(409).json({ message: "This member already has 3 active rentals. Please return one before renting another." });
     }
     if (error.message === "COPY_NOT_FOUND") {
       return res.status(404).json({ message: "Game copy not found" });

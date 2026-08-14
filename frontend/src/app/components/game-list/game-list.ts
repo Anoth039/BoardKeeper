@@ -29,6 +29,7 @@ export class GameListComponent implements OnInit {
   editingCopyId: number | null = null;
   editCopyCondition = 'good';
   editCopyNumber = '';
+  editCopyNotes = '';
 
   copySearchTerm = '';
   copyFilterCondition = 'all';
@@ -51,29 +52,36 @@ export class GameListComponent implements OnInit {
         }
         this.cdr.detectChanges();
       },
-      error: (err) => console.error('Failed to load games', err)
+      error: (err) => {
+        console.error('Failed to load games', err);
+        this.cdr.detectChanges();
+      }
     });
   }
 
   openAddForm(): void {
     this.editingGame = null;
     this.showForm = true;
+    this.cdr.detectChanges();
   }
 
   openEditForm(game: Game): void {
     this.editingGame = game;
     this.showForm = true;
+    this.cdr.detectChanges();
   }
 
   onFormSaved(): void {
     this.showForm = false;
     this.editingGame = null;
     this.loadGames();
+    this.cdr.detectChanges();
   }
 
   onFormCancelled(): void {
     this.showForm = false;
     this.editingGame = null;
+    this.cdr.detectChanges();
   }
 
   openCopiesModal(game: Game): void {
@@ -81,17 +89,20 @@ export class GameListComponent implements OnInit {
     this.resetNewCopyForm();
     this.resetCopyFilters();
     this.editingCopyId = null;
+    this.cdr.detectChanges();
   }
 
   closeCopiesModal(): void {
     this.selectedGameForCopies = null;
     this.resetCopyFilters();
+    this.cdr.detectChanges();
   }
 
   resetNewCopyForm(): void {
     this.newCopyCondition = 'new';
     this.newCopyNumber = '';
     this.errorMessage = '';
+    this.cdr.detectChanges();
   }
 
   addCopy(): void {
@@ -117,6 +128,7 @@ export class GameListComponent implements OnInit {
 
     this.addingCopy = true;
     this.errorMessage = '';
+    this.cdr.detectChanges();
 
     this.gameCopyService.create({
       gameId: this.selectedGameForCopies.id,
@@ -127,7 +139,6 @@ export class GameListComponent implements OnInit {
         this.addingCopy = false;
         this.resetNewCopyForm();
         this.loadGames();
-        this.cdr.detectChanges();
       },
       error: (err) => {
         this.addingCopy = false;
@@ -143,11 +154,15 @@ export class GameListComponent implements OnInit {
     this.editingCopyId = copy.id;
     this.editCopyCondition = copy.condition;
     this.editCopyNumber = copy.copyNumber || '';
+    this.editCopyNotes = copy.notes || '';
+    this.cdr.detectChanges();
   }
 
   cancelEditCopy(): void {
     this.errorMessage = '';
     this.editingCopyId = null;
+    this.editCopyNotes = '';
+    this.cdr.detectChanges();
   }
 
   saveEditCopy(copyId: number): void {
@@ -170,15 +185,26 @@ export class GameListComponent implements OnInit {
     }
 
     this.errorMessage = '';
+    this.cdr.detectChanges();
 
     this.gameCopyService.update(copyId, {
       condition: this.editCopyCondition as any,
-      copyNumber: trimmedNumber
+      copyNumber: trimmedNumber,
+      notes: this.editCopyNotes.trim() || null
     }).subscribe({
       next: () => {
+        if (this.selectedGameForCopies?.copies) {
+          const target = this.selectedGameForCopies.copies.find(c => c.id === copyId);
+          if (target) {
+            target.copyNumber = trimmedNumber;
+            target.condition = this.editCopyCondition as any;
+            target.notes = this.editCopyNotes.trim() || null;
+          }
+        }
         this.editingCopyId = null;
-        this.loadGames();
+        this.editCopyNotes = '';
         this.cdr.detectChanges();
+        this.loadGames();
       },
       error: (err) => {
         this.errorMessage = err.error?.message || 'Failed to update copy.';
@@ -189,18 +215,11 @@ export class GameListComponent implements OnInit {
   }
 
   deleteCopy(copyId: number): void {
-    const copy = this.selectedGameForCopies?.copies?.find(c => c.id === copyId);
-    if (copy && !copy.isAvailable) {
-      this.errorMessage = 'Cannot delete a copy that is currently rented out.';
-      return;
-    }
-
     if (!confirm('Delete this copy? This cannot be undone.')) return;
 
     this.gameCopyService.delete(copyId).subscribe({
       next: () => {
         this.loadGames();
-        this.cdr.detectChanges();
       },
       error: (err) => {
         const message = err.error?.message || 'Failed to delete this copy. Please try again.';
@@ -267,6 +286,7 @@ export class GameListComponent implements OnInit {
     this.copySearchTerm = '';
     this.copyFilterCondition = 'all';
     this.copyFilterAvailability = 'all';
+    this.cdr.detectChanges();
   }
 
   availableCount(game: Game): number {
