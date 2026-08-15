@@ -15,6 +15,10 @@ export class GameCopyService {
     return this.http.post<GameCopy>(this.apiUrl, copy);
   }
 
+  createBulk(data: { gameId: number; condition: string; prefix: string; startNumber: number; quantity: number }): Observable<GameCopy[]> {
+    return this.http.post<GameCopy[]>(`${this.apiUrl}/bulk`, data);
+  }
+
   update(id: number, copy: Partial<GameCopy>): Observable<GameCopy> {
     return this.http.put<GameCopy>(`${this.apiUrl}/${id}`, copy);
   }

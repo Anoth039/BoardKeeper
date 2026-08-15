@@ -26,6 +26,12 @@ export class GameListComponent implements OnInit {
   addingCopy = false;
   errorMessage = '';
 
+  bulkMode = false;
+  bulkPrefix = '';
+  bulkQuantity = 2;
+  bulkCondition = 'new';
+  addingBulk = false;
+
   editingCopyId: number | null = null;
   editCopyCondition = 'good';
   editCopyNumber = '';
@@ -95,6 +101,8 @@ export class GameListComponent implements OnInit {
   closeCopiesModal(): void {
     this.selectedGameForCopies = null;
     this.resetCopyFilters();
+    this.bulkMode = false;
+    this.bulkPrefix = '';
     this.cdr.detectChanges();
   }
 
@@ -144,6 +152,62 @@ export class GameListComponent implements OnInit {
         this.addingCopy = false;
         this.errorMessage = err.error?.message || 'Failed to add copy.';
         console.error(err);
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  get bulkPreview(): string[] {
+    if (!this.bulkPrefix.trim() || this.bulkQuantity < 1) return [];
+    return Array.from({ length: Math.min(this.bulkQuantity, 20) }, (_, i) =>
+      `${this.bulkPrefix.trim()}-${String(i + 1).padStart(2, '0')}`
+    );
+  }
+
+  toggleBulkMode(): void {
+    this.bulkMode = !this.bulkMode;
+    this.bulkPrefix = '';
+    this.bulkQuantity = 2;
+    this.bulkCondition = 'new';
+    this.errorMessage = '';
+    this.cdr.detectChanges();
+  }
+
+  addBulkCopies(): void {
+    if (!this.selectedGameForCopies) return;
+
+    const invalid = this.bulkPreview.find(n => n.length < 3 || n.length > 12);
+    if (invalid) {
+      this.errorMessage = `Generated name "${invalid}" is invalid (must be 3–12 characters). Use a shorter prefix.`;
+      this.cdr.detectChanges();
+      return;
+    }
+
+    this.addingBulk = true;
+    this.errorMessage = '';
+
+    this.gameCopyService.createBulk({
+      gameId: this.selectedGameForCopies.id,
+      condition: this.bulkCondition,
+      prefix: this.bulkPrefix.trim(),
+      startNumber: 1,
+      quantity: this.bulkQuantity,
+    }).subscribe({
+      next: (newCopies) => {
+        this.addingBulk = false;
+        this.selectedGameForCopies!.copies = [
+          ...(this.selectedGameForCopies!.copies || []),
+          ...newCopies
+        ];
+        const gameInList = this.games.find(g => g.id === this.selectedGameForCopies!.id);
+        if (gameInList) gameInList.copies = this.selectedGameForCopies!.copies;
+        this.bulkPrefix = '';
+        this.bulkQuantity = 2;
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        this.addingBulk = false;
+        this.errorMessage = err.error?.message || 'Failed to add copies.';
         this.cdr.detectChanges();
       }
     });

@@ -76,6 +76,52 @@ export const createGameCopy = async (req: Request, res: Response) => {
   }
 };
 
+export const createGameCopiesBulk = async (req: Request, res: Response) => {
+  try {
+    const { gameId, condition, prefix, startNumber, quantity } = req.body;
+
+    if (!gameId || !prefix?.trim() || !quantity || quantity < 1 || quantity > 20) {
+      return res.status(400).json({ message: "Please provide a valid game ID, a prefix, and a quantity between 1 and 20." });
+    }
+
+    const game = await gameRepository.findOneBy({ id: gameId });
+    if (!game) return res.status(404).json({ message: "Game not found" });
+
+    const copies = [];
+    const duplicates: string[] = [];
+
+    for (let i = 0; i < quantity; i++) {
+      const copyNumber = `${prefix.trim()}-${String((startNumber || 1) + i).padStart(2, '0')}`;
+
+      if (copyNumber.length > 12) {
+        return res.status(400).json({
+          message: `Generated name "${copyNumber}" exceeds 12 characters. Use a shorter prefix.`
+        });
+      }
+
+      const existing = await gameCopyRepository
+        .createQueryBuilder("copy")
+        .where("copy.game.id = :gameId", { gameId })
+        .andWhere("LOWER(copy.copyNumber) = LOWER(:copyNumber)", { copyNumber })
+        .getOne();
+
+      if (existing) duplicates.push(copyNumber);
+      else copies.push(gameCopyRepository.create({ game, condition, copyNumber }));
+    }
+
+    if (duplicates.length > 0) {
+      return res.status(409).json({
+        message: `Already exist: ${duplicates.join(', ')}. Adjust your prefix.`
+      });
+    }
+
+    const saved = await gameCopyRepository.save(copies);
+    res.status(201).json(saved);
+  } catch (error) {
+    res.status(500).json({ message: "Failed to create copies", error });
+  }
+};
+
 // PUT /api/game-copies/:id
 export const updateGameCopy = async (req: Request, res: Response) => {
   try {
