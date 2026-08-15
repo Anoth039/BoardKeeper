@@ -160,7 +160,7 @@
         <div class="d-flex align-items-center justify-content-between mb-2">
           <h6 class="mb-0 fw-semibold">{{ bulkMode ? 'Add Multiple Copies' : 'Add a Copy' }}</h6>
           <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none text-muted" (click)="toggleBulkMode()"> 
-            {{ bulkMode ? 'Single mode' : 'Add multiple' }}
+            {{ bulkMode ? 'Single mode' : 'Bulk mode' }}
           </button>
         </div>
 
@@ -186,10 +186,13 @@
 
         <div *ngIf="bulkMode">
           <div class="row g-2 align-items-center mb-2">
-            <div class="col-4">
+            <div class="col-3">
               <input type="text" class="form-control form-control-sm" placeholder="Prefix *" [(ngModel)]="bulkPrefix" maxlength="9"/>
             </div>
-            <div class="col-3">
+            <div class="col-2">
+              <input type="number" class="form-control form-control-sm" placeholder="From" [(ngModel)]="bulkStartNumber" min="1" max="99"/>
+            </div>
+            <div class="col-2">
               <input type="number" class="form-control form-control-sm" placeholder="Qty" [(ngModel)]="bulkQuantity" min="1" max="20"/>
             </div>
             <div class="col-3">

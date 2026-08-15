@@ -28,6 +28,7 @@ export class GameListComponent implements OnInit {
 
   bulkMode = false;
   bulkPrefix = '';
+  bulkStartNumber = 1;
   bulkQuantity = 2;
   bulkCondition = 'new';
   addingBulk = false;
@@ -160,7 +161,7 @@ export class GameListComponent implements OnInit {
   get bulkPreview(): string[] {
     if (!this.bulkPrefix.trim() || this.bulkQuantity < 1) return [];
     return Array.from({ length: Math.min(this.bulkQuantity, 20) }, (_, i) =>
-      `${this.bulkPrefix.trim()}-${String(i + 1).padStart(2, '0')}`
+      `${this.bulkPrefix.trim()}-${String(this.bulkStartNumber + i).padStart(2, '0')}`
     );
   }
 
@@ -168,6 +169,7 @@ export class GameListComponent implements OnInit {
     this.bulkMode = !this.bulkMode;
     this.bulkPrefix = '';
     this.bulkQuantity = 2;
+    this.bulkStartNumber = 1;
     this.bulkCondition = 'new';
     this.errorMessage = '';
     this.cdr.detectChanges();
@@ -190,7 +192,7 @@ export class GameListComponent implements OnInit {
       gameId: this.selectedGameForCopies.id,
       condition: this.bulkCondition,
       prefix: this.bulkPrefix.trim(),
-      startNumber: 1,
+      startNumber: this.bulkStartNumber,
       quantity: this.bulkQuantity,
     }).subscribe({
       next: (newCopies) => {
@@ -201,8 +203,7 @@ export class GameListComponent implements OnInit {
         ];
         const gameInList = this.games.find(g => g.id === this.selectedGameForCopies!.id);
         if (gameInList) gameInList.copies = this.selectedGameForCopies!.copies;
-        this.bulkPrefix = '';
-        this.bulkQuantity = 2;
+        this.bulkStartNumber = this.bulkStartNumber + this.bulkQuantity;
         this.cdr.detectChanges();
       },
       error: (err) => {
