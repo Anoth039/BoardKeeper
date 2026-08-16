@@ -18,7 +18,8 @@ export class App {
     this.router.events
       .pipe(filter(event => event instanceof NavigationEnd))
       .subscribe((event: NavigationEnd) => {
-        this.showNavbar = !['/login', '/register', '/forgot-password'].includes(event.urlAfterRedirects);
+        const path = event.urlAfterRedirects.split('?')[0];
+        this.showNavbar = !['/login', '/register', '/forgot-password'].includes(path);
       });
   }
 }

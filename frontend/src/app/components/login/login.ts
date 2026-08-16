@@ -1,6 +1,6 @@
 import { Component, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { AuthService } from '../../services/auth';
 
@@ -15,13 +15,22 @@ export class Login {
   form: FormGroup;
   submitting = false;
   errorMessage = '';
+  successMessage = '';
   showPassword = false;
   
-  constructor(private fb: FormBuilder, private authService: AuthService, private router: Router, private cdr: ChangeDetectorRef) {
+  constructor(private fb: FormBuilder, private authService: AuthService, private router: Router, 
+    private route: ActivatedRoute, private cdr: ChangeDetectorRef) {
     this.form = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
       password: ['', Validators.required]
     });
+
+    const reason = this.route.snapshot.queryParamMap.get('reason');
+    if (reason === 'logout') {
+      this.successMessage = 'You have been logged out successfully.';
+    } else if (reason === 'expired') {
+      this.errorMessage = 'Your session has expired. Please log in again.';
+    }
   }
 
   onSubmit(): void {
