@@ -23,7 +23,22 @@ interface TextOptions {
 @Injectable({ providedIn: 'root' })
 export class PdfService {
 
+  generateRentalReceiptDataUrl(rental: Rental): string {
+    const doc = this.buildReceiptDoc(rental);
+    return doc.output('datauristring');
+  }
+
   generateRentalReceipt(rental: Rental): void {
+    const doc = this.buildReceiptDoc(rental);
+    const memberName = rental.member
+      ? `${rental.member.firstName} ${rental.member.lastName}`
+      : 'unknown-member';
+    const slug = memberName.replace(/\s+/g, '-').toLowerCase();
+    
+    doc.save(`receipt-${String(rental.id).padStart(4, '0')}-${slug}.pdf`);
+  }
+
+  private buildReceiptDoc(rental: Rental): jsPDF {
     const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a5' });
     const W = doc.internal.pageSize.getWidth();
     const H = doc.internal.pageSize.getHeight();
@@ -91,8 +106,7 @@ export class PdfService {
     const footerLines = doc.splitTextToSize(status.footer, W - m * 2);
     this.drawText(doc, footerLines, W / 2, H - 14, { size: 7.5, color: COLOR.muted, align: 'center' });
 
-    const slug = member.replace(/\s+/g, '-').toLowerCase();
-    doc.save(`receipt-${String(rental.id).padStart(4, '0')}-${slug}.pdf`);
+    return doc;
   }
 
   private drawText(doc: jsPDF, text: string | string[], x: number, y: number, opts: TextOptions = {}): void {

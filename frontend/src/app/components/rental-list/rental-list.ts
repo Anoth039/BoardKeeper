@@ -8,11 +8,12 @@ import { Rental, RentalStatus, isRentalOverdue, isRentalDueSoon } from '../../mo
 import { RentalForm } from '../rental-form/rental-form';
 import { PdfService } from '../../services/pdf';
 import * as XLSX from 'xlsx';
+import { SafePipe } from '../../pipes/safe-pipe';
 
 @Component({
   selector: 'app-rental-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, RentalForm],
+  imports: [CommonModule, FormsModule, RouterLink, RentalForm, SafePipe],
   templateUrl: './rental-list.html',
   styleUrl: './rental-list.css'
 })
@@ -27,6 +28,8 @@ export class RentalListComponent implements OnInit {
   dueDateFrom = '';
   dueDateTo = '';
   showFilters = false;
+  previewPdfUrl: string | null = null;
+  previewRental: Rental | null = null;
 
   isOverdue = isRentalOverdue;
   isDueSoon = isRentalDueSoon;
@@ -175,8 +178,22 @@ export class RentalListComponent implements OnInit {
     return rental.returnedBy?.email?.charAt(0).toUpperCase() || '?';
   }
 
-  downloadReceipt(rental: Rental): void {
-    this.pdfService.generateRentalReceipt(rental);
+  previewReceipt(rental: Rental): void {
+    this.previewPdfUrl = this.pdfService.generateRentalReceiptDataUrl(rental);
+    this.previewRental = rental;
+    this.cdr.detectChanges();
+  }
+
+  closePreview(): void {
+    this.previewPdfUrl = null;
+    this.previewRental = null;
+    this.cdr.detectChanges();
+  }
+
+  downloadFromPreview(): void {
+    if (this.previewRental) {
+      this.pdfService.generateRentalReceipt(this.previewRental);
+    }
   }
 
   private rentalStatusLabel(rental: Rental): string {

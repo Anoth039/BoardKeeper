@@ -113,7 +113,7 @@
             </button>
           </div>
 
-          <button class="btn btn-sm btn-outline-secondary ms-1" (click)="downloadReceipt(rental)" title="Download receipt">
+          <button class="btn btn-sm btn-outline-secondary ms-1" (click)="previewReceipt(rental)" title="Preview receipt">
             <i class="bi bi-file-earmark-pdf"></i>
           </button>
         </div>
@@ -157,5 +157,24 @@
       </div>
     </div>
 
+  </div>
+</div>
+
+<div class="modal-backdrop-custom" *ngIf="previewPdfUrl" (click)="closePreview()">
+  <div class="modal-box pdf-modal" (click)="$event.stopPropagation()">
+    <div class="modal-header-custom">
+      <h5 class="mb-0">
+        <i class="bi bi-file-earmark-pdf me-2"></i>Receipt Preview
+      </h5>
+      <div class="d-flex gap-2 align-items-center">
+        <button class="btn btn-sm btn-primary" (click)="downloadFromPreview()">
+          <i class="bi bi-download me-1"></i> Download
+        </button>
+        <button class="btn-close" (click)="closePreview()"></button>
+      </div>
+    </div>
+    <div class="pdf-preview-body">
+      <iframe [src]="(previewPdfUrl + '#toolbar=0&navpanes=0') | safe" class="pdf-iframe" type="application/pdf"></iframe>
+    </div>
   </div>
 </div>
