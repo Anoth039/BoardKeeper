@@ -3,11 +3,12 @@ import { RouterOutlet, Router, NavigationEnd } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { NavbarComponent } from './components/navbar/navbar';
 import { filter } from 'rxjs';
+import { BackToTopComponent } from './components/back-to-top/back-to-top';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, CommonModule, NavbarComponent],
+  imports: [RouterOutlet, CommonModule, NavbarComponent, BackToTopComponent],
   templateUrl: './app.html',
   styleUrl: './app.css'
 })
