@@ -18,6 +18,7 @@ import { isRentalOverdue } from '../../models/rental.model';
 export class MemberListComponent implements OnInit {
   members: Member[] = [];
   searchTerm = '';
+  sortAsc = true;
 
   showForm = false;
   editingMember: Member | null = null;
@@ -55,7 +56,11 @@ export class MemberListComponent implements OnInit {
     return [...result].sort((a, b) => {
       const statusDiff = Number(b.isActive) - Number(a.isActive);
       if (statusDiff !== 0) return statusDiff;
-      return a.lastName.localeCompare(b.lastName);
+
+      const nameA = `${a.firstName} ${a.lastName}`;
+      const nameB = `${b.firstName} ${b.lastName}`;
+
+      return this.sortAsc ? nameA.localeCompare(nameB) : nameB.localeCompare(nameA);
     });
   }
 

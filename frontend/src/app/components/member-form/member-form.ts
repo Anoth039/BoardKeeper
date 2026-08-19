@@ -3,11 +3,12 @@ import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MemberService } from '../../services/member';
 import { Member } from '../../models/member.model';
+import { AutofocusDirective } from '../../directives/autofocus';
 
 @Component({
   selector: 'app-member-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, AutofocusDirective],
   templateUrl: './member-form.html',
   styleUrl: './member-form.css'
 })
@@ -91,6 +92,7 @@ export class MemberForm implements OnInit, OnChanges {
   }
 
   onCancel(): void {
+    if (this.form.dirty && !confirm('Are you sure? You have unsaved changes.')) return;
     this.cancelled.emit();
   }
 }

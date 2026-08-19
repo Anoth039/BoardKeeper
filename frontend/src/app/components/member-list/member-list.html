@@ -36,7 +36,9 @@
     <table class="table member-table align-middle mb-0">
       <thead>
         <tr>
-          <th>Member</th>
+          <th (click)="sortAsc = !sortAsc" role="button" class="user-select-none">
+            Member <i class="bi ms-1" [ngClass]="sortAsc ? 'bi-sort-alpha-down' : 'bi-sort-alpha-down-alt'"></i>
+          </th>
           <th>Email</th>
           <th>Phone</th>
           <th>Status</th>

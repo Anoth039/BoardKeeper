@@ -1,16 +1,17 @@
 import { Component, EventEmitter, Output, OnInit, ChangeDetectorRef, HostListener, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, NgForm } from '@angular/forms';
 import { RentalService } from '../../services/rental';
 import { MemberService } from '../../services/member';
 import { GameService } from '../../services/game';
 import { Member } from '../../models/member.model';
 import { Game, GameCopy } from '../../models/game.model';
+import { AutofocusDirective } from '../../directives/autofocus';
 
 @Component({
   selector: 'app-rental-form',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, AutofocusDirective],
   templateUrl: './rental-form.html',
   styleUrl: './rental-form.css'
 })
@@ -219,7 +220,9 @@ export class RentalForm implements OnInit {
     });
   }
 
-  onCancel(): void {
+  onCancel(f?: NgForm): void {
+    const isDirty = f?.dirty || !!this.selectedMemberId || !!this.selectedGameId;
+    if (isDirty && !confirm('Are you sure? You have unsaved changes.')) return;
     this.cancelled.emit();
   }
 }

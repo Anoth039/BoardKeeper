@@ -13,7 +13,7 @@
 
         <div class="mb-3">
           <label class="form-label">Title *</label>
-          <input type="text" class="form-control" formControlName="title" placeholder="e.g. Catan"/>
+          <input type="text" appAutofocus class="form-control" formControlName="title" placeholder="e.g. Catan"/>
           <div class="text-danger small" *ngIf="form.get('title')?.invalid && form.get('title')?.touched">
             Title is required.
           </div>

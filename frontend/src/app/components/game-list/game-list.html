@@ -125,7 +125,6 @@
                   <button class="btn btn-sm btn-outline-secondary" (click)="startEditCopy(copy)"><i class="bi bi-pencil"></i></button>
                   <button class="btn btn-sm btn-outline-danger ms-1" (click)="deleteCopy(copy.id)"><i class="bi bi-trash"></i></button>
                 </div>
-                <span *ngIf="!copy.isAvailable" class="text-muted small fst-italic">Locked while rented</span>
               </ng-container>
             </div>
 
@@ -144,8 +143,13 @@
                   <button class="btn btn-sm btn-outline-secondary" (click)="cancelEditCopy()">✕</button>
                 </div>
               </div>
-              <input type="text" class="form-control form-control-sm" placeholder="Internal note (optional) — e.g. missing 2 cards" 
-                [(ngModel)]="editCopyNotes" maxlength="100"/>
+              <div>
+                <input type="text" class="form-control form-control-sm" placeholder="Internal note (optional) — e.g. missing 2 cards" 
+                  [(ngModel)]="editCopyNotes" maxlength="200"/>
+                <div class="text-end text-muted mt-1" style="font-size: 0.75rem;">
+                  {{ (editCopyNotes || '').length }}/200
+                </div>
+              </div>
             </div>
 
           </li>

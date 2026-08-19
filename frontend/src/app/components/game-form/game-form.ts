@@ -4,6 +4,7 @@ import { ReactiveFormsModule, FormBuilder, FormGroup, Validators, AbstractContro
 import { FormsModule } from '@angular/forms';
 import { GameService } from '../../services/game';
 import { Game } from '../../models/game.model';
+import { AutofocusDirective } from '../../directives/autofocus';
 
 function maxNotLessThanMinValidator(group: AbstractControl): ValidationErrors | null {
   const min = group.get('minPlayers')?.value;
@@ -19,7 +20,7 @@ const PRESET_CATEGORIES = ['Strategy', 'Party', 'Family', 'Cooperative', 'Card G
 @Component({
   selector: 'app-game-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, AutofocusDirective],
   templateUrl: './game-form.html',
   styleUrl: './game-form.css'
 })
@@ -106,6 +107,7 @@ export class GameForm implements OnInit, OnChanges {
 
     this.errorMessage = '';
     this.form.patchValue({ categories: current });
+    this.form.markAsDirty();
     this.cdr.detectChanges();
   }
 
@@ -129,6 +131,7 @@ export class GameForm implements OnInit, OnChanges {
 
     const updated = [...this.selectedCategories, formatted];
     this.form.patchValue({ categories: updated });
+    this.form.markAsDirty();
     this.customCategoryInput = '';
     this.errorMessage = '';
     this.cdr.detectChanges();
@@ -137,6 +140,7 @@ export class GameForm implements OnInit, OnChanges {
   removeCategory(cat: string): void {
     const current = this.selectedCategories.filter(c => c !== cat);
     this.form.patchValue({ categories: current });
+    this.form.markAsDirty();
     this.errorMessage = '';
     this.cdr.detectChanges();
   }
@@ -179,6 +183,7 @@ export class GameForm implements OnInit, OnChanges {
   }
 
   onCancel(): void {
+    if (this.form.dirty && !confirm('Are you sure? You have unsaved changes.')) return;
     this.cancelled.emit();
   }
 }

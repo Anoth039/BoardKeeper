@@ -1,12 +1,12 @@
-<div class="modal-backdrop-custom" (click)="onCancel()">
+<div class="modal-backdrop-custom" (click)="onCancel(f)">
   <div class="modal-box modal-box-wide" (click)="$event.stopPropagation()">
     <div class="modal-header-custom">
       <h5 class="mb-0"><i class="bi bi-journal-plus me-2"></i>New Rental</h5>
-      <button class="btn-close" (click)="onCancel()"></button>
+      <button class="btn-close" (click)="onCancel(f)"></button>
     </div>
 
     <div class="modal-body-custom">
-      <form (ngSubmit)="onSubmit()">
+      <form #f="ngForm" (ngSubmit)="onSubmit()">
 
         <div class="rental-section mb-4">
           <h6 class="rental-section-title"><i class="bi bi-person-fill me-1"></i>Who's renting?</h6>
@@ -22,7 +22,7 @@
           </div>
 
           <div *ngIf="!selectedMember" class="position-relative">
-            <input type="text" class="form-control" placeholder="Search members by name or email..." [(ngModel)]="memberSearchTerm"
+            <input type="text" appAutofocus class="form-control" placeholder="Search members by name or email..." [(ngModel)]="memberSearchTerm"
               name="memberSearch" (focus)="showMemberDropdown = true"/>
             <div class="dropdown-list" *ngIf="showMemberDropdown">
               <div class="dropdown-list-item" *ngFor="let member of filteredMembers" (click)="selectMember(member)">

@@ -13,7 +13,7 @@
         <div class="row">
           <div class="col mb-3">
             <label class="form-label">First Name *</label>
-            <input type="text" class="form-control" formControlName="firstName" maxlength="30"/>
+            <input type="text" appAutofocus class="form-control" formControlName="firstName" maxlength="30"/>
             <div class="text-danger small" *ngIf="form.get('firstName')?.invalid && form.get('firstName')?.touched">
               <span *ngIf="form.get('firstName')?.errors?.['required']">First name is required.</span>
             </div>
