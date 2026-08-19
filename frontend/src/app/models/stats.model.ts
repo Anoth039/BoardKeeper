@@ -3,8 +3,8 @@ export interface StatsSummary {
   totalCopies: number;
   availableCopies: number;
   activeMembers: number;
-  inactiveMembers: number;
   activeRentals: number;
+  dueSoonRentals: number;
   overdueRentals: number;
 }
 

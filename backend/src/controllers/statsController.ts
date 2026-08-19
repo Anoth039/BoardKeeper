@@ -37,6 +37,12 @@ export const getStats = async (req: Request, res: Response) => {
     const monthStart = monthStartStr();
     const fourteenDaysAgo = nDaysAgoStr(13);
 
+    const twoDaysFromNow = toLocalDate((() => {
+      const d = new Date();
+      d.setDate(d.getDate() + 2);
+      return d;
+    })());
+
     const totalGames = await gameRepo.count();
     const totalCopies = await copyRepo.count();
     const availableCopies = await copyRepo
@@ -45,11 +51,17 @@ export const getStats = async (req: Request, res: Response) => {
       .andWhere("c.condition != :lost", { lost: "lost" })
       .getCount();
     const activeMembers = await memberRepo.count({ where: { isActive: true } });
-    const inactiveMembers = await memberRepo.count({ where: { isActive: false } });
 
     const activeRentals = await rentalRepo
       .createQueryBuilder("r")
       .where("r.status = :s", { s: RentalStatus.ACTIVE })
+      .getCount();
+
+    const dueSoonRentals = await rentalRepo
+      .createQueryBuilder("r")
+      .where("r.status = :s", { s: RentalStatus.ACTIVE })
+      .andWhere("r.due_date >= :today", { today })
+      .andWhere("r.due_date <= :twoDaysFromNow", { twoDaysFromNow })
       .getCount();
 
     const overdueRentals = await rentalRepo
@@ -169,8 +181,8 @@ export const getStats = async (req: Request, res: Response) => {
         totalCopies,
         availableCopies,
         activeMembers,
-        inactiveMembers,
         activeRentals,
+        dueSoonRentals,
         overdueRentals,
       },
       monthlyBreakdown: {

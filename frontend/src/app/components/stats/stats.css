@@ -13,6 +13,11 @@
   box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
 
+.stat-card-warning {
+  border-color: #ffe69c;
+  background: #fffdf0;
+}
+
 .stat-card-danger {
   border-color: #f5c6cb;
   background: #fff5f5;
