@@ -18,10 +18,11 @@ import { isRentalOverdue } from '../../models/rental.model';
 export class MemberListComponent implements OnInit {
   members: Member[] = [];
   searchTerm = '';
+  successMessage = '';
   sortAsc = true;
-
   showForm = false;
   editingMember: Member | null = null;
+  copiedMemberId: number | null = null;
 
   constructor(private memberService: MemberService, private cdr: ChangeDetectorRef, public authService: AuthService) {}
 
@@ -74,6 +75,21 @@ export class MemberListComponent implements OnInit {
 
   memberInitials(member: Member): string {
     return `${member.firstName.charAt(0)}${member.lastName.charAt(0)}`.toUpperCase();
+  }
+
+  copyEmail(email: string, memberId: number): void {
+    navigator.clipboard.writeText(email).then(() => {
+      this.copiedMemberId = memberId;
+      this.successMessage = 'Email copied to clipboard!';
+      this.cdr.detectChanges();
+
+      setTimeout(() => {
+        if (this.copiedMemberId === memberId) {
+          this.copiedMemberId = null;
+          this.cdr.detectChanges();
+        }
+      }, 2000);
+    });
   }
 
   openAddForm(): void {

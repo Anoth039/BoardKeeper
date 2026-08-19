@@ -48,7 +48,16 @@
           </div>
         </div>
 
-        <p class="card-text game-card-description mt-2">{{ game.description }}</p>
+        <div class="mt-2">
+          <p #descEl class="card-text game-card-description mb-0" [class.expanded]="expandedCards[game.id]">
+            {{ game.description }}
+          </p>
+          <button *ngIf="hasOverflow[game.id] || (descEl && descEl.scrollHeight > descEl.clientHeight + 2)" type="button" 
+            class="btn btn-link btn-sm p-0 text-decoration-none description-toggle-btn" (click)="toggleDescription(game.id)">
+            {{ expandedCards[game.id] ? 'Less' : 'More...' }}
+            <i class="bi" [ngClass]="expandedCards[game.id] ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+          </button>
+        </div>
 
         <div class="mt-auto">
           <small class="text-muted">

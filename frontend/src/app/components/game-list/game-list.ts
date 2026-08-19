@@ -21,6 +21,9 @@ export class GameListComponent implements OnInit {
   selectedGameForCopies: Game | null = null;
   gameSearchTerm = '';
 
+  expandedCards: { [key: number]: boolean } = {};
+  hasOverflow: { [key: number]: boolean } = {};
+
   newCopyCondition = 'new';
   newCopyNumber = '';
   addingCopy = false;
@@ -389,5 +392,11 @@ export class GameListComponent implements OnInit {
 
   capitalize(text: string): string {
     return text.charAt(0).toUpperCase() + text.slice(1);
+  }
+
+  toggleDescription(gameId: number): void {
+    this.expandedCards[gameId] = !this.expandedCards[gameId];
+    this.hasOverflow[gameId] = true;
+    this.cdr.detectChanges();
   }
 }
