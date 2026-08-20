@@ -34,4 +34,7 @@ export class User {
 
   @Column({ name: "reset_code_expires_at", type: "datetime", nullable: true })
   resetCodeExpiresAt!: Date;
+
+  @Column({ name: "is_approved", default: false })
+  isApproved!: boolean;
 }

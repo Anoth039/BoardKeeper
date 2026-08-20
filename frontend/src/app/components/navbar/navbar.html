@@ -21,16 +21,19 @@
         <li class="nav-item" *ngIf="isAdmin">
           <a class="nav-link" routerLink="/stats" routerLinkActive="active">Stats</a>
         </li>
+        <li class="nav-item" *ngIf="isAdmin">
+          <a class="nav-link" routerLink="/users" routerLinkActive="active">Users</a>
+        </li>
       </ul>
 
-      <div class="d-flex align-items-center gap-3">
+      <div class="d-flex align-items-center gap-3 my-2">
         <span class="text-light small">
           <i class="bi bi-person-circle me-1"></i>{{ authService.getCurrentUser()?.email }}
           <span class="badge ms-1" [ngClass]="authService.getCurrentUser()?.role === 'admin' ? 'bg-danger' : 'bg-secondary'">
             {{ authService.getCurrentUser()?.role }}
           </span>
         </span>
-        <button class="btn btn-sm btn-outline-light" (click)="logout()">
+        <button class="btn btn-sm btn-outline-light ms-auto" (click)="logout()">
           <i class="bi bi-box-arrow-right"></i> Logout
         </button>
       </div>

@@ -1,0 +1,110 @@
+<div *ngIf="loading" class="py-5 text-center text-muted">
+  <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+  <span>Loading users...</span>
+</div>
+
+<ng-container *ngIf="!loading">
+  <div class="mb-3">
+    <div class="input-group search-input">
+      <span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span>
+      <input type="text" class="form-control border-start-0" placeholder="Search by email..." [(ngModel)]="searchTerm"/>
+      <button *ngIf="searchTerm" class="btn btn-outline-secondary" (click)="searchTerm = ''">
+        <i class="bi bi-x"></i>
+      </button>
+    </div>
+  </div>
+
+  <div *ngIf="users.length === 0" class="empty-state py-5 text-center">
+    <i class="bi bi-people fs-1 text-muted"></i>
+    <p class="mt-2 text-muted">No users found.</p>
+  </div>
+
+  <div *ngIf="users.length > 0 && filteredUsers.length === 0" class="empty-state py-5 text-center px-3">
+    <i class="bi bi-search fs-1 text-muted"></i>
+    <p class="mt-2 text-muted text-break">
+      No users match "<strong>{{ searchTerm }}</strong>"
+    </p>
+    <button class="btn btn-sm btn-outline-secondary" (click)="searchTerm = ''">Clear search</button>
+  </div>
+
+  <div class="card mb-4" *ngIf="pendingUsers.length > 0">
+    <div class="card-header bg-white py-3 d-flex align-items-center gap-2">
+      <h6 class="mb-0 fw-bold">Pending Approval</h6>
+      <span class="badge bg-danger">{{ pendingUsers.length }}</span>
+    </div>
+    <div class="table-responsive">
+      <table class="table user-table align-middle mb-0">
+        <tbody>
+          <tr *ngFor="let user of pendingUsers">
+            <td>
+              <div class="d-flex align-items-center gap-2 min-w-0">
+                <div class="member-avatar-sm avatar-inactive flex-shrink-0">
+                  {{ userInitials(user.email) }}
+                </div>
+                <div class="text-truncate">
+                  <div class="fw-semibold small text-truncate" [title]="'Email: ' + user.email">
+                    {{ user.email }}
+                  </div>
+                  <div class="text-muted extra-small d-md-none">
+                    Registered: {{ memberSince(user.createdAt) }}
+                  </div>
+                </div>
+              </div>
+            </td>
+            <td class="text-muted small d-none d-md-table-cell text-nowrap">
+              <span class="text-secondary fw-medium me-1">Registered:</span>{{ memberSince(user.createdAt) }}
+            </td>
+            <td class="text-end">
+              <div class="d-flex justify-content-end gap-1">
+                <button class="btn btn-sm btn-success" (click)="toggleApproval(user)" title="Approve">
+                  <i class="bi bi-check-lg"></i>
+                </button>
+                <button class="btn btn-sm btn-outline-danger" (click)="deleteUser(user)" title="Reject">
+                  <i class="bi bi-x-lg"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card mb-4" *ngIf="approvedUsers.length > 0">
+    <div class="card-header bg-white py-3 d-flex align-items-center gap-2">
+      <h6 class="mb-0 fw-bold">Approved Staff</h6>
+      <span class="badge bg-success">{{ approvedUsers.length }}</span>
+    </div>
+    <div class="table-responsive">
+      <table class="table user-table align-middle mb-0">
+        <tbody>
+          <tr *ngFor="let user of approvedUsers">
+            <td>
+              <div class="d-flex align-items-center gap-2 min-w-0">
+                <div class="member-avatar-sm flex-shrink-0">
+                  {{ userInitials(user.email) }}
+                </div>
+                <div class="text-truncate">
+                  <div class="fw-semibold small text-truncate" [title]="'Email: ' + user.email">
+                    {{ user.email }}
+                  </div>
+                  <div class="text-muted extra-small d-md-none">
+                    Registered: {{ memberSince(user.createdAt) }}
+                  </div>
+                </div>
+              </div>
+            </td>
+            <td class="text-muted small d-none d-md-table-cell text-nowrap">
+              <span class="text-secondary fw-medium me-1">Registered:</span>{{ memberSince(user.createdAt) }}
+            </td>
+            <td class="text-end">
+              <button class="btn btn-sm btn-outline-warning" (click)="toggleApproval(user)" title="Revoke">
+                <i class="bi bi-slash-circle"></i>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</ng-container>

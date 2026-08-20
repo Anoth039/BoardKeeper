@@ -99,7 +99,7 @@ export class Register {
     this.authService.register(email, password, verificationCode).subscribe({
       next: () => {
         this.submitting = false;
-        this.successMessage = 'Account created! You can now log in.';
+        this.successMessage = 'Account successfully created!';
         this.form.reset();
         this.codeSent = false;
         this.cdr.detectChanges();

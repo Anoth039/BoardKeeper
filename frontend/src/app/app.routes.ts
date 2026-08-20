@@ -9,6 +9,7 @@ import { authGuard } from './guards/auth-guard';
 import { StatsPage } from './components/stats/stats';
 import { adminGuard } from './guards/admin-guard';
 import { ForgotPassword } from './components/forgot-password/forgot-password';
+import { UsersPage } from './components/users/users';
 
 export const routes: Routes = [
   { path: 'login', component: Login },
@@ -20,4 +21,5 @@ export const routes: Routes = [
   { path: 'members/:id', component: MemberDetail, canActivate: [authGuard] },
   { path: 'rentals', component: RentalListComponent, canActivate: [authGuard] },
   { path: 'stats', component: StatsPage, canActivate: [authGuard, adminGuard] },
+  { path: 'users', component: UsersPage, canActivate: [authGuard, adminGuard] },
 ];

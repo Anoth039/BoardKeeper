@@ -10,6 +10,7 @@ import gameCopyRoutes from './routes/gameCopyRoutes';
 import authRoutes from './routes/authRoutes';
 import { requireAuth } from './middleware/authMiddleware';
 import statsRoutes from './routes/statsRoutes';
+import userRoutes from './routes/userRoutes';
 
 dotenv.config();
 const app = express();
@@ -25,6 +26,7 @@ app.use("/api/game-copies", requireAuth, gameCopyRoutes);
 app.use("/api/members", requireAuth, memberRoutes);
 app.use("/api/rentals", requireAuth, rentalRoutes);
 app.use("/api/stats", requireAuth, statsRoutes);
+app.use("/api/users", requireAuth, userRoutes);
 
 AppDataSource.initialize()
   .then(() => {
