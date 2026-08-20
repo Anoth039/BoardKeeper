@@ -15,8 +15,8 @@
         <div class="mb-3">
           <label class="form-label">Password</label>
           <div class="input-group">
-            <input [type]="showPassword ? 'text' : 'password'" class="form-control" formControlName="password"/>
-            <button type="button" class="btn btn-outline-secondary" (click)="showPassword = !showPassword" tabindex="-1">
+            <input [type]="showPassword ? 'text' : 'password'" class="form-control border-end-0" formControlName="password"/>
+            <button type="button" class="btn border border-start-0 bg-transparent text-secondary" (click)="showPassword = !showPassword" tabindex="-1">
               <i class="bi" [ngClass]="showPassword ? 'bi-eye-slash' : 'bi-eye'"></i>
             </button>
           </div>

@@ -8,9 +8,10 @@
         <div class="mb-3">
           <label class="form-label">Email *</label>
           <div class="input-group">
-            <input type="email" class="form-control" formControlName="email" />
-            <button type="button" class="btn btn-outline-secondary" (click)="sendCode()" [disabled]="!canSendCode || sendingCode">
-              {{ sendingCode ? '...' : cooldownSeconds > 0 ? cooldownSeconds + 's' : codeSent ? 'Resend' : 'Send Code' }}
+            <input type="email" class="form-control border-end-0" formControlName="email"/>
+            <button type="button" class="btn border border-start-0 bg-transparent text-primary small" (click)="sendCode()" [disabled]="!canSendCode || sendingCode">
+              <span *ngIf="sendingCode" class="spinner-border spinner-border-sm me-1" role="status"></span>
+              {{ sendingCode ? 'Sending...' : cooldownSeconds > 0 ? cooldownSeconds + 's' : codeSent ? 'Resend' : 'Send Code' }}
             </button>
           </div>
           <div class="text-danger small" *ngIf="form.get('email')?.invalid && form.get('email')?.touched">
@@ -30,8 +31,8 @@
         <div class="mb-3">
           <label class="form-label">Password *</label>
           <div class="input-group">
-            <input [type]="showPassword ? 'text' : 'password'" class="form-control" formControlName="password" />
-            <button type="button" class="btn btn-outline-secondary" (click)="showPassword = !showPassword" tabindex="-1">
+            <input [type]="showPassword ? 'text' : 'password'" class="form-control border-end-0" formControlName="password"/>
+            <button type="button" class="btn border border-start-0 bg-transparent text-secondary" (click)="showPassword = !showPassword" tabindex="-1">
               <i class="bi" [ngClass]="showPassword ? 'bi-eye-slash' : 'bi-eye'"></i>
             </button>
           </div>
@@ -43,8 +44,8 @@
         <div class="mb-3">
           <label class="form-label">Confirm Password *</label>
           <div class="input-group">
-            <input [type]="showConfirmPassword ? 'text' : 'password'" class="form-control" formControlName="confirmPassword" />
-            <button type="button" class="btn btn-outline-secondary" (click)="showConfirmPassword = !showConfirmPassword" tabindex="-1">
+            <input [type]="showConfirmPassword ? 'text' : 'password'" class="form-control border-end-0" formControlName="confirmPassword" />
+            <button type="button" class="btn border border-start-0 bg-transparent text-secondary" (click)="showConfirmPassword = !showConfirmPassword" tabindex="-1">
               <i class="bi" [ngClass]="showConfirmPassword ? 'bi-eye-slash' : 'bi-eye'"></i>
             </button>
           </div>

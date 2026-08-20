@@ -86,6 +86,7 @@ export class MemberListComponent implements OnInit {
       setTimeout(() => {
         if (this.copiedMemberId === memberId) {
           this.copiedMemberId = null;
+          this.successMessage = '';
           this.cdr.detectChanges();
         }
       }, 2000);
