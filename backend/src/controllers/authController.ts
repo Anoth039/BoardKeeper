@@ -109,8 +109,10 @@ export const login = async (req: Request, res: Response) => {
       return res.status(403).json({ message: "Your account is pending approval by an administrator." });
     }
 
-    const token = jwt.sign({ userId: user.id, email: user.email, role: user.role }, 
-        JWT_SECRET, { expiresIn: '1h' });
+    user.lastLoginAt = new Date();
+    await userRepository.save(user);
+
+    const token = jwt.sign({ userId: user.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '1h' });
 
     res.json({
       token,

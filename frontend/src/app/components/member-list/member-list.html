@@ -19,14 +19,16 @@
   {{ filteredMembers.length }} of {{ members.length }} members
 </div>
 
-<div *ngIf="members.length === 0" class="empty-state">
+<div *ngIf="members.length === 0" class="empty-state text-muted">
   <i class="bi bi-people"></i>
   <p>No members yet. Add one to get started.</p>
 </div>
 
-<div *ngIf="members.length > 0 && filteredMembers.length === 0" class="empty-state">
+<div *ngIf="members.length > 0 && filteredMembers.length === 0" class="empty-state text-muted">
   <i class="bi bi-search"></i>
-  <p>No members match your search.</p>
+    <p class="text-break">
+      No members match "<strong>{{ searchTerm }}</strong>"
+    </p>
   <button class="btn btn-sm btn-outline-secondary" (click)="searchTerm = ''">Clear search</button>
 </div>
 

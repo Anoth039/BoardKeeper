@@ -15,4 +15,5 @@ export interface SystemUser {
   role: string;
   isApproved: boolean;
   createdAt: string;
+  lastLoginAt: string | null;
 }

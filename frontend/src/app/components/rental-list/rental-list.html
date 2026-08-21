@@ -69,12 +69,12 @@
   </span>
 </div>
 
-<div *ngIf="rentals.length === 0" class="empty-state">
+<div *ngIf="rentals.length === 0" class="empty-state text-muted">
   <i class="bi bi-journal-x"></i>
   <p>No rentals yet. Create one to get started.</p>
 </div>
 
-<div *ngIf="rentals.length > 0 && filteredRentals.length === 0" class="empty-state">
+<div *ngIf="rentals.length > 0 && filteredRentals.length === 0" class="empty-state text-muted">
   <i class="bi bi-search"></i>
   <p>No rentals match your search or filters.</p>
   <button class="btn btn-sm btn-outline-secondary" (click)="clearFilters()">Clear filters</button>
@@ -108,7 +108,7 @@
             <button class="btn btn-sm btn-outline-success" (click)="returnRental(rental)" title="Return">
               <i class="bi bi-box-arrow-in-left"></i> Return
             </button>
-            <button class="btn btn-sm btn-outline-dark ms-1" *ngIf="isAdmin" (click)="markLost(rental)" title="Mark as lost">
+            <button class="btn btn-sm btn-outline-dark ms-1" (click)="markLost(rental)" title="Mark as lost">
               <i class="bi bi-bookmark-x"></i>
             </button>
           </div>

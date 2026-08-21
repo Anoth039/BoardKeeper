@@ -34,15 +34,6 @@
       </div>
     </div>
     <div class="col-6 col-sm-4 col-lg-2">
-      <div class="stat-card" [class.stat-card-warning]="stats.summary.dueSoonRentals > 0">
-        <i class="bi bi-clock stat-icon" [ngClass]="stats.summary.dueSoonRentals > 0 ? 'text-warning' : 'text-muted'"></i>
-        <div class="stat-value" [ngClass]="stats.summary.dueSoonRentals > 0 ? 'text-warning' : ''">
-          {{ stats.summary.dueSoonRentals }}
-        </div>
-        <div class="stat-label">Due Soon</div>
-      </div>
-    </div>
-    <div class="col-6 col-sm-4 col-lg-2">
       <div class="stat-card" [class.stat-card-danger]="stats.summary.overdueRentals > 0">
         <i class="bi bi-exclamation-triangle-fill stat-icon"
            [ngClass]="stats.summary.overdueRentals > 0 ? 'text-danger' : 'text-muted'"></i>
@@ -50,6 +41,15 @@
           {{ stats.summary.overdueRentals }}
         </div>
         <div class="stat-label">Overdue</div>
+      </div>
+    </div>
+    <div class="col-6 col-sm-4 col-lg-2">
+      <div class="stat-card" [class.stat-card-warning]="stats.summary.dueSoonRentals > 0">
+        <i class="bi bi-clock stat-icon" [ngClass]="stats.summary.dueSoonRentals > 0 ? 'text-warning' : 'text-muted'"></i>
+        <div class="stat-value" [ngClass]="stats.summary.dueSoonRentals > 0 ? 'text-warning' : ''">
+          {{ stats.summary.dueSoonRentals }}
+        </div>
+        <div class="stat-label">Due Soon</div>
       </div>
     </div>
   </div>

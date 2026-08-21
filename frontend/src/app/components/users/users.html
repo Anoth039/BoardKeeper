@@ -14,14 +14,14 @@
     </div>
   </div>
 
-  <div *ngIf="users.length === 0" class="empty-state py-5 text-center">
-    <i class="bi bi-people fs-1 text-muted"></i>
-    <p class="mt-2 text-muted">No users found.</p>
+  <div *ngIf="users.length === 0" class="empty-state text-muted">
+    <i class="bi bi-people"></i>
+    <p class="mt-2">No users found.</p>
   </div>
 
-  <div *ngIf="users.length > 0 && filteredUsers.length === 0" class="empty-state py-5 text-center px-3">
-    <i class="bi bi-search fs-1 text-muted"></i>
-    <p class="mt-2 text-muted text-break">
+  <div *ngIf="users.length > 0 && filteredUsers.length === 0" class="empty-state text-muted">
+    <i class="bi bi-search"></i>
+    <p class="text-break">
       No users match "<strong>{{ searchTerm }}</strong>"
     </p>
     <button class="btn btn-sm btn-outline-secondary" (click)="searchTerm = ''">Clear search</button>
@@ -47,12 +47,24 @@
                   </div>
                   <div class="text-muted extra-small d-md-none">
                     Registered: {{ memberSince(user.createdAt) }}
+                    <br><i class="bi bi-box-arrow-in-right me-1"></i>
+                    <span [ngClass]="!user.lastLoginAt ? 'text-danger' : 'text-muted'">
+                      {{ lastLogin(user) }}
+                    </span>
                   </div>
                 </div>
               </div>
             </td>
             <td class="text-muted small d-none d-md-table-cell text-nowrap">
-              <span class="text-secondary fw-medium me-1">Registered:</span>{{ memberSince(user.createdAt) }}
+              <div>
+                <span class="text-secondary fw-medium me-1">Registered:</span>{{ memberSince(user.createdAt) }}
+              </div>
+              <div class="extra-small mt-1">
+                <i class="bi bi-box-arrow-in-right me-1"></i>
+                <span [ngClass]="!user.lastLoginAt ? 'text-danger' : 'text-muted'">
+                  {{ lastLogin(user) }}
+                </span>
+              </div>
             </td>
             <td class="text-end">
               <div class="d-flex justify-content-end gap-1">
@@ -90,12 +102,24 @@
                   </div>
                   <div class="text-muted extra-small d-md-none">
                     Registered: {{ memberSince(user.createdAt) }}
+                    <br><i class="bi bi-box-arrow-in-right me-1"></i>
+                    <span [ngClass]="!user.lastLoginAt ? 'text-danger' : 'text-muted'">
+                      {{ lastLogin(user) }}
+                    </span>
                   </div>
                 </div>
               </div>
             </td>
             <td class="text-muted small d-none d-md-table-cell text-nowrap">
-              <span class="text-secondary fw-medium me-1">Registered:</span>{{ memberSince(user.createdAt) }}
+              <div>
+                <span class="text-secondary fw-medium me-1">Registered:</span>{{ memberSince(user.createdAt) }}
+              </div>
+              <div class="extra-small mt-1">
+                <i class="bi bi-box-arrow-in-right me-1"></i>
+                <span [ngClass]="!user.lastLoginAt ? 'text-danger' : 'text-muted'">
+                  {{ lastLogin(user) }}
+                </span>
+              </div>
             </td>
             <td class="text-end">
               <button class="btn btn-sm btn-outline-warning" (click)="toggleApproval(user)" title="Revoke">

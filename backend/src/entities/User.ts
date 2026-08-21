@@ -37,4 +37,7 @@ export class User {
 
   @Column({ name: "is_approved", default: false })
   isApproved!: boolean;
+
+  @Column({ name: "last_login_at", type: "datetime", nullable: true })
+  lastLoginAt!: Date | null;
 }

@@ -91,4 +91,16 @@ export class UsersPage implements OnInit {
   memberSince(dateStr: string): string {
     return new Date(dateStr).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
   }
+
+  lastLogin(user: SystemUser): string {
+    if (!user.lastLoginAt) return 'Never logged in';
+    const days = Math.floor(
+      (Date.now() - new Date(user.lastLoginAt).getTime()) / 86400000
+    );
+    if (days === 0) return 'Today';
+    if (days === 1) return 'Yesterday';
+    if (days < 30) return `${days} days ago`;
+    const months = Math.floor(days / 30);
+    return months === 1 ? '1 month ago' : `${months} months ago`;
+  }
 }

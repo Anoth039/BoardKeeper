@@ -13,6 +13,7 @@ export const getAllUsers = async (req: Request, res: Response) => {
         role: true,
         isApproved: true,
         createdAt: true,
+        lastLoginAt: true,
       },
       order: { createdAt: "DESC" },
     });

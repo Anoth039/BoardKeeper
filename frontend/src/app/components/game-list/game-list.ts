@@ -19,7 +19,7 @@ export class GameListComponent implements OnInit {
   showForm = false;
   editingGame: Game | null = null;
   selectedGameForCopies: Game | null = null;
-  gameSearchTerm = '';
+  searchTerm = '';
 
   expandedCards: { [key: number]: boolean } = {};
   hasOverflow: { [key: number]: boolean } = {};
@@ -319,9 +319,9 @@ export class GameListComponent implements OnInit {
   }
 
   get filteredGames(): Game[] {
-    if (this.gameSearchTerm.trim() === '') return this.games;
+    if (this.searchTerm.trim() === '') return this.games;
 
-    const term = this.gameSearchTerm.trim().toLowerCase();
+    const term = this.searchTerm.trim().toLowerCase();
     return this.games.filter(game =>
       game.title.toLowerCase().includes(term)
       || (game.category?.toLowerCase().includes(term) ?? false)
