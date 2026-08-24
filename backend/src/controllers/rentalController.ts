@@ -187,6 +187,35 @@ export const returnRental = async (req: AuthenticatedRequest, res: Response) => 
   }
 };
 
+export const extendRental = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const id = Number(req.params.id);
+    const { newDueDate } = req.body;
+
+    if (!newDueDate) {
+      return res.status(400).json({ message: "newDueDate is required" });
+    }
+
+    const rental = await rentalRepository.findOneBy({ id });
+
+    if (!rental) {
+      return res.status(404).json({ message: "Rental not found" });
+    }
+    if (rental.status !== RentalStatus.ACTIVE) {
+      return res.status(409).json({ message: "Only active rentals can be extended" });
+    }
+    if (newDueDate <= rental.dueDate) {
+      return res.status(400).json({ message: "New due date must be after the current due date" });
+    }
+
+    rental.dueDate = newDueDate;
+    const updated = await rentalRepository.save(rental);
+    res.json(updated);
+  } catch (error) {
+    res.status(500).json({ message: "Failed to extend rental", error });
+  }
+};
+
 export const markRentalLost = async (req: AuthenticatedRequest, res: Response) => {
   try {
     const id = Number(req.params.id);

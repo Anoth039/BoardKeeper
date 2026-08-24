@@ -102,18 +102,33 @@
           </span>
         </div>
 
-        <div class="d-flex align-items-center gap-1 flex-shrink-0">
+        <div class="d-flex align-items-center gap-2 flex-shrink-0">
+          
+          <ng-container *ngIf="rental.status === 'active'">
+            <ng-container *ngIf="extendingRentalId !== rental.id">
+              <button class="btn btn-sm btn-outline-success" (click)="returnRental(rental)" title="Return">
+                <i class="bi bi-box-arrow-in-left"></i>
+              </button>
+              <button class="btn btn-sm btn-outline-primary" (click)="startExtend(rental)" title="Extend due date">
+                <i class="bi bi-calendar-plus"></i>
+              </button>
+              <button class="btn btn-sm btn-outline-dark" *ngIf="isAdmin" (click)="markLost(rental)" title="Mark as lost">
+                <i class="bi bi-bookmark-x"></i>
+              </button>
+            </ng-container>
 
-          <div class="rental-actions" *ngIf="rental.status === 'active'">
-            <button class="btn btn-sm btn-outline-success" (click)="returnRental(rental)" title="Return">
-              <i class="bi bi-box-arrow-in-left"></i> Return
-            </button>
-            <button class="btn btn-sm btn-outline-dark ms-1" (click)="markLost(rental)" title="Mark as lost">
-              <i class="bi bi-bookmark-x"></i>
-            </button>
-          </div>
+            <ng-container *ngIf="extendingRentalId === rental.id">
+              <input type="date" class="form-control form-control-sm" style="max-width: 140px;" [(ngModel)]="extendDueDate" [min]="rental.dueDate"/>
+              <button class="btn btn-sm btn-success" (click)="submitExtend(rental)">
+                <i class="bi bi-check-lg"></i>
+              </button>
+              <button class="btn btn-sm btn-outline-danger" (click)="cancelExtend()">
+                <i class="bi bi-x-lg"></i>
+              </button>
+            </ng-container>
+          </ng-container>
 
-          <button class="btn btn-sm btn-outline-secondary ms-1" (click)="previewReceipt(rental)" title="Preview receipt">
+          <button class="btn btn-sm btn-outline-secondary" (click)="previewReceipt(rental)" title="Preview receipt">
             <i class="bi bi-file-earmark-pdf"></i>
           </button>
         </div>

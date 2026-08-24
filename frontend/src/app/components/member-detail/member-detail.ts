@@ -4,11 +4,12 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { MemberService } from '../../services/member';
 import { Member } from '../../models/member.model';
 import { Rental, RentalStatus, isRentalOverdue, isRentalDueSoon } from '../../models/rental.model';
+import { FormsModule } from '@angular/forms';
 
 @Component({
   selector: 'app-member-detail',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, FormsModule],
   templateUrl: './member-detail.html',
   styleUrl: './member-detail.css'
 })
@@ -16,6 +17,7 @@ export class MemberDetail implements OnInit {
   member: Member | null = null;
   loading = true;
   notFound = false;
+  rentalSearchTerm = '';
 
   isOverdue = isRentalOverdue;
   isDueSoon = isRentalDueSoon;
@@ -57,5 +59,23 @@ export class MemberDetail implements OnInit {
 
   get pastRentals(): Rental[] {
     return this.member?.rentals?.filter(r => r.status !== RentalStatus.ACTIVE) || [];
+  }
+
+  get filteredActiveRentals(): Rental[] {
+    if (!this.rentalSearchTerm.trim()) return this.activeRentals;
+    const term = this.rentalSearchTerm.trim().toLowerCase();
+    return this.activeRentals.filter(r =>
+      (r.gameCopy?.game?.title || r.gameTitleSnapshot || '').toLowerCase().includes(term)
+      || (r.gameCopy?.copyNumber || r.copyLabelSnapshot || '').toLowerCase().includes(term)
+    );
+  }
+
+  get filteredPastRentals(): Rental[] {
+    if (!this.rentalSearchTerm.trim()) return this.pastRentals;
+    const term = this.rentalSearchTerm.trim().toLowerCase();
+    return this.pastRentals.filter(r =>
+      (r.gameCopy?.game?.title || r.gameTitleSnapshot || '').toLowerCase().includes(term)
+      || (r.gameCopy?.copyNumber || r.copyLabelSnapshot || '').toLowerCase().includes(term)
+    );
   }
 }

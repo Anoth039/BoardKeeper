@@ -21,6 +21,9 @@ export class RentalListComponent implements OnInit {
   rentals: Rental[] = [];
   showForm = false;
 
+  extendingRentalId: number | null = null;
+  extendDueDate = '';
+
   searchTerm = '';
   statusFilter: 'all' | RentalStatus = 'all';
   rentalDateFrom = '';
@@ -231,5 +234,36 @@ export class RentalListComponent implements OnInit {
 
     const date = new Date().toISOString().split('T')[0];
     XLSX.writeFile(wb, `rentals-export-${date}.xlsx`);
+  }
+
+  startExtend(rental: Rental): void {
+    this.extendingRentalId = rental.id;
+    const d = new Date(rental.dueDate);
+    d.setDate(d.getDate() + 7);
+    this.extendDueDate = d.toISOString().split('T')[0];
+    this.cdr.detectChanges();
+  }
+
+  cancelExtend(): void {
+    this.extendingRentalId = null;
+    this.extendDueDate = '';
+    this.cdr.detectChanges();
+  }
+
+  submitExtend(rental: Rental): void {
+    if (!this.extendDueDate) return;
+
+    this.rentalService.extend(rental.id, this.extendDueDate).subscribe({
+      next: (updated) => {
+        rental.dueDate = updated.dueDate;
+        this.extendingRentalId = null;
+        this.extendDueDate = '';
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        alert(err.error?.message || 'Failed to extend rental.');
+        this.cdr.detectChanges();
+      }
+    });
   }
 }

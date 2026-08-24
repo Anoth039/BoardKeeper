@@ -8,7 +8,7 @@ router.get("/", getAllGameCopies);
 router.get("/:id", getGameCopyById);
 router.post("/", requireAdmin, createGameCopy);
 router.post("/bulk", requireAdmin, createGameCopiesBulk);
-router.put("/:id", requireAdmin, updateGameCopy);
+router.put("/:id", updateGameCopy);
 router.delete("/:id", requireAdmin, deleteGameCopy);
     
 export default router;

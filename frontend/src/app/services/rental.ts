@@ -23,6 +23,10 @@ export class RentalService {
     return this.http.put<Rental>(`${this.apiUrl}/${rentalId}/return`, {});
   }
 
+  extend(rentalId: number, newDueDate: string): Observable<Rental> {
+    return this.http.put<Rental>(`${this.apiUrl}/${rentalId}/extend`, { newDueDate });
+  }
+
   markLost(rentalId: number): Observable<Rental> {
     return this.http.put<Rental>(`${this.apiUrl}/${rentalId}/lost`, {});
   }

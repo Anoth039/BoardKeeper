@@ -8,9 +8,21 @@
 
 <ng-container *ngIf="member">
 
-  <a routerLink="/members" class="btn btn-outline-secondary btn-sm mb-3">
-    <i class="bi bi-arrow-left me-1"></i> Back to Members
-  </a>
+  <div class="d-flex align-items-center justify-content-between gap-3 mb-3 flex-wrap">
+    <div class="input-group" style="max-width: 320px;">
+      <span class="input-group-text bg-white">
+        <i class="bi bi-search text-muted"></i>
+      </span>
+      <input type="text" class="form-control border-start-0" placeholder="Search in rental history..." [(ngModel)]="rentalSearchTerm"/>
+      <button *ngIf="rentalSearchTerm" class="btn btn-outline-secondary" (click)="rentalSearchTerm = ''">
+        <i class="bi bi-x"></i>
+      </button>
+    </div>
+
+    <a routerLink="/members" class="btn btn-outline-primary border">
+      <i class="bi bi-arrow-left me-1"></i> Back to Members
+    </a>
+  </div>
 
   <div class="profile-card mb-4">
     <div class="profile-avatar" [class.avatar-inactive]="!member.isActive">
@@ -69,13 +81,13 @@
   <div class="rental-section mb-4">
     <div class="rental-section-header">
       <i class="bi bi-controller me-1"></i> Currently Renting
-      <span class="rental-count">{{ activeRentals.length }}</span>
+      <span class="rental-count">{{ filteredActiveRentals.length }}</span>
     </div>
     <div class="rental-section-body">
-      <div *ngIf="activeRentals.length === 0" class="rental-empty">
-        No active rentals.
+      <div *ngIf="filteredActiveRentals.length === 0" class="rental-empty">
+        {{ activeRentals.length === 0 ? 'No active rentals.' : 'No active rentals match your search.' }}
       </div>
-      <div class="rental-row" *ngFor="let rental of activeRentals">
+      <div class="rental-row" *ngFor="let rental of filteredActiveRentals">
         <div class="rental-row-stripe" [ngClass]="{
           'stripe-danger': isOverdue(rental),
           'stripe-warning': isDueSoon(rental),
@@ -101,13 +113,13 @@
   <div class="rental-section">
     <div class="rental-section-header">
       <i class="bi bi-clock-history me-1"></i> Rental History
-      <span class="rental-count">{{ pastRentals.length }}</span>
+      <span class="rental-count">{{ filteredPastRentals.length }}</span>
     </div>
     <div class="rental-section-body">
-      <div *ngIf="pastRentals.length === 0" class="rental-empty">
-        No past rentals.
+      <div *ngIf="filteredPastRentals.length === 0" class="rental-empty">
+        {{ pastRentals.length === 0 ? 'No past rentals.' : 'No past rentals match your search.' }}
       </div>
-      <div class="rental-row" *ngFor="let rental of pastRentals">
+      <div class="rental-row" *ngFor="let rental of filteredPastRentals">
         <div class="rental-row-stripe" [ngClass]="{
           'stripe-success': rental.status === 'returned',
           'stripe-dark': rental.status === 'lost'
