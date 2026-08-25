@@ -15,11 +15,11 @@ export const routes: Routes = [
   { path: 'login', component: Login },
   { path: 'register', component: Register },
   { path: 'forgot-password', component: ForgotPassword },
-  { path: '', redirectTo: 'games', pathMatch: 'full' },
+  { path: '', redirectTo: 'stats', pathMatch: 'full' },
   { path: 'games', component: GameListComponent, canActivate: [authGuard] },
   { path: 'members', component: MemberListComponent, canActivate: [authGuard] },
   { path: 'members/:id', component: MemberDetail, canActivate: [authGuard] },
   { path: 'rentals', component: RentalListComponent, canActivate: [authGuard] },
-  { path: 'stats', component: StatsPage, canActivate: [authGuard, adminGuard] },
+  { path: 'stats', component: StatsPage, canActivate: [authGuard] },
   { path: 'users', component: UsersPage, canActivate: [authGuard, adminGuard] },
 ];

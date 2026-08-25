@@ -48,7 +48,7 @@ export class Login {
     this.authService.login(email, password).subscribe({
       next: () => {
         this.submitting = false;
-        this.router.navigate(['/games']);
+        this.router.navigate(['/stats']);
         this.cdr.detectChanges();
       },
       error: (err) => {

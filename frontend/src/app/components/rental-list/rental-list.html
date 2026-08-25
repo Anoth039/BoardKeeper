@@ -112,7 +112,7 @@
               <button class="btn btn-sm btn-outline-primary" (click)="startExtend(rental)" title="Extend due date">
                 <i class="bi bi-calendar-plus"></i>
               </button>
-              <button class="btn btn-sm btn-outline-dark" *ngIf="isAdmin" (click)="markLost(rental)" title="Mark as lost">
+              <button class="btn btn-sm btn-outline-dark" (click)="markLost(rental)" title="Mark as lost">
                 <i class="bi bi-bookmark-x"></i>
               </button>
             </ng-container>

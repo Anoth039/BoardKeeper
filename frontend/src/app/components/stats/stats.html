@@ -90,7 +90,7 @@
     <div class="col-lg-6">
       <div class="chart-card">
         <div class="chart-card-header">
-          <i class="bi bi-trophy-fill me-1 text-warning"></i> Most Rented This Month
+          <i class="bi bi-trophy-fill me-1 text-warning"></i> Trending This Month
         </div>
         <div class="chart-card-body d-flex align-items-center justify-content-center">
           <div *ngIf="stats.topGamesThisMonth.length === 0" class="text-muted text-center py-4">
@@ -103,7 +103,7 @@
     <div class="col-lg-6">
       <div class="chart-card">
         <div class="chart-card-header">
-          <i class="bi bi-hourglass-split me-1 text-secondary"></i> Not Rented Recently
+          <i class="bi bi-hourglass-split me-1 text-secondary"></i> Gathering Dust
         </div>
         <div class="chart-card-body p-0 d-flex flex-column">
           <div *ngIf="stats.unusedGames.length === 0" class="flex-grow-1 d-flex flex-column align-items-center justify-content-center text-muted">
@@ -112,8 +112,7 @@
           </div>
           <div class="unused-scroll">
             <ul class="list-group list-group-flush" *ngIf="stats.unusedGames.length > 0">
-              <li class="list-group-item d-flex align-items-center gap-3 py-2 px-3" 
-                *ngFor="let game of stats.unusedGames; let i = index">
+              <li class="list-group-item d-flex align-items-center gap-3 py-2 px-3" *ngFor="let game of stats.unusedGames; let i = index">
                 <span class="unused-rank">{{ i + 1 }}</span>
                 <img *ngIf="game.imageUrl" [src]="game.imageUrl" class="unused-thumb" [alt]="game.title" />
                 <div *ngIf="!game.imageUrl" class="unused-thumb unused-thumb-placeholder">

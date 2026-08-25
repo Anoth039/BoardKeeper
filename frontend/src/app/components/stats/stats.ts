@@ -1,7 +1,4 @@
-import {
-  Component, OnInit, AfterViewInit, OnDestroy,
-  ViewChild, ElementRef, ChangeDetectorRef
-} from '@angular/core';
+import { Component, OnInit, AfterViewInit, OnDestroy, ViewChild, ElementRef, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { StatsService } from '../../services/stats';
 import { Stats, UnusedGame } from '../../models/stats.model';
