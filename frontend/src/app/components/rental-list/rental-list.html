@@ -153,7 +153,7 @@
             <i class="bi bi-calendar-x me-1"></i>
             Due {{ rental.dueDate }}
           </span>
-          <span class="rental-meta-divider">·</span>
+          <span class="rental-meta-divider" *ngIf="rental.extensions?.length">·</span>
           <span class="rental-meta" *ngIf="rental.extensions && rental.extensions.length > 0"
             [title]="rental.extensions.map(e => e.previousDueDate + ' → ' + e.newDueDate + ' by ' + (e.extendedBy?.email || 'unknown')).join('\n')">
             <i class="bi bi-arrow-repeat me-1"></i>
