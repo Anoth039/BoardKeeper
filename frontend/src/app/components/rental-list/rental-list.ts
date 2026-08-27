@@ -215,6 +215,7 @@ export class RentalListComponent implements OnInit {
       'Copy': r.gameCopy?.copyNumber || r.copyLabelSnapshot || '—',
       'Status': this.rentalStatusLabel(r),
       'Rental Date': r.rentalDate,
+      'Original Due Date': r.originalDueDate,
       'Due Date': r.dueDate,
       'Return Date': r.returnDate || '—',
       'Rented out by': r.handledBy?.email || '—',
@@ -227,8 +228,8 @@ export class RentalListComponent implements OnInit {
 
     const colWidths = [
       { wch: 22 }, { wch: 28 }, { wch: 24 }, { wch: 14 },
-      { wch: 12 }, { wch: 14 }, { wch: 14 }, { wch: 14 },
-      { wch: 26 }, { wch: 26 },
+      { wch: 12 }, { wch: 14 }, { wch: 15 }, { wch: 14 },
+      { wch: 14 }, { wch: 26 }, { wch: 26 },
     ];
     ws['!cols'] = colWidths;
 
@@ -254,11 +255,10 @@ export class RentalListComponent implements OnInit {
     if (!this.extendDueDate) return;
 
     this.rentalService.extend(rental.id, this.extendDueDate).subscribe({
-      next: (updated) => {
-        rental.dueDate = updated.dueDate;
+      next: () => {
         this.extendingRentalId = null;
         this.extendDueDate = '';
-        this.cdr.detectChanges();
+        this.loadRentals(); 
       },
       error: (err) => {
         alert(err.error?.message || 'Failed to extend rental.');

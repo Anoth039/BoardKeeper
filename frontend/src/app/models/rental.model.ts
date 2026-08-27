@@ -8,10 +8,19 @@ export enum RentalStatus {
   LOST = 'lost'
 }
 
+export interface RentalExtension {
+  id: number;
+  previousDueDate: string;
+  newDueDate: string;
+  extendedBy: { id: number; email: string } | null;
+  extendedAt: string;
+}
+
 export interface Rental {
   id: number;
   rentalDate: string;
   dueDate: string;
+  originalDueDate: string | null;
   returnDate: string | null;
   status: RentalStatus;
   member?: Member;
@@ -20,6 +29,7 @@ export interface Rental {
   copyLabelSnapshot?: string;
   handledBy?: { id: number; email: string } | null;
   returnedBy?: { id: number; email: string } | null;
+  extensions?: RentalExtension[];
   createdAt: string;
 }
 

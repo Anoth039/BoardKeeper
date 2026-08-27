@@ -1,7 +1,8 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn } from "typeorm";
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn, OneToMany } from "typeorm";
 import { Member } from "./Member";
 import { GameCopy } from "./GameCopy";
 import { User } from "./User";
+import { RentalExtension } from "./RentalExtension";
 
 export enum RentalStatus {
   ACTIVE = "active",
@@ -29,6 +30,9 @@ export class Rental {
   @Column({ name: "due_date", type: "date" })
   dueDate!: string;
 
+  @Column({ name: "original_due_date", type: "date", nullable: true })
+  originalDueDate!: string | null;
+
   @Column({ name: "return_date", type: "date", nullable: true })
   returnDate!: string | null;
 
@@ -55,4 +59,7 @@ export class Rental {
 
   @Column({ name: "copy_label_snapshot", nullable: true })
   copyLabelSnapshot!: string;
+
+  @OneToMany(() => RentalExtension, (ext) => ext.rental)
+  extensions!: RentalExtension[];
 }

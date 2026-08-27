@@ -5,6 +5,7 @@ import { GameCopy } from "../entities/GameCopy";
 import { Member } from "../entities/Member";
 import { AuthenticatedRequest } from "../middleware/authMiddleware";
 import { User } from "../entities/User";
+import { RentalExtension } from "../entities/RentalExtension";
 
 const rentalRepository = AppDataSource.getRepository(Rental);
 
@@ -14,7 +15,8 @@ export const getAllRentals = async (req: AuthenticatedRequest, res: Response) =>
     const isAdmin = req.user?.role === "admin";
 
     const rentals = await rentalRepository.find({
-      relations: { member: true, gameCopy: { game: true }, ...(isAdmin ? { handledBy: true, returnedBy: true } : {}),
+      relations: { 
+        member: true, gameCopy: { game: true }, ...(isAdmin ? { handledBy: true, returnedBy: true } : {}), extensions: { extendedBy: true }
       },
     });
 
@@ -98,6 +100,7 @@ export const createRental = async (req: AuthenticatedRequest, res: Response) => 
         gameCopy,
         rentalDate,
         dueDate,
+        originalDueDate: dueDate,
         status: RentalStatus.ACTIVE,
         gameTitleSnapshot: gameCopy.game?.title,
         copyLabelSnapshot: gameCopy.copyNumber,
@@ -208,8 +211,23 @@ export const extendRental = async (req: AuthenticatedRequest, res: Response) => 
       return res.status(400).json({ message: "New due date must be after the current due date" });
     }
 
+    const extensionRepo = AppDataSource.getRepository(RentalExtension);
+    const userRepo = AppDataSource.getRepository(User);
+    const extendedByUser = req.user
+      ? await userRepo.findOneBy({ id: req.user.userId })
+      : null;
+
+    const extension = extensionRepo.create({
+      rental,
+      previousDueDate: rental.dueDate,
+      newDueDate,
+      extendedBy: extendedByUser,
+    });
+    await extensionRepo.save(extension);
+
     rental.dueDate = newDueDate;
     const updated = await rentalRepository.save(rental);
+
     res.json(updated);
   } catch (error) {
     res.status(500).json({ message: "Failed to extend rental", error });
