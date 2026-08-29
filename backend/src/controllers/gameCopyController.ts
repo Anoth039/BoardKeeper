@@ -143,7 +143,7 @@ export const updateGameCopy = async (req: Request, res: Response) => {
       });
     }
 
-    const { copyNumber } = req.body;
+    const { copyNumber, condition } = req.body;
 
     if (!copyNumber || copyNumber.trim().length < 3 || copyNumber.trim().length > 12) {
       return res.status(400).json({ message: "copyNumber must be between 3 and 12 characters" });
@@ -158,6 +158,14 @@ export const updateGameCopy = async (req: Request, res: Response) => {
 
     if (existingCopy) {
       return res.status(409).json({ message: "A copy with this name already exists for this game" });
+    }
+
+    if (condition) {
+      if (condition === "lost") {
+        req.body.isAvailable = false;
+      } else {
+        req.body.isAvailable = true;
+      }
     }
 
     req.body.copyNumber = copyNumber.trim();

@@ -263,7 +263,7 @@ export const markRentalLost = async (req: AuthenticatedRequest, res: Response) =
         : null;
 
       rental.gameCopy.condition = "lost" as any;
-      rental.gameCopy.isAvailable = true;
+      rental.gameCopy.isAvailable = false;
       await gameCopyRepo.save(rental.gameCopy);
 
       rental.status = RentalStatus.LOST;

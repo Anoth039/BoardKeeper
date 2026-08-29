@@ -131,7 +131,7 @@
                 </div>
               </div>
 
-              <ng-container *ngIf="copy.isAvailable">
+              <ng-container *ngIf="copy.isAvailable || copy.condition === 'lost'">
                 <button class="btn btn-sm btn-outline-secondary" (click)="startEditCopy(copy)" title="Edit">
                   <i class="bi bi-pencil"></i>
                 </button>

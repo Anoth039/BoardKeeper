@@ -255,10 +255,13 @@ export class GameListComponent implements OnInit {
     this.errorMessage = '';
     this.cdr.detectChanges();
 
+    const isAvailable = this.editCopyCondition !== 'lost';
+
     this.gameCopyService.update(copyId, {
       condition: this.editCopyCondition as any,
       copyNumber: trimmedNumber,
-      notes: this.editCopyNotes.trim() || null
+      notes: this.editCopyNotes.trim() || null,
+      isAvailable: isAvailable
     }).subscribe({
       next: () => {
         if (this.selectedGameForCopies?.copies) {
@@ -267,6 +270,7 @@ export class GameListComponent implements OnInit {
             target.copyNumber = trimmedNumber;
             target.condition = this.editCopyCondition as any;
             target.notes = this.editCopyNotes.trim() || null;
+            target.isAvailable = isAvailable;
           }
         }
         this.editingCopyId = null;
@@ -339,8 +343,8 @@ export class GameListComponent implements OnInit {
         || copy.condition === this.copyFilterCondition;
 
       const matchesAvailability = this.copyFilterAvailability === 'all'
-        || (this.copyFilterAvailability === 'available' && copy.isAvailable && copy.condition !== 'lost')
-        || (this.copyFilterAvailability === 'rented' && !copy.isAvailable);
+        || (this.copyFilterAvailability === 'available' && copy.isAvailable)
+        || (this.copyFilterAvailability === 'rented' && !copy.isAvailable && copy.condition !== 'lost');
 
       return matchesSearch && matchesCondition && matchesAvailability;
     });
@@ -358,7 +362,7 @@ export class GameListComponent implements OnInit {
   }
 
   availableCount(game: Game): number {
-    return game.copies?.filter(copy => copy.isAvailable && copy.condition !== 'lost').length || 0;
+    return game.copies?.filter(copy => copy.isAvailable).length || 0;
   }
 
   conditionBadgeClass(condition: string): string {
