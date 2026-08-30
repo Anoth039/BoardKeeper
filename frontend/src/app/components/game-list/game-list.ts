@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { GameService } from '../../services/game';
 import { GameCopyService } from '../../services/game-copy';
-import { Game, GameCopy } from '../../models/game.model';
+import { CopyAuditLog, Game, GameCopy } from '../../models/game.model';
 import { GameForm } from '../game-form/game-form';
 import { AuthService } from '../../services/auth';
 
@@ -20,6 +20,10 @@ export class GameListComponent implements OnInit {
   editingGame: Game | null = null;
   selectedGameForCopies: Game | null = null;
   searchTerm = '';
+
+  showAuditLog = false;
+  auditLogs: CopyAuditLog[] = [];
+  auditLoading = false;
 
   expandedCards: { [key: number]: boolean } = {};
   hasOverflow: { [key: number]: boolean } = {};
@@ -104,6 +108,8 @@ export class GameListComponent implements OnInit {
 
   closeCopiesModal(): void {
     this.selectedGameForCopies = null;
+    this.showAuditLog = false;
+    this.auditLogs = [];
     this.resetCopyFilters();
     this.bulkMode = false;
     this.bulkPrefix = '';
@@ -402,5 +408,59 @@ export class GameListComponent implements OnInit {
     this.expandedCards[gameId] = !this.expandedCards[gameId];
     this.hasOverflow[gameId] = true;
     this.cdr.detectChanges();
+  }
+
+  openAuditLog(): void {
+    if (!this.selectedGameForCopies) return;
+    this.showAuditLog = true;
+    this.auditLoading = true;
+    this.cdr.detectChanges();
+
+    this.gameCopyService.getAuditLog(this.selectedGameForCopies.id).subscribe({
+      next: (logs) => {
+        this.auditLogs = logs;
+        this.auditLoading = false;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.auditLoading = false;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  closeAuditLog(): void {
+    this.showAuditLog = false;
+    this.auditLogs = [];
+    this.cdr.detectChanges();
+  }
+
+  auditActionLabel(action: string): string {
+    switch (action) {
+      case 'created': return 'Created';
+      case 'condition_changed': return 'Condition';
+      case 'name_changed': return 'Renamed';
+      case 'notes_changed': return 'Notes';
+      case 'deleted': return 'Deleted';
+      default: return action;
+    }
+  }
+
+  auditActionClass(action: string): string {
+    switch (action) {
+      case 'created': return 'text-success';
+      case 'deleted': return 'text-danger';
+      case 'condition_changed': return 'text-warning';
+      default: return 'text-secondary';
+    }
+  }
+
+  auditTimeAgo(dateStr: string): string {
+    const diff = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
+    if (diff < 60) return 'just now';
+    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+    const days = Math.floor(diff / 86400);
+    return days === 1 ? 'yesterday' : `${days} days ago`;
   }
 }

@@ -79,14 +79,26 @@
   </div>
 </div>
 
-<div *ngIf="selectedGameForCopies" class="modal-backdrop-custom" (click)="closeCopiesModal()">
-  <div class="modal-box" (click)="$event.stopPropagation()">
+<div class="modal-backdrop-custom" *ngIf="selectedGameForCopies" (click)="closeCopiesModal()">
+  <div class="modal-box modal-box-wide" (click)="$event.stopPropagation()">
     <div class="modal-header-custom">
-      <h5 class="mb-0">{{ selectedGameForCopies.title }} — Copies</h5>
-      <button class="btn-close" (click)="closeCopiesModal()"></button>
+      <h5 class="mb-0 text-truncate me-2" style="min-width: 0;" [title]="selectedGameForCopies.title">
+        {{ selectedGameForCopies.title }}
+      </h5>
+      <div class="d-flex align-items-center gap-2 flex-shrink-0">
+        <div class="btn-group btn-group-sm" *ngIf="isAdmin">
+          <button class="btn" [ngClass]="!showAuditLog ? 'btn-primary' : 'btn-light'" (click)="closeAuditLog()">
+            <i class="bi bi-boxes"></i>
+          </button>
+          <button class="btn" [ngClass]="showAuditLog ? 'btn-primary' : 'btn-light'" (click)="openAuditLog()">
+            <i class="bi bi-clock-history"></i>
+          </button>
+        </div>
+        <button class="btn-close" (click)="closeCopiesModal()"></button>
+      </div>
     </div>
 
-    <div class="modal-body-custom">
+    <div class="modal-body-custom" *ngIf="!showAuditLog">
       <div class="row g-2 mb-2">
         <div class="col-12">
           <input type="text" class="form-control form-control-sm" placeholder="Search by copy name/number..." [(ngModel)]="copySearchTerm"/>
@@ -173,7 +185,7 @@
         </p>
       </div>
 
-      <div *ngIf="isAdmin" class="mt-3">
+      <div class="mt-3">
         <div class="d-flex align-items-center justify-content-between mb-2">
           <h6 class="mb-0 fw-semibold">{{ bulkMode ? 'Add Multiple Copies' : 'Add a Copy' }}</h6>
           <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none text-muted" (click)="toggleBulkMode()"> 
@@ -242,7 +254,52 @@
           </div>
         </div>
       </div>
-
     </div>
+
+    <div class="modal-body-custom" *ngIf="showAuditLog">
+      <div *ngIf="auditLoading" class="text-center text-muted py-4">
+        <div class="spinner-border spinner-border-sm me-2"></div> Loading audit log...
+      </div>
+
+      <div *ngIf="!auditLoading && auditLogs.length === 0" class="text-center text-muted py-4">
+        <i class="bi bi-clock-history d-block mb-2" style="font-size: 1.8rem;"></i>
+        No changes recorded yet.
+      </div>
+
+      <div class="audit-list" *ngIf="!auditLoading && auditLogs.length > 0">
+        <div class="audit-row" *ngFor="let log of auditLogs">
+          <div class="audit-icon" [ngClass]="auditActionClass(log.action)">
+            <i class="bi" [ngClass]="{
+              'bi-plus-circle-fill': log.action === 'created',
+              'bi-trash-fill': log.action === 'deleted',
+              'bi-arrow-left-right': log.action === 'condition_changed',
+              'bi-pencil-fill': log.action === 'name_changed' || log.action === 'notes_changed',
+            }"></i>
+          </div>
+          <div class="audit-body">
+            <div class="audit-main">
+              <span class="fw-semibold">{{ log.copyNumber }}</span>
+              <span class="audit-action" [ngClass]="auditActionClass(log.action)">
+                {{ auditActionLabel(log.action) }}
+              </span>
+              <ng-container *ngIf="log.oldValue && log.newValue">
+                <span class="audit-value old">{{ log.oldValue }}</span>
+                <i class="bi bi-arrow-right audit-arrow"></i>
+                <span class="audit-value new">{{ log.newValue }}</span>
+              </ng-container>
+              <ng-container *ngIf="log.action === 'created' && log.newValue">
+                <span class="audit-value new">{{ log.newValue }}</span>
+              </ng-container>
+            </div>
+            <div class="audit-meta">
+              <span>{{ auditTimeAgo(log.createdAt) }}</span>
+              <span class="meta-divider">·</span>
+              <span>{{ log.performedBy?.email || 'Unknown' }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div>
 </div>

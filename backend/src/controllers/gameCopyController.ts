@@ -2,9 +2,21 @@ import { Request, Response } from "express";
 import { AppDataSource } from "../data-source";
 import { GameCopy } from "../entities/GameCopy";
 import { Game } from "../entities/Game";
+import { AuditAction, CopyAuditLog } from "../entities/CopyAuditLog";
+import { User } from "../entities/User";
+import { AuthenticatedRequest } from "../middleware/authMiddleware";
 
 const gameCopyRepository = AppDataSource.getRepository(GameCopy);
 const gameRepository = AppDataSource.getRepository(Game);
+
+const auditRepo = AppDataSource.getRepository(CopyAuditLog);
+const userRepo = AppDataSource.getRepository(User);
+
+async function logAudit(copy: GameCopy, gameId: number, action: AuditAction, oldValue: string | null, newValue: string | null, userId: number | null): Promise<void> {
+  const performedBy = userId ? await userRepo.findOneBy({ id: userId }) : null;
+  const log = auditRepo.create({ copy, copyNumberSnapshot: copy.copyNumber, gameId, action, oldValue, newValue, performedBy });
+  await auditRepo.save(log);
+}
 
 // GET /api/game-copies
 export const getAllGameCopies = async (req: Request, res: Response) => {
@@ -36,15 +48,16 @@ export const getGameCopyById = async (req: Request, res: Response) => {
 };
 
 // POST /api/game-copies
-export const createGameCopy = async (req: Request, res: Response) => {
+export const createGameCopy = async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const { gameId, condition, copyNumber } = req.body;
+    const { gameId, copyNumber, condition } = req.body;
 
-    if (!gameId) {
-      return res.status(400).json({ message: "gameId is required" });
+    if (!gameId || !copyNumber) {
+      return res.status(400).json({ message: "gameId and copyNumber are required" });
     }
 
-    if (!copyNumber || copyNumber.trim().length < 3 || copyNumber.trim().length > 12) {
+    const trimmed = copyNumber.trim();
+    if (trimmed.length < 3 || trimmed.length > 12) {
       return res.status(400).json({ message: "copyNumber must be between 3 and 12 characters" });
     }
 
@@ -53,35 +66,39 @@ export const createGameCopy = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "Game not found" });
     }
 
-    const existingCopy = await gameCopyRepository
+    const existing = await gameCopyRepository
       .createQueryBuilder("copy")
       .where("copy.game.id = :gameId", { gameId })
-      .andWhere("LOWER(copy.copyNumber) = LOWER(:copyNumber)", { copyNumber: copyNumber.trim() })
+      .andWhere("LOWER(copy.copyNumber) = LOWER(:copyNumber)", { copyNumber: trimmed })
       .getOne();
 
-    if (existingCopy) {
-      return res.status(409).json({ message: "A copy with this name already exists for this game" });
+    if (existing) {
+      return res.status(409).json({ message: `A copy named "${trimmed}" already exists for this game` });
     }
 
     const copy = gameCopyRepository.create({
       game,
-      condition,
-      copyNumber: copyNumber.trim(),
+      copyNumber: trimmed,
+      condition: condition || "good",
+      isAvailable: true,
     });
 
-    const savedCopy = await gameCopyRepository.save(copy);
-    res.status(201).json(savedCopy);
+    const saved = await gameCopyRepository.save(copy);
+
+    await logAudit(saved, game.id, AuditAction.CREATED, null, `Condition: ${saved.condition}`, req.user?.userId ?? null);
+
+    res.status(201).json(saved);
   } catch (error) {
-    res.status(500).json({ message: "Failed to create game copy", error });
+    res.status(500).json({ message: "Failed to create copy", error });
   }
 };
 
-export const createGameCopiesBulk = async (req: Request, res: Response) => {
+export const createGameCopiesBulk = async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { gameId, condition, prefix, startNumber, quantity } = req.body;
 
     if (!gameId || !prefix?.trim() || !quantity || quantity < 1 || quantity > 20) {
-      return res.status(400).json({ message: "Please provide a valid game ID, a prefix, and a quantity between 1 and 20." });
+      return res.status(400).json({ message: "gameId, prefix, and quantity (1–20) are required" });
     }
 
     const game = await gameRepository.findOneBy({ id: gameId });
@@ -116,6 +133,11 @@ export const createGameCopiesBulk = async (req: Request, res: Response) => {
     }
 
     const saved = await gameCopyRepository.save(copies);
+
+    for (const copy of saved) {
+      await logAudit(copy, gameId, AuditAction.CREATED, null, `Condition: ${copy.condition}`, req.user?.userId ?? null);
+    }
+
     res.status(201).json(saved);
   } catch (error) {
     res.status(500).json({ message: "Failed to create copies", error });
@@ -123,85 +145,101 @@ export const createGameCopiesBulk = async (req: Request, res: Response) => {
 };
 
 // PUT /api/game-copies/:id
-export const updateGameCopy = async (req: Request, res: Response) => {
+export const updateGameCopy = async (req: AuthenticatedRequest, res: Response) => {
   try {
     const id = Number(req.params.id);
     const copy = await gameCopyRepository.findOne({
       where: { id },
-      relations: { game: true, rentals: true },
+      relations: { game: true },
     });
 
     if (!copy) {
-      return res.status(404).json({ message: "Game copy not found" });
+      return res.status(404).json({ message: "GameCopy not found" });
     }
 
-    const hasActiveRental = copy.rentals?.some((rental) => rental.status === "active");
+    const { copyNumber, condition, notes } = req.body;
+    const userId = req.user?.userId ?? null;
+    const gameId = copy.game.id;
 
-    if (hasActiveRental) {
-      return res.status(409).json({
-        message: "Cannot update this copy — it is currently rented out.",
-      });
+    if (copyNumber !== undefined && copyNumber.trim() !== copy.copyNumber) {
+      const trimmed = copyNumber.trim();
+      if (trimmed.length < 3 || trimmed.length > 12) {
+        return res.status(400).json({ message: "copyNumber must be between 3 and 12 characters" });
+      }
+      await logAudit(copy, gameId, AuditAction.NAME_CHANGED, copy.copyNumber, trimmed, userId);
+      copy.copyNumber = trimmed;
     }
 
-    const { copyNumber, condition } = req.body;
-
-    if (!copyNumber || copyNumber.trim().length < 3 || copyNumber.trim().length > 12) {
-      return res.status(400).json({ message: "copyNumber must be between 3 and 12 characters" });
-    }
-
-    const existingCopy = await gameCopyRepository
-      .createQueryBuilder("copy")
-      .where("copy.game.id = :gameId", { gameId: copy.game.id })
-      .andWhere("LOWER(copy.copyNumber) = LOWER(:copyNumber)", { copyNumber: copyNumber.trim() })
-      .andWhere("copy.id != :id", { id })
-      .getOne();
-
-    if (existingCopy) {
-      return res.status(409).json({ message: "A copy with this name already exists for this game" });
-    }
-
-    if (condition) {
+    if (condition !== undefined && condition !== copy.condition) {
+      await logAudit(copy, gameId, AuditAction.CONDITION_CHANGED, copy.condition, condition, userId);
+      copy.condition = condition;
       if (condition === "lost") {
-        req.body.isAvailable = false;
-      } else {
-        req.body.isAvailable = true;
+        copy.isAvailable = false;
+      } else if (copy.condition !== "lost") {
+        copy.isAvailable = true;
       }
     }
 
-    req.body.copyNumber = copyNumber.trim();
-    gameCopyRepository.merge(copy, req.body);
-    const updatedCopy = await gameCopyRepository.save(copy);
-    res.json(updatedCopy);
+    if (notes !== undefined && notes !== copy.notes) {
+      await logAudit(copy, gameId, AuditAction.NOTES_CHANGED, copy.notes || null, notes || null, userId);
+      copy.notes = notes;
+    }
+
+    const updated = await gameCopyRepository.save(copy);
+    res.json(updated);
   } catch (error) {
-    res.status(500).json({ message: "Failed to update game copy", error });
+    res.status(500).json({ message: "Failed to update copy", error });
   }
 };
 
 // DELETE /api/game-copies/:id
-export const deleteGameCopy = async (req: Request, res: Response) => {
+export const deleteGameCopy = async (req: AuthenticatedRequest, res: Response) => {
   try {
     const id = Number(req.params.id);
-
     const copy = await gameCopyRepository.findOne({
       where: { id },
-      relations: { rentals: true },
+      relations: { rentals: true, game: true },
     });
 
     if (!copy) {
-      return res.status(404).json({ message: "Game copy not found" });
+      return res.status(404).json({ message: "GameCopy not found" });
     }
 
-    const hasActiveRental = copy.rentals?.some(rental => rental.status === "active");
-
-    if (hasActiveRental) {
-      return res.status(409).json({
-        message: "Cannot delete this copy — it is currently rented out.",
-      });
+    const hasActiveRentals = copy.rentals?.some(r => r.status === "active");
+    if (hasActiveRentals) {
+      return res.status(409).json({ message: "Cannot delete a copy that is currently rented out" });
     }
+
+    await logAudit(copy, copy.game.id, AuditAction.DELETED, copy.condition, null, req.user?.userId ?? null);
 
     await gameCopyRepository.delete(id);
     res.status(204).send();
   } catch (error) {
-    res.status(500).json({ message: "Failed to delete game copy", error });
+    res.status(500).json({ message: "Failed to delete copy", error });
+  }
+};
+
+export const getCopyAuditLog = async (req: Request, res: Response) => {
+  try {
+    const gameId = Number(req.params.gameId);
+
+    const logs = await auditRepo
+      .createQueryBuilder("log")
+      .leftJoinAndSelect("log.performedBy", "user")
+      .where("log.game_id = :gameId", { gameId })
+      .orderBy("log.created_at", "DESC")
+      .getMany();
+
+    res.json(logs.map(log => ({
+      id: log.id,
+      copyNumber: log.copyNumberSnapshot,
+      action: log.action,
+      oldValue: log.oldValue,
+      newValue: log.newValue,
+      performedBy: log.performedBy ? { email: log.performedBy.email } : null,
+      createdAt: log.createdAt,
+    })));
+  } catch (error) {
+    res.status(500).json({ message: "Failed to fetch audit log", error });
   }
 };

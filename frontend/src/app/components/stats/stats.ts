@@ -64,11 +64,12 @@ export class StatsPage implements OnInit, AfterViewInit, OnDestroy {
   private renderTopGames(): void {
     if (!this.topGamesCanvas || !this.stats) return;
     const games = this.stats.topGamesThisMonth;
+    const truncate = (str: string, len = 15) => str.length > len ? str.slice(0, len) + '…' : str;
 
     const chart = new Chart(this.topGamesCanvas.nativeElement, {
       type: 'bar',
       data: {
-        labels: games.length ? games.map(g => g.title) : ['No data'],
+        labels: games.length ? games.map(g => truncate(g.title)) : ['No data'],
         datasets: [{
           label: 'Rentals',
           data: games.length ? games.map(g => Number(g.rentalCount)) : [0],

@@ -32,3 +32,13 @@ export interface GameCopy {
   rentals?: Rental[];
   createdAt: string;
 }
+
+export interface CopyAuditLog {
+  id: number;
+  copyNumber: string;
+  action: string;
+  oldValue: string | null;
+  newValue: string | null;
+  performedBy: { email: string } | null;
+  createdAt: string;
+}

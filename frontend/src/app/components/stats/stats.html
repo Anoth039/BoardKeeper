@@ -114,12 +114,12 @@
             <ul class="list-group list-group-flush" *ngIf="stats.unusedGames.length > 0">
               <li class="list-group-item d-flex align-items-center gap-3 py-2 px-3" *ngFor="let game of stats.unusedGames; let i = index">
                 <span class="unused-rank">{{ i + 1 }}</span>
-                <img *ngIf="game.imageUrl" [src]="game.imageUrl" class="unused-thumb" [alt]="game.title" />
+                <img *ngIf="game.imageUrl" [src]="game.imageUrl" class="unused-thumb" [alt]="game.title"/>
                 <div *ngIf="!game.imageUrl" class="unused-thumb unused-thumb-placeholder">
                   <i class="bi bi-dice-5-fill"></i>
                 </div>
-                <div class="flex-grow-1 min-w-0">
-                  <div class="fw-semibold text-truncate">{{ game.title }}</div>
+                <div class="flex-grow-1" style="min-width: 0;">
+                  <div class="fw-semibold text-truncate" [title]="game.title">{{ game.title }}</div>
                   <small class="text-muted">{{ unusedGameLabel(game) }}</small>
                 </div>
               </li>
