@@ -6,6 +6,7 @@ import { GameService } from '../../services/game';
 import { Game } from '../../models/game.model';
 import { AutofocusDirective } from '../../directives/autofocus';
 import { DialogService } from '../../services/dialog';
+import { ToastService } from '../../services/toast';
 
 function maxNotLessThanMinValidator(group: AbstractControl): ValidationErrors | null {
   const min = group.get('minPlayers')?.value;
@@ -32,12 +33,12 @@ export class GameForm implements OnInit, OnChanges {
 
   form: FormGroup;
   submitting = false;
-  errorMessage = '';
 
   presetCategories = PRESET_CATEGORIES;
   customCategoryInput = '';
 
-  constructor(private fb: FormBuilder, private gameService: GameService, private cdr: ChangeDetectorRef, private dialogService: DialogService) {
+  constructor(private fb: FormBuilder, private gameService: GameService, private cdr: ChangeDetectorRef,
+    private dialogService: DialogService, private toastService: ToastService) {
     this.form = this.fb.group({
       title: ['', Validators.required],
       description: [''],
@@ -106,7 +107,6 @@ export class GameForm implements OnInit, OnChanges {
       current.push(cat);
     }
 
-    this.errorMessage = '';
     this.form.patchValue({ categories: current });
     this.form.markAsDirty();
     this.cdr.detectChanges();
@@ -123,7 +123,7 @@ export class GameForm implements OnInit, OnChanges {
     );
 
     if (existingCategory) {
-      this.errorMessage = `Category "${existingCategory}" has already been added.`;
+      this.toastService.error(`Category "${existingCategory}" has already been added.`);
       this.cdr.detectChanges();
       return;
     }
@@ -134,7 +134,6 @@ export class GameForm implements OnInit, OnChanges {
     this.form.patchValue({ categories: updated });
     this.form.markAsDirty();
     this.customCategoryInput = '';
-    this.errorMessage = '';
     this.cdr.detectChanges();
   }
 
@@ -142,7 +141,6 @@ export class GameForm implements OnInit, OnChanges {
     const current = this.selectedCategories.filter(c => c !== cat);
     this.form.patchValue({ categories: current });
     this.form.markAsDirty();
-    this.errorMessage = '';
     this.cdr.detectChanges();
   }
 
@@ -154,7 +152,6 @@ export class GameForm implements OnInit, OnChanges {
     }
 
     this.submitting = true;
-    this.errorMessage = '';
 
     const { categories, ...formValues } = this.form.value;
 
@@ -168,6 +165,8 @@ export class GameForm implements OnInit, OnChanges {
     request.subscribe({
       next: () => {
         this.submitting = false;
+        const actionLabel = this.isEditMode ? 'updated' : 'created';
+        this.toastService.success(`Game "${payload.title}" ${actionLabel} successfully.`);
         if (!this.isEditMode) {
           this.form.reset({ minPlayers: 1, maxPlayers: 4, categories: [] });
         }
@@ -176,7 +175,7 @@ export class GameForm implements OnInit, OnChanges {
       },
       error: (err) => {
         this.submitting = false;
-        this.errorMessage = err.error?.message || 'Failed to save game. Please check the fields and try again.';
+        this.toastService.error(err.error?.message || 'Failed to save game. Please check the fields and try again.');
         console.error(err);
         this.cdr.detectChanges();
       }

@@ -5,11 +5,12 @@ import { NavbarComponent } from './components/navbar/navbar';
 import { filter } from 'rxjs';
 import { BackToTopComponent } from './components/back-to-top/back-to-top';
 import { DialogComponent } from './components/dialog/dialog';
+import { ToastComponent } from './components/toast/toast';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, CommonModule, NavbarComponent, BackToTopComponent, DialogComponent],
+  imports: [RouterOutlet, CommonModule, NavbarComponent, BackToTopComponent, DialogComponent, ToastComponent],
   templateUrl: './app.html',
   styleUrl: './app.css'
 })

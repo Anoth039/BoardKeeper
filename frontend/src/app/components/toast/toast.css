@@ -1,0 +1,17 @@
+.toast-container-fixed {
+  position: fixed;
+  bottom: 0;
+  right: 0;
+  padding: 1rem;
+  z-index: 1080;
+}
+
+.toast.toast-danger {
+  background-color: var(--bs-danger, #dc3545);
+  color: #ffffff;
+}
+
+.toast.toast-success {
+  background-color: var(--bs-success, #198754);
+  color: #ffffff;
+}

@@ -8,6 +8,7 @@ import { Member } from '../../models/member.model';
 import { Game, GameCopy } from '../../models/game.model';
 import { AutofocusDirective } from '../../directives/autofocus';
 import { DialogService } from '../../services/dialog';
+import { ToastService } from '../../services/toast';
 
 @Component({
   selector: 'app-rental-form',
@@ -39,10 +40,9 @@ export class RentalForm implements OnInit {
   dueDate = this.inOneWeek();
 
   submitting = false;
-  errorMessage = '';
 
   constructor(private rentalService: RentalService, private memberService: MemberService, private gameService: GameService,
-    private cdr: ChangeDetectorRef, private elementRef: ElementRef, private dialogService: DialogService) {}
+    private cdr: ChangeDetectorRef, private elementRef: ElementRef, private dialogService: DialogService, private toastService: ToastService) {}
 
   ngOnInit(): void {
     this.memberService.getAll().subscribe({
@@ -50,7 +50,10 @@ export class RentalForm implements OnInit {
         this.members = data.filter(m => m.isActive);
         this.cdr.detectChanges();
       },
-      error: (err) => console.error('Failed to load members', err)
+      error: (err) => {
+        console.error('Failed to load members', err);
+        this.toastService.error('Failed to load active members.');
+      }
     });
 
     this.gameService.getAll().subscribe({
@@ -58,7 +61,10 @@ export class RentalForm implements OnInit {
         this.games = data;
         this.cdr.detectChanges();
       },
-      error: (err) => console.error('Failed to load games', err)
+      error: (err) => {
+        console.error('Failed to load games', err);
+        this.toastService.error('Failed to load games.');
+      }
     });
   }
 
@@ -185,21 +191,21 @@ export class RentalForm implements OnInit {
   }
 
   onSubmit(): void {
-    this.errorMessage = '';
-
     if (!this.selectedMemberId || !this.selectedCopyId || !this.rentalDate || !this.dueDate) {
-      this.errorMessage = 'Please fill in all fields.';
+      this.toastService.error('Please fill in all fields.');
       this.cdr.detectChanges();
       return;
     }
 
     if (this.dueDate < this.rentalDate) {
-      this.errorMessage = 'Due date cannot be before the rental date.';
+      this.toastService.error('Due date cannot be before the rental date.');
       this.cdr.detectChanges();
       return;
     }
 
     this.submitting = true;
+
+    const gameTitle = this.selectedGame?.title || 'Game';
 
     this.rentalService.create({
       memberId: this.selectedMemberId,
@@ -209,12 +215,14 @@ export class RentalForm implements OnInit {
     }).subscribe({
       next: () => {
         this.submitting = false;
+        this.toastService.success(`Rental for "${gameTitle}" created successfully.`);
         this.rentalCreated.emit();
         this.cdr.detectChanges();
       },
       error: (err) => {
         this.submitting = false;
-        this.errorMessage = err.error?.message || 'Failed to create rental.';
+        const message = err.error?.message || 'Failed to create rental.';
+        this.toastService.error(message);
         console.error(err);
         this.cdr.detectChanges();
       }

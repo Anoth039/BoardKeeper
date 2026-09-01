@@ -1,8 +1,9 @@
-import { Component, ChangeDetectorRef } from '@angular/core';
+import { Component, ChangeDetectorRef, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
 import { AuthService } from '../../services/auth';
+import { ToastService } from '../../services/toast';
 
 function passwordsMatchValidator(group: AbstractControl): ValidationErrors | null {
   const password = group.get('password')?.value;
@@ -17,25 +18,30 @@ function passwordsMatchValidator(group: AbstractControl): ValidationErrors | nul
   templateUrl: './register.html',
   styleUrl: './register.css'
 })
-export class Register {
+export class Register implements OnDestroy {
   form: FormGroup;
   submitting = false;
   sendingCode = false;
-  errorMessage = '';
-  successMessage = '';
   codeSent = false;
   cooldownSeconds = 0;
   showPassword = false;
   showConfirmPassword = false;
   private cooldownInterval: any;
 
-  constructor(private fb: FormBuilder, private authService: AuthService, private router: Router, private cdr: ChangeDetectorRef) {
+  constructor(private fb: FormBuilder, private authService: AuthService, private router: Router,
+    private cdr: ChangeDetectorRef, private toastService: ToastService) {
     this.form = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
       verificationCode: ['', [Validators.required, Validators.pattern(/^\d{6}$/)]],
       password: ['', [Validators.required, Validators.minLength(8)]],
       confirmPassword: ['', Validators.required]
     }, { validators: passwordsMatchValidator });
+  }
+
+  ngOnDestroy(): void {
+    if (this.cooldownInterval) {
+      clearInterval(this.cooldownInterval);
+    }
   }
 
   get canSendCode(): boolean {
@@ -52,13 +58,12 @@ export class Register {
     }
 
     this.sendingCode = true;
-    this.errorMessage = '';
 
     this.authService.sendVerificationCode(email).subscribe({
       next: () => {
         this.sendingCode = false;
         this.codeSent = true;
-        this.successMessage = 'A 6-digit code has been sent to your email.';
+        this.toastService.success('A 6-digit code has been sent to your email.');
         this.startCooldown(60);
         this.cdr.detectChanges();
       },
@@ -67,7 +72,8 @@ export class Register {
         if (err.status === 429 && err.error?.retryAfterSeconds) {
           this.startCooldown(err.error.retryAfterSeconds);
         }
-        this.errorMessage = err.error?.message || 'Failed to send code.';
+        const message = err.error?.message || 'Failed to send code.';
+        this.toastService.error(message);
         this.cdr.detectChanges();
       }
     });
@@ -91,22 +97,20 @@ export class Register {
     }
 
     this.submitting = true;
-    this.errorMessage = '';
-    this.successMessage = '';
 
     const { email, password, verificationCode } = this.form.value;
 
     this.authService.register(email, password, verificationCode).subscribe({
       next: () => {
         this.submitting = false;
-        this.successMessage = 'Account created successfully!';
-        this.form.reset();
-        this.codeSent = false;
+        this.toastService.success('Account created successfully! Please log in.');
+        this.router.navigate(['/login']);
         this.cdr.detectChanges();
       },
       error: (err) => {
         this.submitting = false;
-        this.errorMessage = err.error?.message || 'Registration failed. Please try again.';
+        const message = err.error?.message || 'Registration failed. Please try again.';
+        this.toastService.error(message);
         this.cdr.detectChanges();
       }
     });

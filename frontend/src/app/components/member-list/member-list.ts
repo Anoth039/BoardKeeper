@@ -8,6 +8,7 @@ import { RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth';
 import { isRentalOverdue } from '../../models/rental.model';
 import { DialogService } from '../../services/dialog';
+import { ToastService } from '../../services/toast';
 
 @Component({
   selector: 'app-member-list',
@@ -19,13 +20,13 @@ import { DialogService } from '../../services/dialog';
 export class MemberListComponent implements OnInit {
   members: Member[] = [];
   searchTerm = '';
-  successMessage = '';
   sortAsc = true;
   showForm = false;
   editingMember: Member | null = null;
   copiedMemberId: number | null = null;
 
-  constructor(private memberService: MemberService, private cdr: ChangeDetectorRef, public authService: AuthService, private dialogService: DialogService) {}
+  constructor(private memberService: MemberService, private cdr: ChangeDetectorRef, public authService: AuthService,
+    private dialogService: DialogService, private toastService: ToastService) {}
 
   ngOnInit(): void {
     this.loadMembers();
@@ -39,6 +40,7 @@ export class MemberListComponent implements OnInit {
       },
       error: (err) => {
         console.error('Failed to load members', err);
+        this.toastService.error('Failed to load members.');
         this.cdr.detectChanges();
       }
     });
@@ -81,13 +83,12 @@ export class MemberListComponent implements OnInit {
   copyEmail(email: string, memberId: number): void {
     navigator.clipboard.writeText(email).then(() => {
       this.copiedMemberId = memberId;
-      this.successMessage = 'Email copied to clipboard!';
+      this.toastService.success('Email copied to clipboard!');
       this.cdr.detectChanges();
 
       setTimeout(() => {
         if (this.copiedMemberId === memberId) {
           this.copiedMemberId = null;
-          this.successMessage = '';
           this.cdr.detectChanges();
         }
       }, 2000);
@@ -128,7 +129,7 @@ export class MemberListComponent implements OnInit {
           const activeRentalCount = fullMember.rentals?.filter(r => r.status === 'active').length || 0;
 
           if (activeRentalCount > 0) {
-            alert(`Cannot deactivate ${member.firstName} ${member.lastName} — they have ${activeRentalCount} active rental(s). Please return them first.`);
+            this.toastService.error(`Cannot deactivate ${member.firstName} ${member.lastName} — they have ${activeRentalCount} active rental(s). Please return them first.`);
             this.cdr.detectChanges();
             return;
           }
@@ -137,6 +138,7 @@ export class MemberListComponent implements OnInit {
         },
         error: (err) => {
           console.error('Failed to check member rentals', err);
+          this.toastService.error('Failed to check member status.');
           this.cdr.detectChanges();
         }
       });
@@ -161,11 +163,13 @@ export class MemberListComponent implements OnInit {
     this.memberService.update(member.id, { isActive: newStatus }).subscribe({
       next: (updated) => {
         member.isActive = updated.isActive;
+        const statusMsg = updated.isActive ? 'reactivated' : 'deactivated';
+        this.toastService.success(`Member "${memberName}" ${statusMsg}.`);
         this.cdr.detectChanges();
       },
       error: (err) => {
         const message = err.error?.message || 'Failed to update member status.';
-        alert(message);
+        this.toastService.error(message);
         console.error(err);
         this.cdr.detectChanges();
       }
@@ -186,11 +190,12 @@ export class MemberListComponent implements OnInit {
     this.memberService.delete(member.id).subscribe({
       next: () => {
         this.members = this.members.filter(m => m.id !== member.id);
+        this.toastService.success(`Member "${memberName}" deleted.`);
         this.cdr.detectChanges();
       },
       error: (err) => {
         const message = err.error?.message || 'Failed to delete this member.';
-        alert(message);
+        this.toastService.error(message);
         console.error(err);
         this.cdr.detectChanges();
       }

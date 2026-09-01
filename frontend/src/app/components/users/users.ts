@@ -4,6 +4,7 @@ import { UserService } from '../../services/user';
 import { SystemUser } from '../../models/user.model';
 import { FormsModule } from '@angular/forms';
 import { DialogService } from '../../services/dialog';
+import { ToastService } from '../../services/toast';
 
 @Component({
   selector: 'app-users',
@@ -17,7 +18,8 @@ export class UsersPage implements OnInit {
   searchTerm = '';
   loading = true;
 
-  constructor(private userService: UserService, private cdr: ChangeDetectorRef, private dialogService: DialogService) {}
+  constructor(private userService: UserService, private cdr: ChangeDetectorRef, 
+    private dialogService: DialogService, private toastService: ToastService) {}
 
   ngOnInit(): void {
     this.loadUsers();
@@ -32,6 +34,7 @@ export class UsersPage implements OnInit {
       },
       error: (err) => {
         console.error('Failed to load users', err);
+        this.toastService.error('Failed to load users.');
         this.loading = false;
         this.cdr.detectChanges();
       }
@@ -66,10 +69,13 @@ export class UsersPage implements OnInit {
     this.userService.toggleApproval(user.id).subscribe({
       next: (updated) => {
         user.isApproved = updated.isApproved;
+        const actionLabel = updated.isApproved ? 'approved' : 'revoked access for';
+        this.toastService.success(`Successfully ${actionLabel} ${user.email}.`);
         this.cdr.detectChanges();
       },
       error: (err) => {
-        alert(err.error?.message || 'Failed to update user.');
+        const message = err.error?.message || 'Failed to update user.';
+        this.toastService.error(message);
         this.cdr.detectChanges();
       }
     });
@@ -87,10 +93,12 @@ export class UsersPage implements OnInit {
     this.userService.delete(user.id).subscribe({
       next: () => {
         this.users = this.users.filter(u => u.id !== user.id);
+        this.toastService.success(`User ${user.email} deleted.`);
         this.cdr.detectChanges();
       },
       error: (err) => {
-        alert(err.error?.message || 'Failed to delete user.');
+        const message = err.error?.message || 'Failed to delete user.';
+        this.toastService.error(message);
         this.cdr.detectChanges();
       }
     });

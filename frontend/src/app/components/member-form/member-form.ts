@@ -5,6 +5,7 @@ import { MemberService } from '../../services/member';
 import { Member } from '../../models/member.model';
 import { AutofocusDirective } from '../../directives/autofocus';
 import { DialogService } from '../../services/dialog';
+import { ToastService } from '../../services/toast';
 
 @Component({
   selector: 'app-member-form',
@@ -20,9 +21,9 @@ export class MemberForm implements OnInit, OnChanges {
 
   form: FormGroup;
   submitting = false;
-  errorMessage = '';
 
-  constructor(private fb: FormBuilder, private memberService: MemberService, private cdr: ChangeDetectorRef, private dialogService: DialogService) {
+  constructor(private fb: FormBuilder, private memberService: MemberService, private cdr: ChangeDetectorRef,
+    private dialogService: DialogService, private toastService: ToastService) {
     this.form = this.fb.group({
       firstName: ['', Validators.required],
       lastName: ['', Validators.required],
@@ -64,7 +65,6 @@ export class MemberForm implements OnInit, OnChanges {
     }
 
     this.submitting = true;
-    this.errorMessage = '';
 
     const request = this.isEditMode
       ? this.memberService.update(this.memberToEdit!.id, this.form.value)
@@ -73,6 +73,10 @@ export class MemberForm implements OnInit, OnChanges {
     request.subscribe({
       next: () => {
         this.submitting = false;
+        const memberName = `${this.form.value.firstName} ${this.form.value.lastName}`;
+        const actionLabel = this.isEditMode ? 'updated' : 'created';
+        this.toastService.success(`Member "${memberName}" ${actionLabel} successfully.`);
+        
         if (!this.isEditMode) {
           this.form.reset();
         }
@@ -82,9 +86,9 @@ export class MemberForm implements OnInit, OnChanges {
       error: (err) => {
         this.submitting = false;
         if (err.status === 409) {
-          this.errorMessage = 'A member with this email already exists.';
+          this.toastService.error('A member with this email already exists.');
         } else {
-          this.errorMessage = 'Failed to save member. Please check the fields and try again.';
+          this.toastService.error('Failed to save member. Please check the fields and try again.');
         }
         console.error(err);
         this.cdr.detectChanges();

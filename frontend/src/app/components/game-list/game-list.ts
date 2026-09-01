@@ -7,6 +7,7 @@ import { CopyAuditLog, Game, GameCopy } from '../../models/game.model';
 import { GameForm } from '../game-form/game-form';
 import { AuthService } from '../../services/auth';
 import { DialogService } from '../../services/dialog';
+import { ToastService } from '../../services/toast';
 
 @Component({
   selector: 'app-game-list',
@@ -32,7 +33,6 @@ export class GameListComponent implements OnInit {
   newCopyCondition = 'new';
   newCopyNumber = '';
   addingCopy = false;
-  errorMessage = '';
 
   bulkMode = false;
   bulkPrefix = '';
@@ -50,8 +50,8 @@ export class GameListComponent implements OnInit {
   copyFilterCondition = 'all';
   copyFilterAvailability = 'all';
 
-  constructor(private gameService: GameService, private gameCopyService: GameCopyService, private cdr: ChangeDetectorRef, 
-    public authService: AuthService, private dialogService: DialogService) {}
+  constructor(private gameService: GameService, private gameCopyService: GameCopyService, private cdr: ChangeDetectorRef,
+    public authService: AuthService, private dialogService: DialogService, private toastService: ToastService) {}
 
   ngOnInit(): void {
     this.loadGames();
@@ -69,6 +69,7 @@ export class GameListComponent implements OnInit {
       },
       error: (err) => {
         console.error('Failed to load games', err);
+        this.toastService.error('Failed to load games.');
         this.cdr.detectChanges();
       }
     });
@@ -120,7 +121,6 @@ export class GameListComponent implements OnInit {
   resetNewCopyForm(): void {
     this.newCopyCondition = 'new';
     this.newCopyNumber = '';
-    this.errorMessage = '';
     this.cdr.detectChanges();
   }
 
@@ -130,7 +130,7 @@ export class GameListComponent implements OnInit {
     const trimmedNumber = this.newCopyNumber.trim();
 
     if (trimmedNumber.length < 3 || trimmedNumber.length > 12) {
-      this.errorMessage = 'Copy name/number must be between 3 and 12 characters.';
+      this.toastService.error('Copy name/number must be between 3 and 12 characters.');
       this.cdr.detectChanges();
       return;
     }
@@ -140,13 +140,12 @@ export class GameListComponent implements OnInit {
     );
 
     if (isDuplicate) {
-      this.errorMessage = 'A copy with this name already exists for this game.';
+      this.toastService.error('A copy with this name already exists for this game.');
       this.cdr.detectChanges();
       return;
     }
 
     this.addingCopy = true;
-    this.errorMessage = '';
     this.cdr.detectChanges();
 
     this.gameCopyService.create({
@@ -156,12 +155,13 @@ export class GameListComponent implements OnInit {
     }).subscribe({
       next: () => {
         this.addingCopy = false;
+        this.toastService.success('Copy added successfully.');
         this.resetNewCopyForm();
         this.loadGames();
       },
       error: (err) => {
         this.addingCopy = false;
-        this.errorMessage = err.error?.message || 'Failed to add copy.';
+        this.toastService.error(err.error?.message || 'Failed to add copy.');
         console.error(err);
         this.cdr.detectChanges();
       }
@@ -181,7 +181,6 @@ export class GameListComponent implements OnInit {
     this.bulkQuantity = 2;
     this.bulkStartNumber = 1;
     this.bulkCondition = 'new';
-    this.errorMessage = '';
     this.cdr.detectChanges();
   }
 
@@ -190,13 +189,12 @@ export class GameListComponent implements OnInit {
 
     const invalid = this.bulkPreview.find(n => n.length < 3 || n.length > 12);
     if (invalid) {
-      this.errorMessage = `Generated name "${invalid}" is invalid (must be 3–12 characters). Use a shorter prefix.`;
+      this.toastService.error(`Generated name "${invalid}" is invalid (must be 3–12 characters). Use a shorter prefix.`);
       this.cdr.detectChanges();
       return;
     }
 
     this.addingBulk = true;
-    this.errorMessage = '';
 
     this.gameCopyService.createBulk({
       gameId: this.selectedGameForCopies.id,
@@ -214,18 +212,18 @@ export class GameListComponent implements OnInit {
         const gameInList = this.games.find(g => g.id === this.selectedGameForCopies!.id);
         if (gameInList) gameInList.copies = this.selectedGameForCopies!.copies;
         this.bulkStartNumber = this.bulkStartNumber + this.bulkQuantity;
+        this.toastService.success(`Added ${newCopies.length} copy/copies.`);
         this.cdr.detectChanges();
       },
       error: (err) => {
         this.addingBulk = false;
-        this.errorMessage = err.error?.message || 'Failed to add copies.';
+        this.toastService.error(err.error?.message || 'Failed to add copies.');
         this.cdr.detectChanges();
       }
     });
   }
 
   startEditCopy(copy: GameCopy): void {
-    this.errorMessage = '';
     this.editingCopyId = copy.id;
     this.editCopyCondition = copy.condition;
     this.editCopyNumber = copy.copyNumber || '';
@@ -234,7 +232,6 @@ export class GameListComponent implements OnInit {
   }
 
   cancelEditCopy(): void {
-    this.errorMessage = '';
     this.editingCopyId = null;
     this.editCopyNotes = '';
     this.cdr.detectChanges();
@@ -244,7 +241,7 @@ export class GameListComponent implements OnInit {
     const trimmedNumber = this.editCopyNumber.trim();
 
     if (trimmedNumber.length < 3 || trimmedNumber.length > 12) {
-      this.errorMessage = 'Copy name/number must be between 3 and 12 characters.';
+      this.toastService.error('Copy name/number must be between 3 and 12 characters.');
       this.cdr.detectChanges();
       return;
     }
@@ -254,12 +251,11 @@ export class GameListComponent implements OnInit {
     );
 
     if (isDuplicate) {
-      this.errorMessage = 'A copy with this name already exists for this game.';
+      this.toastService.error('A copy with this name already exists for this game.');
       this.cdr.detectChanges();
       return;
     }
 
-    this.errorMessage = '';
     this.cdr.detectChanges();
 
     const isAvailable = this.editCopyCondition !== 'lost';
@@ -282,11 +278,12 @@ export class GameListComponent implements OnInit {
         }
         this.editingCopyId = null;
         this.editCopyNotes = '';
+        this.toastService.success('Copy updated successfully.');
         this.cdr.detectChanges();
         this.loadGames();
       },
       error: (err) => {
-        this.errorMessage = err.error?.message || 'Failed to update copy.';
+        this.toastService.error(err.error?.message || 'Failed to update copy.');
         console.error(err);
         this.cdr.detectChanges();
       }
@@ -304,11 +301,12 @@ export class GameListComponent implements OnInit {
 
     this.gameCopyService.delete(copy.id).subscribe({
       next: () => {
+        this.toastService.success(`Copy #${copy.copyNumber} deleted.`);
         this.loadGames();
       },
       error: (err) => {
         const message = err.error?.message || 'Failed to delete this copy. Please try again.';
-        alert(message);
+        this.toastService.error(message);
         console.error(err);
         this.cdr.detectChanges();
       }
@@ -332,11 +330,12 @@ export class GameListComponent implements OnInit {
     this.gameService.delete(game.id).subscribe({
       next: () => {
         this.games = this.games.filter(g => g.id !== game.id);
+        this.toastService.success(`"${game.title}" deleted.`);
         this.cdr.detectChanges();
       },
       error: (err) => {
         const message = err.error?.message || 'Failed to delete this game. Please try again.';
-        alert(message);
+        this.toastService.error(message);
         console.error(err);
         this.cdr.detectChanges();
       }
@@ -439,6 +438,7 @@ export class GameListComponent implements OnInit {
       },
       error: () => {
         this.auditLoading = false;
+        this.toastService.error('Failed to load audit log.');
         this.cdr.detectChanges();
       }
     });

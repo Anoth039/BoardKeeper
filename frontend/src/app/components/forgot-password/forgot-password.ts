@@ -1,8 +1,9 @@
-import { Component, ChangeDetectorRef } from '@angular/core';
+import { Component, ChangeDetectorRef, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
 import { AuthService } from '../../services/auth';
+import { ToastService } from '../../services/toast';
 
 function passwordsMatchValidator(group: AbstractControl): ValidationErrors | null {
   const password = group.get('newPassword')?.value;
@@ -17,7 +18,7 @@ function passwordsMatchValidator(group: AbstractControl): ValidationErrors | nul
   templateUrl: './forgot-password.html',
   styleUrl: './forgot-password.css'
 })
-export class ForgotPassword {
+export class ForgotPassword implements OnDestroy {
   step: 'email' | 'reset' = 'email';
 
   emailForm: FormGroup;
@@ -25,15 +26,14 @@ export class ForgotPassword {
 
   submittedEmail = '';
   submitting = false;
-  errorMessage = '';
-  successMessage = '';
   showNewPassword = false;
   showConfirmPassword = false;
 
   cooldownSeconds = 0;
   private cooldownInterval: any;
 
-  constructor(private fb: FormBuilder, private authService: AuthService, private cdr: ChangeDetectorRef) {
+  constructor(private fb: FormBuilder, private authService: AuthService, private router: Router,
+    private cdr: ChangeDetectorRef, private toastService: ToastService) {
     this.emailForm = this.fb.group({
       email: ['', [Validators.required, Validators.email]]
     });
@@ -45,6 +45,12 @@ export class ForgotPassword {
     }, { validators: passwordsMatchValidator });
   }
 
+  ngOnDestroy(): void {
+    if (this.cooldownInterval) {
+      clearInterval(this.cooldownInterval);
+    }
+  }
+
   requestCode(): void {
     if (this.emailForm.invalid) {
       this.emailForm.markAllAsTouched();
@@ -53,8 +59,6 @@ export class ForgotPassword {
     }
 
     this.submitting = true;
-    this.errorMessage = '';
-    this.successMessage = '';
 
     const email = this.emailForm.value.email;
 
@@ -63,7 +67,7 @@ export class ForgotPassword {
         this.submitting = false;
         this.submittedEmail = email;
         this.step = 'reset';
-        this.successMessage = 'A 6-digit code has been sent to your email.';
+        this.toastService.success('A 6-digit code has been sent to your email.');
         this.startCooldown(60);
         this.cdr.detectChanges();
       },
@@ -72,7 +76,8 @@ export class ForgotPassword {
         if (err.status === 429 && err.error?.retryAfterSeconds) {
           this.startCooldown(err.error.retryAfterSeconds);
         }
-        this.errorMessage = err.error?.message || 'Failed to send reset code.';
+        const message = err.error?.message || 'Failed to send reset code.';
+        this.toastService.error(message);
         console.error(err);
         this.cdr.detectChanges();
       }
@@ -105,21 +110,21 @@ export class ForgotPassword {
     }
 
     this.submitting = true;
-    this.errorMessage = '';
-    this.successMessage = '';
 
     const { code, newPassword } = this.resetForm.value;
 
     this.authService.resetPassword(this.submittedEmail, code, newPassword).subscribe({
       next: () => {
         this.submitting = false;
-        this.successMessage = 'Password reset successfully! You can now log in.';
+        this.toastService.success('Password reset successfully! You can now log in.');
         this.resetForm.reset();
+        this.router.navigate(['/login']);
         this.cdr.detectChanges();
       },
       error: (err) => {
         this.submitting = false;
-        this.errorMessage = err.error?.message || 'Failed to reset password.';
+        const message = err.error?.message || 'Failed to reset password.';
+        this.toastService.error(message);
         console.error(err);
         this.cdr.detectChanges();
       }
@@ -128,8 +133,6 @@ export class ForgotPassword {
 
   backToEmailStep(): void {
     this.step = 'email';
-    this.errorMessage = '';
-    this.successMessage = '';
     clearInterval(this.cooldownInterval);
     this.cooldownSeconds = 0;
     this.cdr.detectChanges();

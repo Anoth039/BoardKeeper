@@ -10,6 +10,7 @@ import { PdfService } from '../../services/pdf';
 import * as XLSX from 'xlsx';
 import { SafePipe } from '../../pipes/safe-pipe';
 import { DialogService } from '../../services/dialog';
+import { ToastService } from '../../services/toast';
 
 @Component({
   selector: 'app-rental-list',
@@ -39,7 +40,7 @@ export class RentalListComponent implements OnInit {
   isDueSoon = isRentalDueSoon;
 
   constructor(private rentalService: RentalService, public authService: AuthService, private pdfService: PdfService, 
-    private cdr: ChangeDetectorRef, private dialogService: DialogService) {}
+    private cdr: ChangeDetectorRef, private dialogService: DialogService, private toastService: ToastService) {}
 
   get isAdmin(): boolean {
     return this.authService.getCurrentUser()?.role === 'admin';
@@ -57,6 +58,7 @@ export class RentalListComponent implements OnInit {
       },
       error: (err) => {
         console.error('Failed to load rentals', err);
+        this.toastService.error('Failed to load rentals.');
         this.cdr.detectChanges();
       }
     });
@@ -144,9 +146,10 @@ export class RentalListComponent implements OnInit {
   }
 
   async returnRental(rental: Rental): Promise<void> {
+    const title = rental.gameCopy?.game?.title || rental.gameTitleSnapshot;
     const confirmed = await this.dialogService.confirm({
       title: 'Return Rental',
-      message: `Mark "${rental.gameCopy?.game?.title || rental.gameTitleSnapshot}" [${rental.gameCopy?.copyNumber || rental.copyLabelSnapshot}] as returned by ${rental.member?.firstName}?`,
+      message: `Mark "${title}" [${rental.gameCopy?.copyNumber || rental.copyLabelSnapshot}] as returned by ${rental.member?.firstName}?`,
       confirmLabel: 'Return',
       type: 'primary',
     });
@@ -156,19 +159,22 @@ export class RentalListComponent implements OnInit {
       next: (updated) => {
         rental.status = updated.status;
         rental.returnDate = updated.returnDate;
+        this.toastService.success(`Rental for "${title}" marked as returned.`);
         this.cdr.detectChanges();
       },
       error: (err) => {
-        alert(err.error?.message || 'Failed to return rental.');
+        const message = err.error?.message || 'Failed to return rental.';
+        this.toastService.error(message);
         this.cdr.detectChanges();
       }
     });
   }
 
   async markLost(rental: Rental): Promise<void> {
+    const title = rental.gameCopy?.game?.title || rental.gameTitleSnapshot;
     const confirmed = await this.dialogService.confirm({
       title: 'Mark as Lost',
-      message: `Mark "${rental.gameCopy?.game?.title || rental.gameTitleSnapshot}" [${rental.gameCopy?.copyNumber || rental.copyLabelSnapshot}] as lost?`,
+      message: `Mark "${title}" [${rental.gameCopy?.copyNumber || rental.copyLabelSnapshot}] as lost?`,
       confirmLabel: 'Mark Lost',
       type: 'danger',
     });
@@ -178,10 +184,12 @@ export class RentalListComponent implements OnInit {
       next: (updated) => {
         rental.status = updated.status;
         rental.returnDate = updated.returnDate;
+        this.toastService.success(`Rental for "${title}" marked as lost.`);
         this.cdr.detectChanges();
       },
       error: (err) => {
-        alert(err.error?.message || 'Failed to mark as lost.');
+        const message = err.error?.message || 'Failed to mark as lost.';
+        this.toastService.error(message);
         this.cdr.detectChanges();
       }
     });
@@ -249,6 +257,7 @@ export class RentalListComponent implements OnInit {
 
     const date = new Date().toISOString().split('T')[0];
     XLSX.writeFile(wb, `rentals-export-${date}.xlsx`);
+    this.toastService.success('Rentals exported to Excel successfully.');
   }
 
   startExtend(rental: Rental): void {
@@ -267,22 +276,27 @@ export class RentalListComponent implements OnInit {
 
   async submitExtend(rental: Rental): Promise<void> {
     if (!this.extendDueDate) return;
+    const title = rental.gameCopy?.game?.title || rental.gameTitleSnapshot;
     const confirmed = await this.dialogService.confirm({
       title: 'Extend Rental',
-      message: `Extend rental for "${rental.gameCopy?.game?.title || rental.gameTitleSnapshot}" [${rental.gameCopy?.copyNumber || rental.copyLabelSnapshot}] until ${this.extendDueDate}?`,
+      message: `Extend rental for "${title}" [${rental.gameCopy?.copyNumber || rental.copyLabelSnapshot}] until ${this.extendDueDate}?`,
       confirmLabel: 'Extend',
       type: 'primary',
     });
     if (!confirmed) return;
 
+    const formattedDueDate = this.extendDueDate;
+
     this.rentalService.extend(rental.id, this.extendDueDate).subscribe({
       next: () => {
         this.extendingRentalId = null;
         this.extendDueDate = '';
+        this.toastService.success(`Rental for "${title}" extended until ${formattedDueDate}.`);
         this.loadRentals(); 
       },
       error: (err) => {
-        alert(err.error?.message || 'Failed to extend rental.');
+        const message = err.error?.message || 'Failed to extend rental.';
+        this.toastService.error(message);
         this.cdr.detectChanges();
       }
     });

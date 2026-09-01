@@ -1,0 +1,8 @@
+<div class="toast-container-fixed" *ngIf="toast">
+  <div class="toast show align-items-center border-0 shadow-lg" [ngClass]="toast.type === 'success' ? 'toast-success' : 'toast-danger'" role="alert">
+    <div class="d-flex">
+      <div class="toast-body text-break">{{ toast.message }}</div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" (click)="dismiss()"></button>
+    </div>
+  </div>
+</div>

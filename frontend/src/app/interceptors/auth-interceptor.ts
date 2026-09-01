@@ -16,8 +16,12 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   return next(clonedReq).pipe(
     catchError((error: HttpErrorResponse) => {
       if (error.status === 401) {
-        authService.logout();
-        router.navigate(['/login'], { queryParams: { reason: 'expired' } });
+        const isAuthRequest = req.url.includes('/auth/');
+
+        if (!isAuthRequest) {
+          authService.logout();
+          router.navigate(['/login'], { queryParams: { reason: 'expired' } });
+        }
       }
       return throwError(() => error);
     })
