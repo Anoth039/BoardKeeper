@@ -4,6 +4,7 @@ import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angula
 import { MemberService } from '../../services/member';
 import { Member } from '../../models/member.model';
 import { AutofocusDirective } from '../../directives/autofocus';
+import { DialogService } from '../../services/dialog';
 
 @Component({
   selector: 'app-member-form',
@@ -21,7 +22,7 @@ export class MemberForm implements OnInit, OnChanges {
   submitting = false;
   errorMessage = '';
 
-  constructor(private fb: FormBuilder, private memberService: MemberService, private cdr: ChangeDetectorRef) {
+  constructor(private fb: FormBuilder, private memberService: MemberService, private cdr: ChangeDetectorRef, private dialogService: DialogService) {
     this.form = this.fb.group({
       firstName: ['', Validators.required],
       lastName: ['', Validators.required],
@@ -91,8 +92,16 @@ export class MemberForm implements OnInit, OnChanges {
     });
   }
 
-  onCancel(): void {
-    if (this.form.dirty && !confirm('Are you sure? You have unsaved changes.')) return;
+  async onCancel(): Promise<void> {
+    if (this.form.dirty) {
+      const confirmed = await this.dialogService.confirm({
+        title: 'Unsaved Changes',
+        message: 'Are you sure you want to close? You have unsaved changes.',
+        confirmLabel: 'Discard',
+        type: 'warning'
+      });
+      if (!confirmed) return;
+    }
     this.cancelled.emit();
   }
 }

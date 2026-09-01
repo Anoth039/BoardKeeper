@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { GameService } from '../../services/game';
 import { Game } from '../../models/game.model';
 import { AutofocusDirective } from '../../directives/autofocus';
+import { DialogService } from '../../services/dialog';
 
 function maxNotLessThanMinValidator(group: AbstractControl): ValidationErrors | null {
   const min = group.get('minPlayers')?.value;
@@ -36,7 +37,7 @@ export class GameForm implements OnInit, OnChanges {
   presetCategories = PRESET_CATEGORIES;
   customCategoryInput = '';
 
-  constructor(private fb: FormBuilder, private gameService: GameService, private cdr: ChangeDetectorRef) {
+  constructor(private fb: FormBuilder, private gameService: GameService, private cdr: ChangeDetectorRef, private dialogService: DialogService) {
     this.form = this.fb.group({
       title: ['', Validators.required],
       description: [''],
@@ -182,8 +183,16 @@ export class GameForm implements OnInit, OnChanges {
     });
   }
 
-  onCancel(): void {
-    if (this.form.dirty && !confirm('Are you sure? You have unsaved changes.')) return;
+  async onCancel(): Promise<void> {
+    if (this.form.dirty) {
+      const confirmed = await this.dialogService.confirm({
+        title: 'Unsaved Changes',
+        message: 'Are you sure you want to close? You have unsaved changes.',
+        confirmLabel: 'Discard',
+        type: 'warning'
+      });
+      if (!confirmed) return;
+    }
     this.cancelled.emit();
   }
 }

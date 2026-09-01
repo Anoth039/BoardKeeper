@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { UserService } from '../../services/user';
 import { SystemUser } from '../../models/user.model';
 import { FormsModule } from '@angular/forms';
+import { DialogService } from '../../services/dialog';
 
 @Component({
   selector: 'app-users',
@@ -16,7 +17,7 @@ export class UsersPage implements OnInit {
   searchTerm = '';
   loading = true;
 
-  constructor(private userService: UserService, private cdr: ChangeDetectorRef) {}
+  constructor(private userService: UserService, private cdr: ChangeDetectorRef, private dialogService: DialogService) {}
 
   ngOnInit(): void {
     this.loadUsers();
@@ -53,9 +54,14 @@ export class UsersPage implements OnInit {
     return this.filteredUsers.filter(u => u.isApproved && u.role !== 'admin');
   }
 
-  toggleApproval(user: SystemUser): void {
-    const action = user.isApproved ? 'revoke access from' : 'approve';
-    if (!confirm(`Are you sure you want to ${action} ${user.email}?`)) return;
+  async toggleApproval(user: SystemUser): Promise<void> {
+    const confirmed = await this.dialogService.confirm({
+      title: user.isApproved ? 'Revoke Access' : 'Approve User',
+      message: `Are you sure you want to ${user.isApproved ? 'revoke access from' : 'approve'} ${user.email}?`,
+      confirmLabel: user.isApproved ? 'Revoke' : 'Approve',
+      type: user.isApproved ? 'danger' : 'primary',
+    });
+    if (!confirmed) return;
 
     this.userService.toggleApproval(user.id).subscribe({
       next: (updated) => {
@@ -69,8 +75,14 @@ export class UsersPage implements OnInit {
     });
   }
 
-  deleteUser(user: SystemUser): void {
-    if (!confirm(`Permanently delete ${user.email}? This cannot be undone.`)) return;
+  async deleteUser(user: SystemUser): Promise<void> {
+    const confirmed = await this.dialogService.confirm({
+      title: 'Delete User',
+      message: `Permanently delete ${user.email}? This cannot be undone.`,
+      confirmLabel: 'Delete',
+      type: 'danger',
+    });
+    if (!confirmed) return;
 
     this.userService.delete(user.id).subscribe({
       next: () => {

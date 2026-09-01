@@ -6,6 +6,7 @@ import { GameCopyService } from '../../services/game-copy';
 import { CopyAuditLog, Game, GameCopy } from '../../models/game.model';
 import { GameForm } from '../game-form/game-form';
 import { AuthService } from '../../services/auth';
+import { DialogService } from '../../services/dialog';
 
 @Component({
   selector: 'app-game-list',
@@ -50,7 +51,7 @@ export class GameListComponent implements OnInit {
   copyFilterAvailability = 'all';
 
   constructor(private gameService: GameService, private gameCopyService: GameCopyService, private cdr: ChangeDetectorRef, 
-    public authService: AuthService) {}
+    public authService: AuthService, private dialogService: DialogService) {}
 
   ngOnInit(): void {
     this.loadGames();
@@ -292,10 +293,16 @@ export class GameListComponent implements OnInit {
     });
   }
 
-  deleteCopy(copyId: number): void {
-    if (!confirm('Delete this copy? This cannot be undone.')) return;
+  async deleteCopy(copy: GameCopy): Promise<void> {
+    const confirmed = await this.dialogService.confirm({
+      title: 'Delete Game Copy',
+      message: `Are you sure you want to delete Copy #${copy.copyNumber}? This action cannot be undone.`,
+      confirmLabel: 'Delete Copy',
+      type: 'danger',
+    });
+    if (!confirmed) return;
 
-    this.gameCopyService.delete(copyId).subscribe({
+    this.gameCopyService.delete(copy.id).subscribe({
       next: () => {
         this.loadGames();
       },
@@ -308,10 +315,18 @@ export class GameListComponent implements OnInit {
     });
   }
 
-  deleteGame(game: Game): void {
-    const confirmed = confirm(
-      `Delete "${game.title}"? This will also delete all ${game.copies?.length || 0} copies of it. This cannot be undone.`
-    );
+  async deleteGame(game: Game): Promise<void> {
+    const copyCount = game.copies?.length || 0;
+    const message = copyCount > 0
+      ? `Delete "${game.title}"? This will also permanently delete all ${copyCount} associated copy/copies.`
+      : `Permanently delete "${game.title}"? This action cannot be undone.`;
+
+    const confirmed = await this.dialogService.confirm({
+      title: 'Delete Game',
+      message,
+      confirmLabel: 'Delete Game',
+      type: 'danger',
+    });
     if (!confirmed) return;
 
     this.gameService.delete(game.id).subscribe({

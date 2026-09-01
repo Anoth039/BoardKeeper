@@ -1,0 +1,23 @@
+<div class="modal-backdrop-custom" *ngIf="visible" (click)="cancel()">
+  <div class="dialog-box" (click)="$event.stopPropagation()">
+    <div class="dialog-header">
+      <i class="bi me-2" [ngClass]="{
+        'bi-exclamation-triangle-fill text-danger': config?.type === 'danger',
+        'bi-exclamation-circle-fill text-warning': config?.type === 'warning',
+        'bi-question-circle-fill text-primary': config?.type === 'primary' || !config?.type
+      }"></i>
+      <h6 class="mb-0">{{ config?.title }}</h6>
+    </div>
+    <div class="dialog-body">
+      <p class="mb-0">{{ config?.message }}</p>
+    </div>
+    <div class="dialog-footer">
+      <button class="btn btn-sm btn-outline-secondary" (click)="cancel()">
+        {{ config?.cancelLabel || 'Cancel' }}
+      </button>
+      <button class="btn btn-sm" [ngClass]="confirmBtnClass" (click)="confirm()">
+        {{ config?.confirmLabel || 'Confirm' }}
+      </button>
+    </div>
+  </div>
+</div>

@@ -7,6 +7,7 @@ import { MemberForm } from '../member-form/member-form';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth';
 import { isRentalOverdue } from '../../models/rental.model';
+import { DialogService } from '../../services/dialog';
 
 @Component({
   selector: 'app-member-list',
@@ -24,7 +25,7 @@ export class MemberListComponent implements OnInit {
   editingMember: Member | null = null;
   copiedMemberId: number | null = null;
 
-  constructor(private memberService: MemberService, private cdr: ChangeDetectorRef, public authService: AuthService) {}
+  constructor(private memberService: MemberService, private cdr: ChangeDetectorRef, public authService: AuthService, private dialogService: DialogService) {}
 
   ngOnInit(): void {
     this.loadMembers();
@@ -144,9 +145,18 @@ export class MemberListComponent implements OnInit {
     }
   }
 
-  private confirmAndToggle(member: Member, newStatus: boolean): void {
-    const action = newStatus ? 'reactivate' : 'deactivate';
-    if (!confirm(`Are you sure you want to ${action} ${member.firstName} ${member.lastName}?`)) return;
+  async confirmAndToggle(member: Member, newStatus: boolean): Promise<void> {
+    const action = newStatus ? 'Reactivate' : 'Deactivate';
+    const actionLower = action.toLowerCase();
+    const memberName = `${member.firstName} ${member.lastName}`;
+
+    const confirmed = await this.dialogService.confirm({
+      title: `${action} Member`,
+      message: `Are you sure you want to ${actionLower} ${memberName}? ${newStatus ? 'They will regain access to rent items.' : 'They will no longer be able to rent items.'}`,
+      confirmLabel: action,
+      type: newStatus ? 'primary' : 'warning',
+    });
+    if (!confirmed) return;
 
     this.memberService.update(member.id, { isActive: newStatus }).subscribe({
       next: (updated) => {
@@ -162,8 +172,15 @@ export class MemberListComponent implements OnInit {
     });
   }
 
-  deleteMember(member: Member): void {
-    const confirmed = confirm(`Permanently delete ${member.firstName} ${member.lastName}? This cannot be undone.`);
+  async deleteMember(member: Member): Promise<void> {
+    const memberName = `${member.firstName} ${member.lastName}`;
+
+    const confirmed = await this.dialogService.confirm({
+      title: 'Delete Member',
+      message: `Permanently delete "${memberName}"? This action cannot be undone and will remove all associated member records.`,
+      confirmLabel: 'Delete Member',
+      type: 'danger',
+    });
     if (!confirmed) return;
 
     this.memberService.delete(member.id).subscribe({

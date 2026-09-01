@@ -9,6 +9,7 @@ import { RentalForm } from '../rental-form/rental-form';
 import { PdfService } from '../../services/pdf';
 import * as XLSX from 'xlsx';
 import { SafePipe } from '../../pipes/safe-pipe';
+import { DialogService } from '../../services/dialog';
 
 @Component({
   selector: 'app-rental-list',
@@ -37,7 +38,8 @@ export class RentalListComponent implements OnInit {
   isOverdue = isRentalOverdue;
   isDueSoon = isRentalDueSoon;
 
-  constructor(private rentalService: RentalService, public authService: AuthService, private pdfService: PdfService, private cdr: ChangeDetectorRef) {}
+  constructor(private rentalService: RentalService, public authService: AuthService, private pdfService: PdfService, 
+    private cdr: ChangeDetectorRef, private dialogService: DialogService) {}
 
   get isAdmin(): boolean {
     return this.authService.getCurrentUser()?.role === 'admin';
@@ -141,8 +143,14 @@ export class RentalListComponent implements OnInit {
     this.cdr.detectChanges();
   }
 
-  returnRental(rental: Rental): void {
-    if (!confirm(`Mark "${rental.gameCopy?.game?.title || rental.gameTitleSnapshot}" (${rental.gameCopy?.copyNumber || rental.copyLabelSnapshot}) as returned by ${rental.member?.firstName}?`)) return;
+  async returnRental(rental: Rental): Promise<void> {
+    const confirmed = await this.dialogService.confirm({
+      title: 'Return Rental',
+      message: `Mark "${rental.gameCopy?.game?.title || rental.gameTitleSnapshot}" [${rental.gameCopy?.copyNumber || rental.copyLabelSnapshot}] as returned by ${rental.member?.firstName}?`,
+      confirmLabel: 'Return',
+      type: 'primary',
+    });
+    if (!confirmed) return;
 
     this.rentalService.return(rental.id).subscribe({
       next: (updated) => {
@@ -157,8 +165,14 @@ export class RentalListComponent implements OnInit {
     });
   }
 
-  markLost(rental: Rental): void {
-    if (!confirm(`Mark "${rental.gameCopy?.game?.title || rental.gameTitleSnapshot}" (${rental.gameCopy?.copyNumber || rental.copyLabelSnapshot}) as lost?`)) return;
+  async markLost(rental: Rental): Promise<void> {
+    const confirmed = await this.dialogService.confirm({
+      title: 'Mark as Lost',
+      message: `Mark "${rental.gameCopy?.game?.title || rental.gameTitleSnapshot}" [${rental.gameCopy?.copyNumber || rental.copyLabelSnapshot}] as lost?`,
+      confirmLabel: 'Mark Lost',
+      type: 'danger',
+    });
+    if (!confirmed) return;
 
     this.rentalService.markLost(rental.id).subscribe({
       next: (updated) => {
@@ -251,8 +265,15 @@ export class RentalListComponent implements OnInit {
     this.cdr.detectChanges();
   }
 
-  submitExtend(rental: Rental): void {
+  async submitExtend(rental: Rental): Promise<void> {
     if (!this.extendDueDate) return;
+    const confirmed = await this.dialogService.confirm({
+      title: 'Extend Rental',
+      message: `Extend rental for "${rental.gameCopy?.game?.title || rental.gameTitleSnapshot}" [${rental.gameCopy?.copyNumber || rental.copyLabelSnapshot}] until ${this.extendDueDate}?`,
+      confirmLabel: 'Extend',
+      type: 'primary',
+    });
+    if (!confirmed) return;
 
     this.rentalService.extend(rental.id, this.extendDueDate).subscribe({
       next: () => {

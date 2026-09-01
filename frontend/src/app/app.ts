@@ -4,11 +4,12 @@ import { CommonModule } from '@angular/common';
 import { NavbarComponent } from './components/navbar/navbar';
 import { filter } from 'rxjs';
 import { BackToTopComponent } from './components/back-to-top/back-to-top';
+import { DialogComponent } from './components/dialog/dialog';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, CommonModule, NavbarComponent, BackToTopComponent],
+  imports: [RouterOutlet, CommonModule, NavbarComponent, BackToTopComponent, DialogComponent],
   templateUrl: './app.html',
   styleUrl: './app.css'
 })

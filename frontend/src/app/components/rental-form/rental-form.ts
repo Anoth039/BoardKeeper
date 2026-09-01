@@ -7,6 +7,7 @@ import { GameService } from '../../services/game';
 import { Member } from '../../models/member.model';
 import { Game, GameCopy } from '../../models/game.model';
 import { AutofocusDirective } from '../../directives/autofocus';
+import { DialogService } from '../../services/dialog';
 
 @Component({
   selector: 'app-rental-form',
@@ -41,7 +42,7 @@ export class RentalForm implements OnInit {
   errorMessage = '';
 
   constructor(private rentalService: RentalService, private memberService: MemberService, private gameService: GameService,
-    private cdr: ChangeDetectorRef, private elementRef: ElementRef) {}
+    private cdr: ChangeDetectorRef, private elementRef: ElementRef, private dialogService: DialogService) {}
 
   ngOnInit(): void {
     this.memberService.getAll().subscribe({
@@ -220,9 +221,20 @@ export class RentalForm implements OnInit {
     });
   }
 
-  onCancel(f?: NgForm): void {
+  async onCancel(f?: NgForm): Promise<void> {
     const isDirty = f?.dirty || !!this.selectedMemberId || !!this.selectedGameId;
-    if (isDirty && !confirm('Are you sure? You have unsaved changes.')) return;
+
+    if (isDirty) {
+      const confirmed = await this.dialogService.confirm({
+        title: 'Unsaved Changes',
+        message: 'Are you sure you want to close? You have unsaved changes.',
+        confirmLabel: 'Discard',
+        type: 'warning'
+      });
+      
+      if (!confirmed) return;
+    }
+
     this.cancelled.emit();
   }
 }
