@@ -7,8 +7,8 @@ const router = Router();
 router.get("/", getAllGameCopies);
 router.get("/:id", getGameCopyById);
 router.get("/audit/:gameId", requireAdmin, getCopyAuditLog);
-router.post("/", createGameCopy);
-router.post("/bulk", createGameCopiesBulk);
+router.post("/", requireAdmin, createGameCopy);
+router.post("/bulk", requireAdmin, createGameCopiesBulk);
 router.put("/:id", updateGameCopy);
 router.delete("/:id", requireAdmin, deleteGameCopy);
     
