@@ -6,20 +6,20 @@
 <ng-container *ngIf="!loading">
   <div class="mb-3">
     <div class="input-group search-input">
-      <span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span>
-      <input type="text" class="form-control border-start-0" placeholder="Search by email..." [(ngModel)]="searchTerm"/>
+      <span class="input-group-text"><i class="bi bi-search text-muted"></i></span>
+      <input type="text" class="form-control" placeholder="Search by email..." [(ngModel)]="searchTerm"/>
       <button *ngIf="searchTerm" class="btn btn-outline-secondary" (click)="searchTerm = ''">
         <i class="bi bi-x"></i>
       </button>
     </div>
   </div>
 
-  <div *ngIf="users.length === 0" class="empty-state text-muted">
+  <div *ngIf="users.length === 0" class="empty-state">
     <i class="bi bi-people"></i>
     <p class="mt-2">No users found.</p>
   </div>
 
-  <div *ngIf="users.length > 0 && filteredUsers.length === 0" class="empty-state text-muted">
+  <div *ngIf="users.length > 0 && filteredUsers.length === 0" class="empty-state">
     <i class="bi bi-search"></i>
     <p class="text-break">
       No users match "<strong>{{ searchTerm }}</strong>"
@@ -27,8 +27,8 @@
     <button class="btn btn-sm btn-outline-secondary" (click)="searchTerm = ''">Clear search</button>
   </div>
 
-  <div class="card mb-4" *ngIf="pendingUsers.length > 0">
-    <div class="card-header bg-white py-3 d-flex align-items-center gap-2">
+  <div class="card mb-4 overflow-hidden" *ngIf="pendingUsers.length > 0">
+    <div class="card-header py-3 d-flex align-items-center gap-2">
       <h6 class="mb-0 fw-bold">Pending Approval</h6>
       <span class="badge bg-danger">{{ pendingUsers.length }}</span>
     </div>
@@ -38,14 +38,14 @@
           <tr *ngFor="let user of pendingUsers">
             <td>
               <div class="d-flex align-items-center gap-2 min-w-0">
-                <div class="member-avatar-sm avatar-inactive flex-shrink-0">
+                <div class="avatar avatar-inactive">
                   {{ userInitials(user.email) }}
                 </div>
                 <div class="text-truncate">
                   <div class="fw-semibold small text-truncate" [title]="'Email: ' + user.email">
                     {{ user.email }}
                   </div>
-                  <div class="text-muted extra-small d-md-none">
+                  <div class="text-muted text-xs d-md-none">
                     Registered: {{ memberSince(user.createdAt) }}
                     <br><i class="bi bi-box-arrow-in-right me-1"></i>
                     <span [ngClass]="!user.lastLoginAt ? 'text-danger' : 'text-muted'">
@@ -59,7 +59,7 @@
               <div>
                 <span class="text-secondary fw-medium me-1">Registered:</span>{{ memberSince(user.createdAt) }}
               </div>
-              <div class="extra-small mt-1">
+              <div class="text-xs mt-1">
                 <i class="bi bi-box-arrow-in-right me-1"></i>
                 <span [ngClass]="!user.lastLoginAt ? 'text-danger' : 'text-muted'">
                   {{ lastLogin(user) }}
@@ -82,8 +82,8 @@
     </div>
   </div>
 
-  <div class="card mb-4" *ngIf="approvedUsers.length > 0">
-    <div class="card-header bg-white py-3 d-flex align-items-center gap-2">
+  <div class="card mb-4 overflow-hidden" *ngIf="approvedUsers.length > 0">
+    <div class="card-header py-3 d-flex align-items-center gap-2">
       <h6 class="mb-0 fw-bold">Approved Staff</h6>
       <span class="badge bg-success">{{ approvedUsers.length }}</span>
     </div>
@@ -93,14 +93,14 @@
           <tr *ngFor="let user of approvedUsers">
             <td>
               <div class="d-flex align-items-center gap-2 min-w-0">
-                <div class="member-avatar-sm flex-shrink-0">
+                <div class="avatar">
                   {{ userInitials(user.email) }}
                 </div>
                 <div class="text-truncate">
                   <div class="fw-semibold small text-truncate" [title]="'Email: ' + user.email">
                     {{ user.email }}
                   </div>
-                  <div class="text-muted extra-small d-md-none">
+                  <div class="text-muted text-xs d-md-none">
                     Registered: {{ memberSince(user.createdAt) }}
                     <br><i class="bi bi-box-arrow-in-right me-1"></i>
                     <span [ngClass]="!user.lastLoginAt ? 'text-danger' : 'text-muted'">
@@ -114,7 +114,7 @@
               <div>
                 <span class="text-secondary fw-medium me-1">Registered:</span>{{ memberSince(user.createdAt) }}
               </div>
-              <div class="extra-small mt-1">
+              <div class="text-xs mt-1">
                 <i class="bi bi-box-arrow-in-right me-1"></i>
                 <span [ngClass]="!user.lastLoginAt ? 'text-danger' : 'text-muted'">
                   {{ lastLogin(user) }}

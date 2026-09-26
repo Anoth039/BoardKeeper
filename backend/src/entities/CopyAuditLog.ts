@@ -8,6 +8,8 @@ export enum AuditAction {
   NAME_CHANGED = "name_changed",
   NOTES_CHANGED = "notes_changed",
   DELETED = "deleted",
+  RESERVED = "reserved",
+  RESERVATION_CANCELLED = "reservation_cancelled",
 }
 
 @Entity()

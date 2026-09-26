@@ -45,7 +45,8 @@ export const sendVerificationCode = async (req: Request, res: Response) => {
 
     res.json({ message: "A verification code has been sent to your email" });
   } catch (error) {
-    res.status(500).json({ message: "Failed to send verification code", error });
+    console.error("Failed to send verification code:", error);
+    res.status(500).json({ message: "Failed to send verification code" });
   }
 };
 
@@ -83,7 +84,8 @@ export const register = async (req: Request, res: Response) => {
 
     res.status(201).json({ message: "Account created successfully" });
   } catch (error) {
-    res.status(500).json({ message: "Failed to register", error });
+    console.error("Failed to register:", error);
+    res.status(500).json({ message: "Failed to register" });
   }
 };
 
@@ -119,7 +121,8 @@ export const login = async (req: Request, res: Response) => {
       user: { id: user.id, email: user.email, role: user.role },
     });
   } catch (error) {
-    res.status(500).json({ message: "Failed to login", error });
+    console.error("Failed to login:", error);
+    res.status(500).json({ message: "Failed to login" });
   }
 };
 
@@ -159,7 +162,8 @@ export const forgotPassword = async (req: Request, res: Response) => {
 
     res.json({ message: "A reset code has been sent to your email" });
   } catch (error) {
-    res.status(500).json({ message: "Failed to send reset code", error });
+    console.error("Failed to send reset code:", error);
+    res.status(500).json({ message: "Failed to send reset code" });
   }
 };
 
@@ -195,6 +199,7 @@ export const resetPassword = async (req: Request, res: Response) => {
 
     res.json({ message: "Password reset successfully" });
   } catch (error) {
-    res.status(500).json({ message: "Failed to reset password", error });
+    console.error("Failed to reset password:", error);
+    res.status(500).json({ message: "Failed to reset password" });
   }
 };

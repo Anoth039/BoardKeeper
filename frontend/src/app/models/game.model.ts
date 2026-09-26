@@ -1,4 +1,6 @@
 import { Rental } from './rental.model';
+import { Member } from './member.model';
+import { dateString } from '../utils/date';
 
 export enum AgeRating {
   AGE_3 = 3,
@@ -18,6 +20,8 @@ export interface Game {
   imageUrl?: string;
   ageRating?: AgeRating;
   estimatedTimeMinutes?: number;
+  pricePerDay?: number;
+  replacementValue?: number;
   copies?: GameCopy[];
   createdAt: string;
 }
@@ -28,9 +32,15 @@ export interface GameCopy {
   copyNumber: string;
   isAvailable: boolean;
   notes: string | null;
+  reservedFor?: Member | null;
+  reservedUntil?: string | null;
   game?: Game;
   rentals?: Rental[];
   createdAt: string;
+}
+
+export function isCopyReserved(copy: GameCopy): boolean {
+  return !!copy.reservedFor && !!copy.reservedUntil && copy.reservedUntil >= dateString();
 }
 
 export interface CopyAuditLog {

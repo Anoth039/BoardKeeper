@@ -6,6 +6,7 @@ import { RentalService } from '../../services/rental';
 import { AuthService } from '../../services/auth';
 import { Rental, RentalStatus, isRentalOverdue, isRentalDueSoon } from '../../models/rental.model';
 import { RentalForm } from '../rental-form/rental-form';
+import { dateString } from '../../utils/date';
 import { PdfService } from '../../services/pdf';
 import * as XLSX from 'xlsx';
 import { SafePipe } from '../../pipes/safe-pipe';
@@ -157,8 +158,7 @@ export class RentalListComponent implements OnInit {
 
     this.rentalService.return(rental.id).subscribe({
       next: (updated) => {
-        rental.status = updated.status;
-        rental.returnDate = updated.returnDate;
+        Object.assign(rental, updated);
         this.toastService.success(`Rental for "${title}" marked as returned.`);
         this.cdr.detectChanges();
       },
@@ -182,8 +182,7 @@ export class RentalListComponent implements OnInit {
 
     this.rentalService.markLost(rental.id).subscribe({
       next: (updated) => {
-        rental.status = updated.status;
-        rental.returnDate = updated.returnDate;
+        Object.assign(rental, updated);
         this.toastService.success(`Rental for "${title}" marked as lost.`);
         this.cdr.detectChanges();
       },
@@ -227,6 +226,10 @@ export class RentalListComponent implements OnInit {
     return rental.status;
   }
 
+  private formatCharge(value: number | null | undefined): string {
+    return value == null ? '—' : `$${Number(value).toFixed(2)}`;
+  }
+
   exportToExcel(): void {
     if (!this.isAdmin) return;
     
@@ -240,6 +243,11 @@ export class RentalListComponent implements OnInit {
       'Original Due Date': r.originalDueDate,
       'Due Date': r.dueDate,
       'Return Date': r.returnDate || '—',
+      'Rental Charge': this.formatCharge(r.rentalCharge),
+      'Late Fee': this.formatCharge(r.lateFeeCharged),
+      'Extension Fee': r.extensionFeeCharged ? `$${Number(r.extensionFeeCharged).toFixed(2)}` : '—',
+      'Replacement Fee': this.formatCharge(r.replacementFeeCharged),
+      'Total Charged': this.formatCharge(r.totalCharged),
       'Rented out by': r.handledBy?.email || '—',
       'Checked in by': r.returnedBy?.email || '—',
     }));
@@ -251,20 +259,22 @@ export class RentalListComponent implements OnInit {
     const colWidths = [
       { wch: 22 }, { wch: 28 }, { wch: 24 }, { wch: 14 },
       { wch: 12 }, { wch: 14 }, { wch: 15 }, { wch: 14 },
-      { wch: 14 }, { wch: 26 }, { wch: 26 },
+      { wch: 14 }, { wch: 13 }, { wch: 11 }, { wch: 13 },
+      { wch: 15 }, { wch: 13 }, { wch: 26 }, { wch: 26 },
     ];
     ws['!cols'] = colWidths;
 
-    const date = new Date().toISOString().split('T')[0];
-    XLSX.writeFile(wb, `rentals-export-${date}.xlsx`);
+    XLSX.writeFile(wb, `rentals-export-${dateString()}.xlsx`);
     this.toastService.success('Rentals exported to Excel successfully.');
+  }
+
+  getMaxDueDate(dueDate: string): string {
+    return dateString(14, dueDate);
   }
 
   startExtend(rental: Rental): void {
     this.extendingRentalId = rental.id;
-    const d = new Date(rental.dueDate);
-    d.setDate(d.getDate() + 7);
-    this.extendDueDate = d.toISOString().split('T')[0];
+    this.extendDueDate = dateString(7, rental.dueDate);
     this.cdr.detectChanges();
   }
 

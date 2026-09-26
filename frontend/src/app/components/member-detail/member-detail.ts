@@ -5,6 +5,7 @@ import { MemberService } from '../../services/member';
 import { Member } from '../../models/member.model';
 import { Rental, RentalStatus, isRentalOverdue, isRentalDueSoon } from '../../models/rental.model';
 import { FormsModule } from '@angular/forms';
+import { formatDate } from '../../utils/date';
 
 @Component({
   selector: 'app-member-detail',
@@ -48,9 +49,7 @@ export class MemberDetail implements OnInit {
 
   get memberSince(): string {
     if (!this.member) return '';
-    return new Date(this.member.createdAt).toLocaleDateString(undefined, {
-      year: 'numeric', month: 'long'
-    });
+    return formatDate(this.member.createdAt, 'monthYear');
   }
 
   get activeRentals(): Rental[] {

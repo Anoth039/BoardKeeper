@@ -1,0 +1,3 @@
+<button class="theme-toggle" type="button" (click)="toggle()" [title]="themeService.theme() === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'">
+  <i class="bi" [class.bi-moon-stars-fill]="themeService.theme() === 'light'" [class.bi-sun-fill]="themeService.theme() === 'dark'"></i>
+</button>

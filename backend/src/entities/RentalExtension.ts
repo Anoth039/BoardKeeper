@@ -1,6 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn } from "typeorm";
 import { Rental } from "./Rental";
 import { User } from "./User";
+import { decimalTransformer } from "../utils/money";
 
 @Entity()
 export class RentalExtension {
@@ -16,6 +17,9 @@ export class RentalExtension {
 
   @Column({ name: "new_due_date", type: "date" })
   newDueDate!: string;
+
+  @Column({ name: "fee_charged", type: "decimal", precision: 8, scale: 2, default: 0, transformer: decimalTransformer })
+  feeCharged!: number;
 
   @ManyToOne(() => User, { nullable: true, onDelete: "SET NULL" })
   @JoinColumn({ name: "extended_by_user_id" })

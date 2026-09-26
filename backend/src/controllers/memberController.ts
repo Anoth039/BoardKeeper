@@ -2,12 +2,17 @@ import { Request, Response } from "express";
 import { AppDataSource } from "../data-source";
 import { Member } from "../entities/Member";
 import { Rental, RentalStatus } from "../entities/Rental";
+import { GameCopy } from "../entities/GameCopy";
+import { MoreThanOrEqual } from "typeorm";
+import { dateString } from "../utils/date";
 import { AuthenticatedRequest } from "../middleware/authMiddleware";
 
 const memberRepository = AppDataSource.getRepository(Member);
 const rentalRepository = AppDataSource.getRepository(Rental);
+const gameCopyRepository = AppDataSource.getRepository(GameCopy);
 
-// GET /api/members
+const countActiveReservations = (memberId: number) => gameCopyRepository.count({ where: { reservedFor: { id: memberId }, reservedUntil: MoreThanOrEqual(dateString()) } });
+
 export const getAllMembers = async (req: Request, res: Response) => {
   try {
     const members = await memberRepository.find({
@@ -15,11 +20,11 @@ export const getAllMembers = async (req: Request, res: Response) => {
     });
     res.json(members);
   } catch (error) {
-    res.status(500).json({ message: "Failed to fetch members", error });
+    console.error("Failed to fetch members:", error);
+    res.status(500).json({ message: "Failed to fetch members" });
   }
 };
 
-// GET /api/members/:id
 export const getMemberById = async (req: Request, res: Response) => {
   try {
     const id = Number(req.params.id);
@@ -34,11 +39,11 @@ export const getMemberById = async (req: Request, res: Response) => {
 
     res.json(member);
   } catch (error) {
-    res.status(500).json({ message: "Failed to fetch member", error });
+    console.error("Failed to fetch member:", error);
+    res.status(500).json({ message: "Failed to fetch member" });
   }
 };
 
-// POST /api/members
 export const createMember = async (req: Request, res: Response) => {
   try {
     const { firstName, lastName, email, phone } = req.body;
@@ -67,11 +72,11 @@ export const createMember = async (req: Request, res: Response) => {
     if (error.code === "ER_DUP_ENTRY") {
       return res.status(409).json({ message: "A member with this email already exists" });
     }
-    res.status(500).json({ message: "Failed to create member", error });
+    console.error("Failed to create member:", error);
+    res.status(500).json({ message: "Failed to create member" });
   }
 };
 
-// PUT /api/members/:id
 export const updateMember = async (req: AuthenticatedRequest, res: Response) => {
   try {
     const id = Number(req.params.id);
@@ -93,6 +98,15 @@ export const updateMember = async (req: AuthenticatedRequest, res: Response) => 
       }
     }
 
+    if (req.body.isActive === false && member.isActive === true) {
+      const reservations = await countActiveReservations(id);
+      if (reservations > 0) {
+        return res.status(409).json({
+          message: `Cannot deactivate this member — they have ${reservations} reserved copy/copies. Please cancel the reservation(s) first.`,
+        });
+      }
+    }
+
     const { firstName, lastName, email, phone } = req.body;
 
     if (firstName && firstName.trim().length > 30) {
@@ -108,15 +122,21 @@ export const updateMember = async (req: AuthenticatedRequest, res: Response) => 
       return res.status(400).json({ message: "Phone number format is invalid" });
     }
 
-    memberRepository.merge(member, req.body);
+    const updates: Partial<Member> = {};
+    for (const field of ["firstName", "lastName", "email", "phone", "isActive"] as const) {
+      if (req.body[field] !== undefined) {
+        (updates as Record<string, unknown>)[field] = req.body[field];
+      }
+    }
+    memberRepository.merge(member, updates);
     const updatedMember = await memberRepository.save(member);
     res.json(updatedMember);
   } catch (error) {
-    res.status(500).json({ message: "Failed to update member", error });
+    console.error("Failed to update member:", error);
+    res.status(500).json({ message: "Failed to update member" });
   }
 };
 
-// DELETE /api/members/:id
 export const deleteMember = async (req: Request, res: Response) => {
   try {
     const id = Number(req.params.id);
@@ -136,9 +156,14 @@ export const deleteMember = async (req: Request, res: Response) => {
       });
     }
 
+    if ((await countActiveReservations(id)) > 0) {
+      return res.status(409).json({ message: "Cannot delete a member who has reserved copies. Please cancel the reservation(s) first." });
+    }
+
     await memberRepository.delete(id);
     res.status(204).send();
   } catch (error) {
-    res.status(500).json({ message: "Failed to delete member", error });
+    console.error("Failed to delete member:", error);
+    res.status(500).json({ message: "Failed to delete member" });
   }
 };

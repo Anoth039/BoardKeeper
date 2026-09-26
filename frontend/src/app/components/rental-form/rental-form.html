@@ -1,5 +1,5 @@
 <div class="modal-backdrop-custom" (click)="onCancel(f)">
-  <div class="modal-box modal-box-wide" (click)="$event.stopPropagation()">
+  <div class="modal-box" (click)="$event.stopPropagation()">
     <div class="modal-header-custom">
       <h5 class="mb-0"><i class="bi bi-journal-plus me-2"></i>New Rental</h5>
       <button class="btn-close" (click)="onCancel(f)"></button>
@@ -8,10 +8,10 @@
     <div class="modal-body-custom">
       <form #f="ngForm" (ngSubmit)="onSubmit()">
 
-        <div class="rental-section mb-4">
-          <h6 class="rental-section-title"><i class="bi bi-person-fill me-1"></i>Who's renting?</h6>
+        <div class="form-section mb-4">
+          <h6 class="form-section-title"><i class="bi bi-person-fill me-1"></i>Who's renting?</h6>
 
-          <div *ngIf="selectedMember" class="d-flex align-items-center justify-content-between border rounded p-2 bg-light">
+          <div *ngIf="selectedMember" class="d-flex align-items-center justify-content-between border rounded p-2 bg-body-secondary">
             <span>
               <strong>{{ selectedMember.firstName }} {{ selectedMember.lastName }}</strong>
               <span class="text-muted small d-block">{{ selectedMember.email }}</span>
@@ -40,10 +40,10 @@
           </div>
         </div>
 
-        <div class="rental-section mb-4">
-          <h6 class="rental-section-title"><i class="bi bi-dice-5-fill me-1"></i>What game?</h6>
+        <div class="form-section mb-4">
+          <h6 class="form-section-title"><i class="bi bi-dice-5-fill me-1"></i>What game?</h6>
 
-          <div *ngIf="selectedGame" class="d-flex align-items-center justify-content-between border rounded p-2 bg-light mb-2">
+          <div *ngIf="selectedGame" class="d-flex align-items-center justify-content-between border rounded p-2 bg-body-secondary mb-2">
             <span><strong>{{ selectedGame.title }}</strong></span>
             <button type="button" class="btn btn-sm btn-outline-secondary" (click)="clearGameSelection()">
               Change
@@ -66,7 +66,7 @@
           <div class="mt-2" *ngIf="selectedGame">
             <label class="form-label small">Copy *</label>
 
-            <div *ngIf="selectedCopy" class="d-flex align-items-center justify-content-between border rounded p-2 bg-light">
+            <div *ngIf="selectedCopy" class="d-flex align-items-center justify-content-between border rounded p-2 bg-body-secondary">
               <span>
                 <strong>{{ selectedCopy.copyNumber }}</strong>
                 <span class="ms-2 text-muted small">({{ selectedCopy.condition }})</span>
@@ -83,6 +83,7 @@
                 <div class="dropdown-list-item" *ngFor="let copy of filteredCopiesForSelectedGame" (click)="selectCopy(copy.id)">
                   {{ copy.copyNumber }}
                   <small class="text-muted ms-1">({{ copy.condition }})</small>
+                  <span *ngIf="copy.reservedFor" class="badge bg-warning text-dark ms-1">Reserved for {{ copy.reservedFor.firstName }}</span>
                 </div>
                 <div class="dropdown-list-item text-muted" *ngIf="filteredCopiesForSelectedGame.length === 0">
                   No copies match your search.
@@ -95,19 +96,17 @@
           </div>
         </div>
 
-        <div class="rental-section mb-4">
-          <h6 class="rental-section-title"><i class="bi bi-calendar-event me-1"></i>When?</h6>
+        <div class="form-section mb-4">
+          <h6 class="form-section-title"><i class="bi bi-calendar-event me-1"></i>When?</h6>
 
           <div class="row">
             <div class="col mb-2">
               <label class="form-label small">Rental Date *</label>
-              <input type="date" class="form-control" [(ngModel)]="rentalDate" name="rentalDate" [min]="minRentalDate"
-                [max]="maxRentalDate" required/>
+              <input type="date" class="form-control" [(ngModel)]="rentalDate" name="rentalDate" [min]="minRentalDate" [max]="maxRentalDate" required/>
             </div>
             <div class="col mb-2">
               <label class="form-label small">Due Date *</label>
-              <input type="date" class="form-control" [(ngModel)]="dueDate" name="dueDate" [min]="minDueDate"
-                [max]="maxDueDate" required/>
+              <input type="date" class="form-control" [(ngModel)]="dueDate" name="dueDate" [min]="minDueDate" [max]="maxDueDate" required/>
             </div>
           </div>
         </div>

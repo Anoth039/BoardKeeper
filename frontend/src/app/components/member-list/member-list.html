@@ -2,10 +2,10 @@
 
 <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
   <div class="input-group search-input">
-    <span class="input-group-text bg-white">
+    <span class="input-group-text">
       <i class="bi bi-search text-muted"></i>
     </span>
-    <input type="text" class="form-control border-start-0" placeholder="Search by name or email..." [(ngModel)]="searchTerm"/>
+    <input type="text" class="form-control" placeholder="Search by name or email..." [(ngModel)]="searchTerm"/>
     <button *ngIf="searchTerm" class="btn btn-outline-secondary" (click)="searchTerm = ''">
       <i class="bi bi-x"></i>
     </button>
@@ -19,12 +19,12 @@
   {{ filteredMembers.length }} of {{ members.length }} members
 </div>
 
-<div *ngIf="members.length === 0" class="empty-state text-muted">
+<div *ngIf="members.length === 0" class="empty-state">
   <i class="bi bi-people"></i>
   <p>No members yet. Add one to get started.</p>
 </div>
 
-<div *ngIf="members.length > 0 && filteredMembers.length === 0" class="empty-state text-muted">
+<div *ngIf="members.length > 0 && filteredMembers.length === 0" class="empty-state">
   <i class="bi bi-search"></i>
     <p class="text-break">
       No members match "<strong>{{ searchTerm }}</strong>"
@@ -34,7 +34,7 @@
 
 <ng-container *ngIf="filteredMembers.length > 0">
 
-  <div class="member-table-wrap d-none d-md-block">
+  <div class="surface d-none d-md-block">
     <table class="table member-table align-middle mb-0">
       <thead>
         <tr>
@@ -51,7 +51,7 @@
         <tr *ngFor="let member of filteredMembers" [class.member-inactive]="!member.isActive">
           <td>
             <div class="d-flex align-items-center gap-2">
-              <div class="member-avatar-sm flex-shrink-0" [class.avatar-inactive]="!member.isActive">
+              <div class="avatar" [class.avatar-inactive]="!member.isActive">
                 {{ memberInitials(member) }}
               </div>
               <div class="d-flex align-items-center gap-1">
@@ -73,7 +73,7 @@
           </td>
           <td><span class="member-meta">{{ member.phone || '—' }}</span></td>
           <td>
-            <span class="member-status-badge" [ngClass]="member.isActive ? 'badge-active' : 'badge-inactive'">
+            <span class="badge rounded-pill" [ngClass]="member.isActive ? 'bg-success-subtle text-success-emphasis' : 'bg-body-secondary text-secondary'">
               {{ member.isActive ? 'Active' : 'Inactive' }}
             </span>
           </td>
@@ -96,15 +96,15 @@
     </table>
   </div>
 
-  <div class="member-cards d-md-none">
-    <div class="member-card" *ngFor="let member of filteredMembers" [class.member-card-inactive]="!member.isActive">
-      <div class="member-card-left">
-        <div class="member-avatar-sm" [class.avatar-inactive]="!member.isActive">
+  <div class="card-stack d-md-none">
+    <div class="surface member-card" *ngFor="let member of filteredMembers" [class.member-card-inactive]="!member.isActive">
+      <div class="flex-shrink-0 pt-1">
+        <div class="avatar" [class.avatar-inactive]="!member.isActive">
           {{ memberInitials(member) }}
         </div>
       </div>
-      <div class="member-card-body">
-        <div class="member-card-top">
+      <div class="flex-grow-1 min-w-0">
+        <div class="d-flex justify-content-between align-items-start mb-2">
           <div>
             <div class="d-flex align-items-center gap-1">
               <a [routerLink]="['/members', member.id]" class="member-name-link">
@@ -120,11 +120,11 @@
               <span>{{ member.email }}</span>
             </div>
           </div>
-          <span class="member-status-badge ms-2 flex-shrink-0" [ngClass]="member.isActive ? 'badge-active' : 'badge-inactive'">
+          <span class="badge rounded-pill ms-2 flex-shrink-0" [ngClass]="member.isActive ? 'bg-success-subtle text-success-emphasis' : 'bg-body-secondary text-secondary'">
             {{ member.isActive ? 'Active' : 'Inactive' }}
           </span>
         </div>
-        <div class="member-card-actions justify-content-end gap-1 mt-2">
+        <div class="d-flex justify-content-end gap-1 mt-2">
           <button class="btn btn-sm btn-outline-secondary" (click)="openEditForm(member)" [disabled]="!member.isActive" title="Edit">
             <i class="bi bi-pencil"></i>
           </button>

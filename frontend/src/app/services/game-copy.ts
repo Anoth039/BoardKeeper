@@ -27,6 +27,14 @@ export class GameCopyService {
     return this.http.put<GameCopy>(`${this.apiUrl}/${id}`, copy);
   }
 
+  reserve(id: number, memberId: number, reservedUntil: string): Observable<GameCopy> {
+    return this.http.put<GameCopy>(`${this.apiUrl}/${id}/reserve`, { memberId, reservedUntil });
+  }
+
+  cancelReservation(id: number): Observable<GameCopy> {
+    return this.http.delete<GameCopy>(`${this.apiUrl}/${id}/reserve`);
+  }
+
   delete(id: number): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
   }

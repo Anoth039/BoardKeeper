@@ -1,40 +1,93 @@
 <app-game-form *ngIf="showForm" [gameToEdit]="editingGame" (gameSaved)="onFormSaved()" (cancelled)="onFormCancelled()"></app-game-form>
 
-<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-  <div class="input-group search-input">
-    <span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span>
-    <input type="text" class="form-control border-start-0" placeholder="Search by name or category..." [(ngModel)]="searchTerm"/>
-    <button *ngIf="searchTerm" class="btn btn-outline-secondary" (click)="searchTerm = ''">
-      <i class="bi bi-x"></i>
+<div class="mb-3">
+  <div class="d-flex gap-2 flex-wrap align-items-center">
+    <div class="input-group search-input">
+      <span class="input-group-text">
+        <i class="bi bi-search text-muted"></i>
+      </span>
+      <input type="text" class="form-control" placeholder="Search by name or category..." [(ngModel)]="searchTerm"/>
+      <button *ngIf="searchTerm" class="btn btn-outline-secondary" (click)="searchTerm = ''">
+        <i class="bi bi-x"></i>
+      </button>
+    </div>
+
+    <button class="btn btn-outline-secondary position-relative" [class.active]="showFilters" (click)="showFilters = !showFilters">
+      <i class="bi bi-funnel"></i> Filters
+      <span class="filter-badge" *ngIf="activeFilterCount > 0">{{ activeFilterCount }}</span>
     </button>
+
+    <button *ngIf="activeFilterCount > 0 || searchTerm" class="btn btn-link text-muted btn-sm" (click)="clearFilters()">
+      Clear all
+    </button>
+
+    <div class="ms-auto">
+      <button *ngIf="!showForm && isAdmin" class="btn btn-primary" (click)="openAddForm()">
+        <i class="bi bi-plus-lg me-1"></i> Add Game
+      </button>
+    </div>
   </div>
 
-  <button *ngIf="!showForm && isAdmin" class="btn btn-primary" (click)="openAddForm()">
-    <i class="bi bi-plus-lg"></i> Add Game
-  </button>
+  <div class="filter-panel mt-2" *ngIf="showFilters">
+    <div class="row g-2 align-items-end">
+      <div class="col-6 col-sm-4 col-lg-2">
+        <label class="caption d-block mb-1">Age rating</label>
+        <select class="form-select form-select-sm" [(ngModel)]="ageRatingFilter">
+          <option [ngValue]="'all'">Any</option>
+          <option [ngValue]="3">3+</option>
+          <option [ngValue]="7">7+</option>
+          <option [ngValue]="12">12+</option>
+          <option [ngValue]="16">16+</option>
+          <option [ngValue]="18">18+</option>
+        </select>
+      </div>
+      <div class="col-6 col-sm-4 col-lg-2">
+        <label class="caption d-block mb-1">Players</label>
+        <input type="number" class="form-control form-control-sm" min="1" placeholder="e.g. 4" [(ngModel)]="playerCountFilter"/>
+      </div>
+      <div class="col-6 col-sm-4 col-lg-2">
+        <label class="caption d-block mb-1">Min playtime</label>
+        <input type="number" class="form-control form-control-sm" min="1" placeholder="min" [(ngModel)]="playtimeMinFilter"/>
+      </div>
+      <div class="col-6 col-sm-4 col-lg-2">
+        <label class="caption d-block mb-1">Max playtime</label>
+        <input type="number" class="form-control form-control-sm" min="1" placeholder="min" [(ngModel)]="playtimeMaxFilter"/>
+      </div>
+      <div class="col-6 col-sm-4 col-lg-2">
+        <label class="caption d-block mb-1">Availability</label>
+        <select class="form-select form-select-sm" [(ngModel)]="availabilityFilter">
+          <option value="all">Any</option>
+          <option value="available">Available now</option>
+        </select>
+      </div>
+    </div>
+  </div>
 </div>
 
-<div *ngIf="games.length === 0" class="empty-state text-muted">
+<div *ngIf="games.length === 0" class="empty-state">
   <i class="bi bi-dice-5"></i>
   <p>No games yet. Add one to get started.</p>
 </div>
 
-<div *ngIf="games.length > 0 && filteredGames.length === 0" class="empty-state text-muted">
+<div *ngIf="games.length > 0 && filteredGames.length === 0" class="empty-state">
   <i class="bi bi-search"></i>
-    <p class="text-break">
-      No games match "<strong>{{ searchTerm }}</strong>"
-    </p>
-  <button class="btn btn-sm btn-outline-secondary" (click)="searchTerm = ''">Clear search</button>
+  <p *ngIf="searchTerm" class="text-break">
+    No games match "<strong>{{ searchTerm }}</strong>"
+  </p>
+  <p *ngIf="!searchTerm">
+    No games match the selected filters.
+  </p>
+  <button class="btn btn-sm btn-outline-secondary" (click)="clearFilters()">Clear search &amp; filters</button>
 </div>
 
 <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3">
   <div class="col" *ngFor="let game of filteredGames">
-    <div class="card game-card h-100 shadow-sm">
+    <div class="card h-100">
       <img *ngIf="game.imageUrl" [src]="game.imageUrl" class="card-img-top game-card-img" [alt]="game.title + ' cover'"/>
       
       <div class="card-body d-flex flex-column">
         <div class="d-flex justify-content-between align-items-start gap-2">
-          <div class="flex-grow-1" style="min-width: 0;">
+          <div class="flex-grow-1 min-w-0">
             <div class="d-flex align-items-center gap-2">
               <h6 class="card-title mb-0 text-truncate" [title]="game.title">{{ game.title }}</h6>
               <span *ngIf="game.ageRating" class="age-rating-badge" [style.color]="ageRatingColor(game.ageRating)" [style.borderColor]="ageRatingColor(game.ageRating)">
@@ -65,6 +118,7 @@
           <small class="text-muted">
             {{ game.minPlayers }}–{{ game.maxPlayers }} players
             <span *ngIf="game.estimatedTimeMinutes"> · <i class="bi bi-clock"></i> {{ formatPlayTime(game.estimatedTimeMinutes) }}</span>
+            <span *ngIf="game.pricePerDay"> · {{ game.pricePerDay | currency }}/day</span>
           </small>
 
           <div class="d-flex justify-content-between align-items-center mt-1">
@@ -80,17 +134,17 @@
 </div>
 
 <div class="modal-backdrop-custom" *ngIf="selectedGameForCopies" (click)="closeCopiesModal()">
-  <div class="modal-box modal-box-wide" (click)="$event.stopPropagation()">
+  <div class="modal-box overflow-hidden" (click)="$event.stopPropagation()">
     <div class="modal-header-custom">
-      <h5 class="mb-0 text-truncate me-2" style="min-width: 0;" [title]="selectedGameForCopies.title">
+      <h5 class="mb-0 text-truncate me-2 min-w-0" [title]="selectedGameForCopies.title">
         {{ selectedGameForCopies.title }}
       </h5>
       <div class="d-flex align-items-center gap-2 flex-shrink-0">
         <div class="btn-group btn-group-sm" *ngIf="isAdmin">
-          <button class="btn" [ngClass]="!showAuditLog ? 'btn-primary' : 'btn-light'" (click)="closeAuditLog()">
+          <button class="btn" [ngClass]="!showAuditLog ? 'btn-primary' : 'btn-secondary'" (click)="closeAuditLog()">
             <i class="bi bi-boxes"></i>
           </button>
-          <button class="btn" [ngClass]="showAuditLog ? 'btn-primary' : 'btn-light'" (click)="openAuditLog()">
+          <button class="btn" [ngClass]="showAuditLog ? 'btn-primary' : 'btn-secondary'" (click)="openAuditLog()">
             <i class="bi bi-clock-history"></i>
           </button>
         </div>
@@ -117,6 +171,7 @@
           <select class="form-select form-select-sm" [(ngModel)]="copyFilterAvailability">
             <option value="all">All statuses</option>
             <option value="available">Available</option>
+            <option value="reserved">Reserved</option>
             <option value="rented">Rented out</option>
           </select>
         </div>
@@ -126,24 +181,35 @@
         <ul *ngIf="filteredCopies.length > 0" class="list-group mb-0">
           <li *ngFor="let copy of filteredCopies" class="list-group-item">
 
-            <div *ngIf="editingCopyId !== copy.id" class="d-flex justify-content-between align-items-center">
-              <div class="flex-grow-1" style="min-width: 0;">
+            <div *ngIf="editingCopyId !== copy.id && reservingCopyId !== copy.id" class="d-flex justify-content-between align-items-center">
+              <div class="flex-grow-1 min-w-0">
                 <span class="copy-name-text" [class.text-muted]="copy.condition === 'lost'" [title]="copy.copyNumber">
                   {{ copy.copyNumber }}
                 </span>
                 <span class="badge ms-2" [ngClass]="conditionBadgeClass(copy.condition)">
                   {{ capitalize(copy.condition) }}
                 </span>
-                <span *ngIf="copy.condition !== 'lost'" class="badge ms-1" [ngClass]="copy.isAvailable ? 'bg-info' : 'bg-secondary'">
-                  {{ copy.isAvailable ? 'Available' : 'Rented out' }}
+                <span *ngIf="copy.condition !== 'lost'" class="badge ms-1" [ngClass]="statusBadgeClass(copy)">
+                  {{ statusLabel(copy) }}
                 </span>
 
-                <div *ngIf="copy.notes" class="copy-notes small text-muted text-truncate mt-1" [title]="copy.notes">
+                <div *ngIf="isReserved(copy)" class="small text-muted mt-1">
+                  <i class="bi bi-bookmark-fill me-1"></i>For {{ copy.reservedFor?.firstName }} {{ copy.reservedFor?.lastName }} until {{ copy.reservedUntil }}
+                </div>
+
+                <div *ngIf="copy.notes" class="small text-muted text-truncate mt-1" [title]="copy.notes">
                   <i class="bi bi-sticky me-1"></i>{{ copy.notes }}
                 </div>
               </div>
 
-              <ng-container *ngIf="copy.isAvailable || copy.condition === 'lost'">
+              <button *ngIf="isReserved(copy)" class="btn btn-sm btn-outline-warning" (click)="cancelReservation(copy)" title="Cancel reservation">
+                <i class="bi bi-bookmark-x"></i>
+              </button>
+
+              <ng-container *ngIf="(copy.isAvailable && !isReserved(copy)) || copy.condition === 'lost'">
+                <button *ngIf="copy.isAvailable" class="btn btn-sm btn-outline-primary me-1" (click)="startReserve(copy)" title="Reserve">
+                  <i class="bi bi-bookmark-plus"></i>
+                </button>
                 <button class="btn btn-sm btn-outline-secondary" (click)="startEditCopy(copy)" title="Edit">
                   <i class="bi bi-pencil"></i>
                 </button>
@@ -155,8 +221,8 @@
 
             <div *ngIf="editingCopyId === copy.id" class="d-flex flex-column gap-2">
               <div class="d-flex align-items-center gap-2">
-                <input type="text" class="form-control form-control-sm" placeholder="Copy #" style="max-width: 120px;" [(ngModel)]="editCopyNumber" required minlength="3" maxlength="12"/>
-                <select class="form-select form-select-sm" style="max-width: 110px;" [(ngModel)]="editCopyCondition">
+                <input type="text" class="form-control form-control-sm field-narrow" placeholder="Copy #" [(ngModel)]="editCopyNumber" required minlength="3" maxlength="12"/>
+                <select class="form-select form-select-sm field-narrow" [(ngModel)]="editCopyCondition">
                   <option value="new">New</option>
                   <option value="good">Good</option>
                   <option value="worn">Worn</option>
@@ -165,15 +231,40 @@
                 </select>
                 <div class="ms-auto d-flex gap-1">
                   <button class="btn btn-sm btn-success" (click)="saveEditCopy(copy.id)">Save</button>
-                  <button class="btn btn-sm btn-outline-secondary" (click)="cancelEditCopy()">✕</button>
+                  <button class="btn btn-sm btn-outline-danger" (click)="cancelEditCopy()">✕</button>
                 </div>
               </div>
               <div>
                 <input type="text" class="form-control form-control-sm" placeholder="Internal note (optional) — e.g. missing 2 cards" 
                   [(ngModel)]="editCopyNotes" maxlength="200"/>
-                <div class="text-end text-muted mt-1" style="font-size: 0.75rem;">
+                <div class="text-end text-muted text-xs mt-1">
                   {{ (editCopyNotes || '').length }}/200
                 </div>
+              </div>
+            </div>
+
+            <div *ngIf="reservingCopyId === copy.id" class="d-flex flex-wrap align-items-center gap-2">
+              <span class="fw-semibold small">{{ copy.copyNumber }}</span>
+              <div class="position-relative reserve-member-search">
+                <input type="text" class="form-control form-control-sm" placeholder="Search member…"
+                  [ngModel]="reserveMemberSearch" (ngModelChange)="onReserveMemberSearchChange($event)"
+                  (focus)="showReserveMemberDropdown = true" (blur)="onReserveMemberBlur()" autocomplete="off" />
+                <div class="member-search-dropdown" *ngIf="showReserveMemberDropdown && filteredReserveMembers.length > 0">
+                  <button type="button" class="member-search-option" *ngFor="let m of filteredReserveMembers"
+                    (mousedown)="selectReserveMember(m)">
+                    <span class="fw-semibold">{{ m.firstName }} {{ m.lastName }}</span>
+                    <span class="text-muted small d-block">{{ m.email }}</span>
+                  </button>
+                </div>
+                <div class="member-search-dropdown" *ngIf="showReserveMemberDropdown && reserveMemberSearch.trim() && filteredReserveMembers.length === 0">
+                  <div class="member-search-empty text-muted small">No active members match.</div>
+                </div>
+              </div>
+              <input type="date" class="form-control form-control-sm w-auto" [(ngModel)]="reserveUntil"
+                [min]="reserveMin" [max]="reserveMax" title="Reserved until"/>
+              <div class="ms-auto d-flex gap-1">
+                <button class="btn btn-sm btn-success" (click)="confirmReserve(copy)">Reserve</button>
+                <button class="btn btn-sm btn-outline-danger" (click)="cancelReserve()">✕</button>
               </div>
             </div>
 
@@ -253,11 +344,11 @@
       </div>
 
       <div *ngIf="!auditLoading && auditLogs.length === 0" class="text-center text-muted py-4">
-        <i class="bi bi-clock-history d-block mb-2" style="font-size: 1.8rem;"></i>
+        <i class="bi bi-clock-history d-block mb-2 fs-3"></i>
         No changes recorded yet.
       </div>
 
-      <div class="audit-list" *ngIf="!auditLoading && auditLogs.length > 0">
+      <div *ngIf="!auditLoading && auditLogs.length > 0">
         <div class="audit-row" *ngFor="let log of auditLogs">
           <div class="audit-icon" [ngClass]="auditActionClass(log.action)">
             <i class="bi" [ngClass]="{
@@ -265,6 +356,8 @@
               'bi-trash-fill': log.action === 'deleted',
               'bi-arrow-left-right': log.action === 'condition_changed',
               'bi-pencil-fill': log.action === 'name_changed' || log.action === 'notes_changed',
+              'bi-bookmark-fill': log.action === 'reserved',
+              'bi-bookmark-x-fill': log.action === 'reservation_cancelled',
             }"></i>
           </div>
           <div class="audit-body">
@@ -278,8 +371,11 @@
                 <i class="bi bi-arrow-right audit-arrow"></i>
                 <span class="audit-value new">{{ log.newValue }}</span>
               </ng-container>
-              <ng-container *ngIf="log.action === 'created' && log.newValue">
+              <ng-container *ngIf="(log.action === 'created' || log.action === 'reserved') && log.newValue">
                 <span class="audit-value new">{{ log.newValue }}</span>
+              </ng-container>
+              <ng-container *ngIf="log.action === 'reservation_cancelled' && log.oldValue">
+                <span class="audit-value old">{{ log.oldValue }}</span>
               </ng-container>
             </div>
             <div class="audit-meta">

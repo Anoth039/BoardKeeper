@@ -1,12 +1,12 @@
 <app-rental-form *ngIf="showForm" (rentalCreated)="onFormCreated()" (cancelled)="onFormCancelled()"></app-rental-form>
 
-<div class="rental-toolbar mb-3">
+<div class="mb-3">
   <div class="d-flex gap-2 flex-wrap align-items-center">
     <div class="input-group search-input">
-      <span class="input-group-text bg-white">
+      <span class="input-group-text">
         <i class="bi bi-search text-muted"></i>
       </span>
-      <input type="text" class="form-control border-start-0" placeholder="Search member, game, copy..." [(ngModel)]="searchTerm"/>
+      <input type="text" class="form-control" placeholder="Search member, game, copy..." [(ngModel)]="searchTerm"/>
       <button *ngIf="searchTerm" class="btn btn-outline-secondary" (click)="searchTerm = ''">
         <i class="bi bi-x"></i>
       </button>
@@ -35,7 +35,7 @@
   <div class="filter-panel mt-2" *ngIf="showFilters">
     <div class="row g-2 align-items-end">
       <div class="col-sm-3">
-        <label class="filter-label">Status</label>
+        <label class="caption d-block mb-1">Status</label>
         <select class="form-select form-select-sm" [(ngModel)]="statusFilter">
           <option value="all">All statuses</option>
           <option value="active">Active</option>
@@ -44,19 +44,19 @@
         </select>
       </div>
       <div class="col-sm-2">
-        <label class="filter-label">Rented from</label>
+        <label class="caption d-block mb-1">Rented from</label>
         <input type="date" class="form-control form-control-sm" [(ngModel)]="rentalDateFrom" />
       </div>
       <div class="col-sm-2">
-        <label class="filter-label">Rented to</label>
+        <label class="caption d-block mb-1">Rented to</label>
         <input type="date" class="form-control form-control-sm" [(ngModel)]="rentalDateTo" />
       </div>
       <div class="col-sm-2">
-        <label class="filter-label">Due from</label>
+        <label class="caption d-block mb-1">Due from</label>
         <input type="date" class="form-control form-control-sm" [(ngModel)]="dueDateFrom" />
       </div>
       <div class="col-sm-2">
-        <label class="filter-label">Due to</label>
+        <label class="caption d-block mb-1">Due to</label>
         <input type="date" class="form-control form-control-sm" [(ngModel)]="dueDateTo" />
       </div>
     </div>
@@ -69,35 +69,35 @@
   </span>
 </div>
 
-<div *ngIf="rentals.length === 0" class="empty-state text-muted">
+<div *ngIf="rentals.length === 0" class="empty-state">
   <i class="bi bi-journal-x"></i>
   <p>No rentals yet. Create one to get started.</p>
 </div>
 
-<div *ngIf="rentals.length > 0 && filteredRentals.length === 0" class="empty-state text-muted">
+<div *ngIf="rentals.length > 0 && filteredRentals.length === 0" class="empty-state">
   <i class="bi bi-search"></i>
   <p>No rentals match your search or filters.</p>
   <button class="btn btn-sm btn-outline-secondary" (click)="clearFilters()">Clear filters</button>
 </div>
 
-<div class="rental-list" *ngIf="filteredRentals.length > 0">
-  <div class="rental-card" *ngFor="let rental of filteredRentals">
+<div class="card-stack" *ngIf="filteredRentals.length > 0">
+  <div class="surface rental-card" *ngFor="let rental of filteredRentals">
 
-    <div class="rental-stripe" [ngClass]="{
+    <div class="stripe" [ngClass]="{
       'stripe-danger': isOverdue(rental),
       'stripe-warning': isDueSoon(rental) && !isOverdue(rental),
       'stripe-primary': rental.status === 'active' && !isOverdue(rental) && !isDueSoon(rental),
       'stripe-success': rental.status === 'returned',
-      'stripe-dark': rental.status === 'lost'
+      'stripe-secondary': rental.status === 'lost'
     }"></div>
 
-    <div class="rental-body">
+    <div class="entry-body">
       <div class="rental-top">
         <div class="rental-game">
           <span class="rental-game-title">
             {{ rental.gameCopy?.game?.title || rental.gameTitleSnapshot || 'Unknown game' }}
           </span>
-          <span class="rental-copy-name">
+          <span class="chip">
             {{ rental.gameCopy?.copyNumber || rental.copyLabelSnapshot || '—' }}
           </span>
         </div>
@@ -108,17 +108,17 @@
               <button class="btn btn-sm btn-outline-success" (click)="returnRental(rental)" title="Return">
                 <i class="bi bi-box-arrow-in-left"></i>
               </button>
-              <button class="btn btn-sm btn-outline-primary" (click)="startExtend(rental)" title="Extend due date">
+              <button class="btn btn-sm btn-outline-primary" *ngIf="!isOverdue(rental)" (click)="startExtend(rental)" title="Extend due date">
                 <i class="bi bi-calendar-plus"></i>
               </button>
-              <button class="btn btn-sm btn-outline-dark" (click)="markLost(rental)" title="Mark as lost">
+              <button class="btn btn-sm btn-outline-secondary" (click)="markLost(rental)" title="Mark as lost">
                 <i class="bi bi-bookmark-x"></i>
               </button>
             </ng-container>
 
             <ng-container *ngIf="extendingRentalId === rental.id">
               <div class="extend-box">
-                <input type="date" class="form-control form-control-sm py-0 px-1" [(ngModel)]="extendDueDate" [min]="rental.dueDate"/>
+                <input type="date" class="form-control form-control-sm py-0 px-1" [(ngModel)]="extendDueDate" [min]="rental.dueDate" [max]="getMaxDueDate(rental.dueDate)"/>
                 <button class="btn btn-sm btn-success" (click)="submitExtend(rental)">
                   <i class="bi bi-check-lg"></i>
                 </button>
@@ -129,49 +129,49 @@
             </ng-container>
           </ng-container>
 
-          <button class="btn btn-sm btn-outline-secondary" (click)="previewReceipt(rental)" title="Preview receipt">
+          <button class="btn btn-sm btn-outline-secondary" *ngIf="rental.status !== 'active'" (click)="previewReceipt(rental)" title="Preview receipt">
             <i class="bi bi-file-earmark-pdf"></i>
           </button>
         </div>
       </div>
 
       <div class="rental-bottom">
-        <div class="rental-dates">
-          <span class="rental-meta">
+        <div class="meta-line rental-dates">
+          <span>
             <i class="bi bi-person me-1"></i>
             <a [routerLink]="['/members', rental.member?.id]" class="text-decoration-none rental-member-link">
               {{ rental.member?.firstName }} {{ rental.member?.lastName }}
             </a>
           </span>
-          <span class="rental-meta-divider">·</span>
-          <span class="rental-meta">
+          <span class="meta-divider">·</span>
+          <span>
             <i class="bi bi-calendar me-1"></i>
             {{ rental.rentalDate }}
           </span>
-          <span class="rental-meta-divider">·</span>
-          <span class="rental-meta" [ngClass]="isOverdue(rental) ? 'text-danger fw-semibold' : (isDueSoon(rental) ? 'text-warning fw-semibold' : '')">
+          <span class="meta-divider">·</span>
+          <span [ngClass]="isOverdue(rental) ? 'text-danger fw-semibold' : (isDueSoon(rental) ? 'text-warning fw-semibold' : '')">
             <i class="bi bi-calendar-x me-1"></i>
             Due {{ rental.dueDate }}
           </span>
-          <span class="rental-meta-divider" *ngIf="rental.extensions?.length">·</span>
-          <span class="rental-meta" *ngIf="rental.extensions && rental.extensions.length > 0"
+          <span class="meta-divider" *ngIf="rental.extensions?.length">·</span>
+          <span *ngIf="rental.extensions && rental.extensions.length > 0"
             [title]="rental.extensions.map(e => e.previousDueDate + ' → ' + e.newDueDate + ' by ' + (e.extendedBy?.email || 'unknown')).join('\n')">
             <i class="bi bi-arrow-repeat me-1"></i>
             Extended {{ rental.extensions.length }}x
             (was {{ rental.extensions[0].previousDueDate }})
           </span>
-          <span class="rental-meta-divider" *ngIf="rental.returnDate">·</span>
-          <span class="rental-meta" *ngIf="rental.returnDate">
+          <span class="meta-divider" *ngIf="rental.returnDate">·</span>
+          <span *ngIf="rental.returnDate">
             <i class="bi bi-calendar-check me-1"></i>
             {{ rental.status === 'lost' ? 'Lost' : 'Returned' }} {{ rental.returnDate }}
           </span>
         </div>
 
         <div class="avatar-stack ms-auto flex-shrink-0" *ngIf="isAdmin">
-          <span class="handler-avatar" [title]="'Rented out by: ' + (rental.handledBy?.email || 'Unknown')">
+          <span class="avatar avatar-sm handler-avatar" [title]="'Rented out by: ' + (rental.handledBy?.email || 'Unknown')">
             {{ handledByInitials(rental) }}
           </span>
-          <span class="handler-avatar returned-avatar" *ngIf="rental.status === 'returned' || rental.status === 'lost'"
+          <span class="avatar avatar-sm handler-avatar returned-avatar" *ngIf="rental.status === 'returned' || rental.status === 'lost'"
             [ngClass]="{ 'lost-avatar': rental.status === 'lost' }"
             [title]="(rental.status === 'lost' ? 'Marked lost by: ' : 'Checked in by: ') + (rental.returnedBy?.email || 'Unknown')">
             {{ returnedByInitials(rental) }}

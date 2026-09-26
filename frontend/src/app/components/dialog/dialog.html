@@ -1,5 +1,5 @@
 <div class="modal-backdrop-custom" *ngIf="visible" (click)="cancel()">
-  <div class="dialog-box" (click)="$event.stopPropagation()">
+  <div class="modal-box dialog-box" (click)="$event.stopPropagation()">
     <div class="dialog-header">
       <i class="bi me-2" [ngClass]="{
         'bi-exclamation-triangle-fill text-danger': config?.type === 'danger',

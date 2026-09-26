@@ -1,24 +1,24 @@
-.back-to-top {
+.theme-toggle {
   position: fixed;
   bottom: 1.5rem;
-  right: 1.5rem;
+  left: 1.5rem;
   z-index: 1000;
   display: flex;
   align-items: center;
   justify-content: center;
   width: 40px;
   height: 40px;
-  border: none;
+  border: 1px solid var(--bk-border);
   border-radius: 50%;
-  background: var(--bs-primary);
+  background: var(--bk-surface);
   box-shadow: 0 2px 8px rgba(16, 24, 40, 0.2);
-  color: #fff;
+  color: var(--bs-secondary-color);
   font-size: 1rem;
   cursor: pointer;
-  transition: opacity 0.2s, transform 0.2s;
+  transition: transform 0.2s, background 0.2s, color 0.2s;
 }
 
-.back-to-top:hover {
+.theme-toggle:hover {
   transform: translateY(-2px);
-  filter: brightness(0.92);
+  color: var(--bs-primary);
 }

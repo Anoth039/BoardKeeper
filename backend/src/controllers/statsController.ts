@@ -4,44 +4,19 @@ import { Game } from "../entities/Game";
 import { GameCopy } from "../entities/GameCopy";
 import { Member } from "../entities/Member";
 import { Rental, RentalStatus } from "../entities/Rental";
+import { dateString, daysBetween, monthStartString, toDateString } from "../utils/date";
 
 const gameRepo = AppDataSource.getRepository(Game);
 const copyRepo = AppDataSource.getRepository(GameCopy);
 const memberRepo = AppDataSource.getRepository(Member);
 const rentalRepo = AppDataSource.getRepository(Rental);
 
-const toLocalDate = (d: Date): string => {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
-};
-
-const todayStr = () => toLocalDate(new Date());
-
-const monthStartStr = () => {
-  const d = new Date();
-  d.setDate(1);
-  return toLocalDate(d);
-};
-
-const nDaysAgoStr = (n: number) => {
-  const d = new Date();
-  d.setDate(d.getDate() - n);
-  return toLocalDate(d);
-};
-
 export const getStats = async (req: Request, res: Response) => {
   try {
-    const today = todayStr();
-    const monthStart = monthStartStr();
-    const fourteenDaysAgo = nDaysAgoStr(13);
-
-    const twoDaysFromNow = toLocalDate((() => {
-      const d = new Date();
-      d.setDate(d.getDate() + 2);
-      return d;
-    })());
+    const today = dateString();
+    const monthStart = monthStartString();
+    const fourteenDaysAgo = dateString(-13);
+    const twoDaysFromNow = dateString(2);
 
     const totalGames = await gameRepo.count();
     const totalCopies = await copyRepo.count();
@@ -49,6 +24,7 @@ export const getStats = async (req: Request, res: Response) => {
       .createQueryBuilder("c")
       .where("c.is_available = true")
       .andWhere("c.condition != :lost", { lost: "lost" })
+      .andWhere("(c.reserved_for_member_id IS NULL OR c.reserved_until < :today)", { today })
       .getCount();
     const activeMembers = await memberRepo.count({ where: { isActive: true } });
 
@@ -119,14 +95,12 @@ export const getStats = async (req: Request, res: Response) => {
       .getRawMany();
 
     const activityMap = new Map<string, number>(
-      rawActivity.map((row) => [toLocalDate(row.date), Number(row.count)])
+      rawActivity.map((row) => [toDateString(row.date), Number(row.count)])
     );
 
     const rentalActivity: { date: string; count: number }[] = [];
     for (let i = 13; i >= 0; i--) {
-      const d = new Date();
-      d.setDate(d.getDate() - i);
-      const ds = toLocalDate(d);
+      const ds = dateString(-i);
       rentalActivity.push({ date: ds, count: activityMap.get(ds) ?? 0 });
     }
 
@@ -134,11 +108,7 @@ export const getStats = async (req: Request, res: Response) => {
       relations: { copies: { rentals: true } },
     });
 
-    const twoWeeksAgo = toLocalDate((() => {
-      const d = new Date();
-      d.setDate(d.getDate() - 14);
-      return d;
-    })());
+    const twoWeeksAgo = dateString(-14);
 
     const unusedGames = allGames
       .map((g) => {
@@ -155,12 +125,8 @@ export const getStats = async (req: Request, res: Response) => {
         };
       })
       .filter((g) => {
-        const createdDaysAgo = Math.floor(
-          (Date.now() - new Date(g.createdAt).getTime()) / 86400000
-        );
-
         if (!g.lastRentedDate) {
-          return createdDaysAgo > 7;
+          return daysBetween(g.createdAt) > 7;
         }
 
         return g.lastRentedDate < twoWeeksAgo;
@@ -196,6 +162,7 @@ export const getStats = async (req: Request, res: Response) => {
       unusedGames,
     });
   } catch (error) {
-    res.status(500).json({ message: "Failed to fetch stats", error });
+    console.error("Failed to fetch stats:", error);
+    res.status(500).json({ message: "Failed to fetch stats" });
   }
 };

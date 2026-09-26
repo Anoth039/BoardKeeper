@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { getAllGameCopies, getGameCopyById, createGameCopy, updateGameCopy, deleteGameCopy, createGameCopiesBulk, getCopyAuditLog } from "../controllers/gameCopyController";
+import { getAllGameCopies, getGameCopyById, createGameCopy, updateGameCopy, deleteGameCopy, createGameCopiesBulk, getCopyAuditLog, reserveGameCopy, cancelReservation } from "../controllers/gameCopyController";
 import { requireAdmin } from "../middleware/authMiddleware";
 
 const router = Router();
@@ -9,6 +9,8 @@ router.get("/:id", getGameCopyById);
 router.get("/audit/:gameId", requireAdmin, getCopyAuditLog);
 router.post("/", requireAdmin, createGameCopy);
 router.post("/bulk", requireAdmin, createGameCopiesBulk);
+router.put("/:id/reserve", reserveGameCopy);
+router.delete("/:id/reserve", cancelReservation);
 router.put("/:id", updateGameCopy);
 router.delete("/:id", requireAdmin, deleteGameCopy);
     

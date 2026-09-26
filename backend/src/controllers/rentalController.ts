@@ -1,15 +1,16 @@
 import { Request, Response } from "express";
 import { AppDataSource } from "../data-source";
 import { Rental, RentalStatus } from "../entities/Rental";
-import { GameCopy } from "../entities/GameCopy";
+import { GameCopy, hasActiveReservation } from "../entities/GameCopy";
 import { Member } from "../entities/Member";
 import { AuthenticatedRequest } from "../middleware/authMiddleware";
 import { User } from "../entities/User";
 import { RentalExtension } from "../entities/RentalExtension";
+import { dateString, daysBetween } from "../utils/date";
+import { effectiveDailyRate, round2, LATE_FEE_RATE_MULTIPLIER, EXTENSION_FEE } from "../utils/pricing";
 
 const rentalRepository = AppDataSource.getRepository(Rental);
 
-// GET /api/rentals
 export const getAllRentals = async (req: AuthenticatedRequest, res: Response) => {
   try {
     const isAdmin = req.user?.role === "admin";
@@ -22,11 +23,11 @@ export const getAllRentals = async (req: AuthenticatedRequest, res: Response) =>
 
     res.json(rentals);
   } catch (error) {
-    res.status(500).json({ message: "Failed to fetch rentals", error });
+    console.error("Failed to fetch rentals:", error);
+    res.status(500).json({ message: "Failed to fetch rentals" });
   }
 };
 
-// GET /api/rentals/:id
 export const getRentalById = async (req: AuthenticatedRequest, res: Response) => {
   try {
     const isAdmin = req.user?.role === "admin";
@@ -43,11 +44,11 @@ export const getRentalById = async (req: AuthenticatedRequest, res: Response) =>
 
     res.json(rental);
   } catch (error) {
-    res.status(500).json({ message: "Failed to fetch rental", error });
+    console.error("Failed to fetch rental:", error);
+    res.status(500).json({ message: "Failed to fetch rental" });
   }
 };
 
-// POST /api/rentals
 export const createRental = async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { memberId, gameCopyId, rentalDate, dueDate } = req.body;
@@ -79,7 +80,7 @@ export const createRental = async (req: AuthenticatedRequest, res: Response) => 
 
       const gameCopy = await gameCopyRepo.findOne({
         where: { id: gameCopyId },
-        relations: { game: true },
+        relations: { game: true, reservedFor: true },
       });
       if (!gameCopy) {
         throw new Error("COPY_NOT_FOUND");
@@ -89,6 +90,9 @@ export const createRental = async (req: AuthenticatedRequest, res: Response) => 
       }
       if (gameCopy.condition === "lost") {
         throw new Error("COPY_LOST");
+      }
+      if (hasActiveReservation(gameCopy) && gameCopy.reservedFor!.id !== member.id) {
+        throw Object.assign(new Error("COPY_RESERVED"), { reservedUntil: gameCopy.reservedUntil });
       }
 
       const handledByUser = req.user
@@ -104,11 +108,14 @@ export const createRental = async (req: AuthenticatedRequest, res: Response) => 
         status: RentalStatus.ACTIVE,
         gameTitleSnapshot: gameCopy.game?.title,
         copyLabelSnapshot: gameCopy.copyNumber,
+        pricePerDaySnapshot: effectiveDailyRate(gameCopy.game?.pricePerDay, gameCopy.condition),
         handledBy: handledByUser,
       });
       const newRental = await rentalRepo.save(rental);
 
       gameCopy.isAvailable = false;
+      gameCopy.reservedFor = null;
+      gameCopy.reservedUntil = null;
       await gameCopyRepo.save(gameCopy);
 
       return newRental;
@@ -131,11 +138,14 @@ export const createRental = async (req: AuthenticatedRequest, res: Response) => 
     if (error.message === "COPY_LOST") {
       return res.status(409).json({ message: "This copy is marked as lost and cannot be rented" });
     }
-    res.status(500).json({ message: "Failed to create rental", error });
+    if (error.message === "COPY_RESERVED") {
+      return res.status(409).json({ message: `This copy is reserved for another member until ${error.reservedUntil}` });
+    }
+    console.error("Failed to create rental:", error);
+    res.status(500).json({ message: "Failed to create rental" });
   }
 };
 
-// PUT /api/rentals/:id/return
 export const returnRental = async (req: AuthenticatedRequest, res: Response) => {
   try {
     const id = Number(req.params.id);
@@ -156,6 +166,9 @@ export const returnRental = async (req: AuthenticatedRequest, res: Response) => 
       if (rental.status === RentalStatus.RETURNED) {
         throw new Error("ALREADY_RETURNED");
       }
+      if (rental.status !== RentalStatus.ACTIVE) {
+        throw new Error("NOT_ACTIVE");
+      }
       if (!rental.gameCopy) {
         throw new Error("COPY_NO_LONGER_EXISTS");
       }
@@ -164,8 +177,17 @@ export const returnRental = async (req: AuthenticatedRequest, res: Response) => 
         ? await userRepo.findOneBy({ id: req.user.userId })
         : null;
 
+      const today = dateString();
+      const daysRented = Math.max(1, daysBetween(rental.rentalDate, today));
+      const lateDays = Math.max(0, daysBetween(rental.dueDate, today));
+      const rate = rental.pricePerDaySnapshot || 0;
+
+      rental.rentalCharge = round2(rate * daysRented);
+      rental.lateFeeCharged = lateDays > 0 ? round2(rate * LATE_FEE_RATE_MULTIPLIER * lateDays) : 0;
+      rental.totalCharged = round2(rental.rentalCharge + rental.lateFeeCharged + (rental.extensionFeeCharged || 0));
+
       rental.status = RentalStatus.RETURNED;
-      rental.returnDate = new Date().toISOString().split("T")[0];
+      rental.returnDate = today;
       rental.returnedBy = returnedByUser;
       const savedRental = await rentalRepo.save(rental);
 
@@ -183,10 +205,14 @@ export const returnRental = async (req: AuthenticatedRequest, res: Response) => 
     if (error.message === "ALREADY_RETURNED") {
       return res.status(409).json({ message: "This rental has already been returned" });
     }
+    if (error.message === "NOT_ACTIVE") {
+      return res.status(409).json({ message: "Only active rentals can be returned" });
+    }
     if (error.message === "COPY_NO_LONGER_EXISTS") {
       return res.status(409).json({ message: "This rental's copy no longer exists and cannot be marked as returned this way" });
     }
-    res.status(500).json({ message: "Failed to return rental", error });
+    console.error("Failed to return rental:", error);
+    res.status(500).json({ message: "Failed to return rental" });
   }
 };
 
@@ -199,38 +225,59 @@ export const extendRental = async (req: AuthenticatedRequest, res: Response) => 
       return res.status(400).json({ message: "newDueDate is required" });
     }
 
-    const rental = await rentalRepository.findOneBy({ id });
+    const updated = await AppDataSource.transaction(async (manager) => {
+      const rentalRepo = manager.getRepository(Rental);
+      const extensionRepo = manager.getRepository(RentalExtension);
+      const userRepo = manager.getRepository(User);
 
-    if (!rental) {
-      return res.status(404).json({ message: "Rental not found" });
-    }
-    if (rental.status !== RentalStatus.ACTIVE) {
-      return res.status(409).json({ message: "Only active rentals can be extended" });
-    }
-    if (newDueDate <= rental.dueDate) {
-      return res.status(400).json({ message: "New due date must be after the current due date" });
-    }
+      const rental = await rentalRepo.findOneBy({ id });
+      if (!rental) {
+        throw new Error("RENTAL_NOT_FOUND");
+      }
+      if (rental.status !== RentalStatus.ACTIVE) {
+        throw new Error("NOT_ACTIVE");
+      }
+      if (daysBetween(rental.dueDate, dateString()) > 0) {
+        throw new Error("RENTAL_OVERDUE");
+      }
+      if (newDueDate <= rental.dueDate) {
+        throw new Error("INVALID_DUE_DATE");
+      }
 
-    const extensionRepo = AppDataSource.getRepository(RentalExtension);
-    const userRepo = AppDataSource.getRepository(User);
-    const extendedByUser = req.user
-      ? await userRepo.findOneBy({ id: req.user.userId })
-      : null;
+      const extendedByUser = req.user
+        ? await userRepo.findOneBy({ id: req.user.userId })
+        : null;
 
-    const extension = extensionRepo.create({
-      rental,
-      previousDueDate: rental.dueDate,
-      newDueDate,
-      extendedBy: extendedByUser,
+      const extension = extensionRepo.create({
+        rental,
+        previousDueDate: rental.dueDate,
+        newDueDate,
+        feeCharged: EXTENSION_FEE,
+        extendedBy: extendedByUser,
+      });
+      await extensionRepo.save(extension);
+
+      rental.dueDate = newDueDate;
+      rental.extensionFeeCharged = round2((rental.extensionFeeCharged || 0) + EXTENSION_FEE);
+      return rentalRepo.save(rental);
     });
-    await extensionRepo.save(extension);
-
-    rental.dueDate = newDueDate;
-    const updated = await rentalRepository.save(rental);
 
     res.json(updated);
-  } catch (error) {
-    res.status(500).json({ message: "Failed to extend rental", error });
+  } catch (error: any) {
+    if (error.message === "RENTAL_NOT_FOUND") {
+      return res.status(404).json({ message: "Rental not found" });
+    }
+    if (error.message === "NOT_ACTIVE") {
+      return res.status(409).json({ message: "Only active rentals can be extended" });
+    }
+    if (error.message === "RENTAL_OVERDUE") {
+      return res.status(409).json({ message: "This rental is already overdue and cannot be extended. Please return it or mark it as lost instead." });
+    }
+    if (error.message === "INVALID_DUE_DATE") {
+      return res.status(400).json({ message: "New due date must be after the current due date" });
+    }
+    console.error("Failed to extend rental:", error);
+    res.status(500).json({ message: "Failed to extend rental" });
   }
 };
 
@@ -245,7 +292,7 @@ export const markRentalLost = async (req: AuthenticatedRequest, res: Response) =
 
       const rental = await rentalRepo.findOne({
         where: { id },
-        relations: { gameCopy: true },
+        relations: { gameCopy: { game: true } },
       });
 
       if (!rental) {
@@ -266,8 +313,20 @@ export const markRentalLost = async (req: AuthenticatedRequest, res: Response) =
       rental.gameCopy.isAvailable = false;
       await gameCopyRepo.save(rental.gameCopy);
 
+      const today = dateString();
+      const daysRented = Math.max(1, daysBetween(rental.rentalDate, today));
+      const lateDays = Math.max(0, daysBetween(rental.dueDate, today));
+      const rate = rental.pricePerDaySnapshot || 0;
+
+      rental.rentalCharge = round2(rate * daysRented);
+      rental.lateFeeCharged = lateDays > 0 ? round2(rate * LATE_FEE_RATE_MULTIPLIER * lateDays) : 0;
+      rental.replacementFeeCharged = round2(rental.gameCopy.game?.replacementValue || 0);
+      rental.totalCharged = round2(
+        rental.rentalCharge + rental.lateFeeCharged + (rental.extensionFeeCharged || 0) + rental.replacementFeeCharged
+      );
+
       rental.status = RentalStatus.LOST;
-      rental.returnDate = new Date().toISOString().split("T")[0];
+      rental.returnDate = today;
       rental.returnedBy = returnedByUser;
       const savedRental = await rentalRepo.save(rental);
 
@@ -285,11 +344,11 @@ export const markRentalLost = async (req: AuthenticatedRequest, res: Response) =
     if (error.message === "COPY_NO_LONGER_EXISTS") {
       return res.status(409).json({ message: "This rental's copy no longer exists" });
     }
-    res.status(500).json({ message: "Failed to mark rental as lost", error });
+    console.error("Failed to mark rental as lost:", error);
+    res.status(500).json({ message: "Failed to mark rental as lost" });
   }
 };
 
-// DELETE /api/rentals/:id
 export const deleteRental = async (req: Request, res: Response) => {
   try {
     const id = Number(req.params.id);
@@ -301,6 +360,7 @@ export const deleteRental = async (req: Request, res: Response) => {
 
     res.status(204).send();
   } catch (error) {
-    res.status(500).json({ message: "Failed to delete rental", error });
+    console.error("Failed to delete rental:", error);
+    res.status(500).json({ message: "Failed to delete rental" });
   }
 };

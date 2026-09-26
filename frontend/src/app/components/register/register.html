@@ -1,5 +1,5 @@
 <div class="auth-wrapper d-flex justify-content-center align-items-center w-100">
-  <div class="card shadow-sm" style="width: 100%; max-width: 420px;">
+  <div class="card auth-card">
     <div class="card-body p-4">
       <h4 class="card-title text-center mb-4">Create an Account</h4>
 
@@ -7,9 +7,9 @@
 
         <div class="mb-3">
           <label class="form-label">Email *</label>
-          <div class="input-group">
-            <input type="email" class="form-control border-end-0" formControlName="email"/>
-            <button type="button" class="btn border border-start-0 bg-transparent text-primary small" (click)="sendCode()" [disabled]="!canSendCode || sendingCode">
+          <div class="input-group input-group-toggle">
+            <input type="email" class="form-control" formControlName="email"/>
+            <button type="button" class="btn text-primary small" (click)="sendCode()" [disabled]="!canSendCode || sendingCode">
               <span *ngIf="sendingCode" class="spinner-border spinner-border-sm me-1" role="status"></span>
               {{ sendingCode ? 'Sending...' : cooldownSeconds > 0 ? cooldownSeconds + 's' : codeSent ? 'Resend' : 'Send Code' }}
             </button>
@@ -21,8 +21,7 @@
 
         <div class="mb-3">
           <label class="form-label">Verification Code *</label>
-          <input type="text" class="form-control text-center" style="letter-spacing: 0.3em; font-size: 1.1rem;"
-            formControlName="verificationCode" maxlength="6" placeholder="000000"/>
+          <input type="text" class="form-control code-input" formControlName="verificationCode" maxlength="6" placeholder="000000"/>
           <div class="text-danger small" *ngIf="form.get('verificationCode')?.invalid && form.get('verificationCode')?.touched">
             Enter the 6-digit code from your email.
           </div>
@@ -30,9 +29,9 @@
 
         <div class="mb-3">
           <label class="form-label">Password *</label>
-          <div class="input-group">
-            <input [type]="showPassword ? 'text' : 'password'" class="form-control border-end-0" formControlName="password"/>
-            <button type="button" class="btn border border-start-0 bg-transparent text-secondary" (click)="showPassword = !showPassword" tabindex="-1">
+          <div class="input-group input-group-toggle">
+            <input [type]="showPassword ? 'text' : 'password'" class="form-control" formControlName="password"/>
+            <button type="button" class="btn" (click)="showPassword = !showPassword" tabindex="-1">
               <i class="bi" [ngClass]="showPassword ? 'bi-eye-slash' : 'bi-eye'"></i>
             </button>
           </div>
@@ -43,9 +42,9 @@
 
         <div class="mb-3">
           <label class="form-label">Confirm Password *</label>
-          <div class="input-group">
-            <input [type]="showConfirmPassword ? 'text' : 'password'" class="form-control border-end-0" formControlName="confirmPassword" />
-            <button type="button" class="btn border border-start-0 bg-transparent text-secondary" (click)="showConfirmPassword = !showConfirmPassword" tabindex="-1">
+          <div class="input-group input-group-toggle">
+            <input [type]="showConfirmPassword ? 'text' : 'password'" class="form-control" formControlName="confirmPassword" />
+            <button type="button" class="btn" (click)="showConfirmPassword = !showConfirmPassword" tabindex="-1">
               <i class="bi" [ngClass]="showConfirmPassword ? 'bi-eye-slash' : 'bi-eye'"></i>
             </button>
           </div>

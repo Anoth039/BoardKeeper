@@ -1,6 +1,8 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn, OneToMany } from "typeorm";
 import { Game } from "./Game";
 import { Rental } from "./Rental";
+import { Member } from "./Member";
+import { dateString } from "../utils/date";
 
 export enum CopyCondition {
   NEW = "new",
@@ -32,6 +34,13 @@ export class GameCopy {
   @Column({ name: "is_available", default: true })
   isAvailable!: boolean;
 
+  @ManyToOne(() => Member, { nullable: true, onDelete: "SET NULL" })
+  @JoinColumn({ name: "reserved_for_member_id" })
+  reservedFor!: Member | null;
+
+  @Column({ name: "reserved_until", type: "date", nullable: true })
+  reservedUntil!: string | null;
+
   @OneToMany(() => Rental, (rental) => rental.gameCopy)
   rentals!: Rental[];
 
@@ -41,3 +50,8 @@ export class GameCopy {
   @Column({ type: "text", nullable: true, name: "notes" })
   notes!: string | null;
 }
+
+export const MAX_RESERVATION_DAYS = 30;
+
+export const hasActiveReservation = (copy: Pick<GameCopy, "reservedFor" | "reservedUntil">): boolean =>
+  !!copy.reservedFor && !!copy.reservedUntil && copy.reservedUntil >= dateString();

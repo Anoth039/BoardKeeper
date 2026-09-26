@@ -47,6 +47,8 @@ export class GameForm implements OnInit, OnChanges {
       categories: [[] as string[]],
       ageRating: [null],
       estimatedTimeMinutes: [null, Validators.min(1)],
+      pricePerDay: [0, [Validators.required, Validators.min(0)]],
+      replacementValue: [0, [Validators.required, Validators.min(0)]],
       imageUrl: ['']
     }, { validators: maxNotLessThanMinValidator });
   }
@@ -82,6 +84,8 @@ export class GameForm implements OnInit, OnChanges {
         categories: initialCategories,
         ageRating: this.gameToEdit.ageRating,
         estimatedTimeMinutes: this.gameToEdit.estimatedTimeMinutes,
+        pricePerDay: this.gameToEdit.pricePerDay ?? 0,
+        replacementValue: this.gameToEdit.replacementValue ?? 0,
         imageUrl: this.gameToEdit.imageUrl
       });
     } else {
@@ -168,7 +172,7 @@ export class GameForm implements OnInit, OnChanges {
         const actionLabel = this.isEditMode ? 'updated' : 'created';
         this.toastService.success(`Game "${payload.title}" ${actionLabel} successfully.`);
         if (!this.isEditMode) {
-          this.form.reset({ minPlayers: 1, maxPlayers: 4, categories: [] });
+          this.form.reset({ minPlayers: 1, maxPlayers: 4, categories: [], pricePerDay: 0, replacementValue: 0 });
         }
         this.gameSaved.emit();
         this.cdr.detectChanges();

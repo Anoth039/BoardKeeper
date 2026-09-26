@@ -1,5 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, OneToMany } from "typeorm";
 import { GameCopy } from "./GameCopy";
+import { decimalTransformer } from "../utils/money";
 
 export enum AgeRating {
   AGE_3 = 3,
@@ -42,6 +43,12 @@ export class Game {
 
   @Column({ name: "estimated_time_minutes", nullable: true })
   estimatedTimeMinutes!: number;
+
+  @Column({ name: "price_per_day", type: "decimal", precision: 8, scale: 2, default: 0, transformer: decimalTransformer })
+  pricePerDay!: number;
+
+  @Column({ name: "replacement_value", type: "decimal", precision: 8, scale: 2, default: 0, transformer: decimalTransformer })
+  replacementValue!: number;
 
   @OneToMany(() => GameCopy, (copy) => copy.game)
   copies!: GameCopy[];

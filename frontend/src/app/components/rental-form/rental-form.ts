@@ -5,10 +5,11 @@ import { RentalService } from '../../services/rental';
 import { MemberService } from '../../services/member';
 import { GameService } from '../../services/game';
 import { Member } from '../../models/member.model';
-import { Game, GameCopy } from '../../models/game.model';
+import { Game, GameCopy, isCopyReserved } from '../../models/game.model';
 import { AutofocusDirective } from '../../directives/autofocus';
 import { DialogService } from '../../services/dialog';
 import { ToastService } from '../../services/toast';
+import { dateString } from '../../utils/date';
 
 @Component({
   selector: 'app-rental-form',
@@ -36,8 +37,8 @@ export class RentalForm implements OnInit {
 
   copySearchTerm = '';
 
-  rentalDate = this.today();
-  dueDate = this.inOneWeek();
+  rentalDate = dateString();
+  dueDate = dateString(7);
 
   submitting = false;
 
@@ -111,7 +112,15 @@ export class RentalForm implements OnInit {
   }
 
   get availableCopiesForSelectedGame(): GameCopy[] {
-    return this.selectedGame?.copies?.filter(c => c.isAvailable && c.condition !== 'lost') || [];
+    const copies = this.selectedGame?.copies?.filter(c =>
+      c.isAvailable && c.condition !== 'lost' &&
+      (!isCopyReserved(c) || c.reservedFor?.id === this.selectedMemberId)) || [];
+
+    return [...copies].sort((a, b) => {
+      const aReservedForMember = isCopyReserved(a) && a.reservedFor?.id === this.selectedMemberId ? 1 : 0;
+      const bReservedForMember = isCopyReserved(b) && b.reservedFor?.id === this.selectedMemberId ? 1 : 0;
+      return bReservedForMember - aReservedForMember;
+    });
   }
 
   get selectedCopy(): GameCopy | null {
@@ -159,35 +168,19 @@ export class RentalForm implements OnInit {
   }
 
   get minRentalDate(): string {
-    const d = new Date();
-    d.setDate(d.getDate() - 7);
-    return d.toISOString().split('T')[0];
+    return dateString(-7);
   }
 
   get maxRentalDate(): string {
-    const d = new Date();
-    d.setDate(d.getDate() + 7);
-    return d.toISOString().split('T')[0];
+    return dateString(7);
   }
 
   get minDueDate(): string {
-    return this.rentalDate || this.today();
+    return this.rentalDate || dateString();
   }
 
   get maxDueDate(): string {
-    const d = new Date();
-    d.setDate(d.getDate() + 60);
-    return d.toISOString().split('T')[0];
-  }
-
-  private today(): string {
-    return new Date().toISOString().split('T')[0];
-  }
-
-  private inOneWeek(): string {
-    const d = new Date();
-    d.setDate(d.getDate() + 7);
-    return d.toISOString().split('T')[0];
+    return dateString(60);
   }
 
   onSubmit(): void {

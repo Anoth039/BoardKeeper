@@ -19,7 +19,8 @@ export const getAllUsers = async (req: Request, res: Response) => {
     });
     res.json(users);
   } catch (error) {
-    res.status(500).json({ message: "Failed to fetch users", error });
+    console.error("Failed to fetch users:", error);
+    res.status(500).json({ message: "Failed to fetch users" });
   }
 };
 
@@ -46,7 +47,8 @@ export const toggleUserApproval = async (req: Request, res: Response) => {
       isApproved: user.isApproved,
     });
   } catch (error) {
-    res.status(500).json({ message: "Failed to update user", error });
+    console.error("Failed to update user:", error);
+    res.status(500).json({ message: "Failed to update user" });
   }
 };
 
@@ -66,6 +68,7 @@ export const deleteUser = async (req: Request, res: Response) => {
     await userRepository.delete(id);
     res.status(204).send();
   } catch (error) {
-    res.status(500).json({ message: "Failed to delete user", error });
+    console.error("Failed to delete user:", error);
+    res.status(500).json({ message: "Failed to delete user" });
   }
 };

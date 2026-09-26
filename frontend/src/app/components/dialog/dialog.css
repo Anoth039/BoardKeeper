@@ -1,9 +1,5 @@
 .dialog-box {
-  background: white;
-  border-radius: 0.75rem;
-  width: 90%;
   max-width: 380px;
-  box-shadow: 0 1rem 3rem rgba(0,0,0,0.25);
   overflow: hidden;
 }
 
@@ -11,15 +7,13 @@
   display: flex;
   align-items: center;
   padding: 1rem 1.25rem 0.75rem;
-  border-bottom: 1px solid #f1f3f5;
+  border-bottom: 1px solid var(--bk-divider);
 }
 
 .dialog-body {
   padding: 0.85rem 1.25rem;
   font-size: 0.9rem;
-  color: #495057;
-  overflow-wrap: break-word;
-  word-break: break-word;
+  overflow-wrap: anywhere;
   hyphens: auto;
 }
 
@@ -28,5 +22,5 @@
   justify-content: flex-end;
   gap: 0.5rem;
   padding: 0.75rem 1.25rem;
-  background: #f8f9fa;
+  background: var(--bk-surface-muted);
 }

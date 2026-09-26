@@ -3,11 +3,14 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { GameService } from '../../services/game';
 import { GameCopyService } from '../../services/game-copy';
-import { CopyAuditLog, Game, GameCopy } from '../../models/game.model';
+import { CopyAuditLog, Game, GameCopy, isCopyReserved } from '../../models/game.model';
+import { Member } from '../../models/member.model';
+import { MemberService } from '../../services/member';
 import { GameForm } from '../game-form/game-form';
 import { AuthService } from '../../services/auth';
 import { DialogService } from '../../services/dialog';
 import { ToastService } from '../../services/toast';
+import { dateString, timeAgo } from '../../utils/date';
 
 @Component({
   selector: 'app-game-list',
@@ -22,6 +25,12 @@ export class GameListComponent implements OnInit {
   editingGame: Game | null = null;
   selectedGameForCopies: Game | null = null;
   searchTerm = '';
+  showFilters = false;
+  ageRatingFilter: number | 'all' = 'all';
+  playerCountFilter: number | null = null;
+  playtimeMinFilter: number | null = null;
+  playtimeMaxFilter: number | null = null;
+  availabilityFilter: 'all' | 'available' = 'all';
 
   showAuditLog = false;
   auditLogs: CopyAuditLog[] = [];
@@ -46,12 +55,20 @@ export class GameListComponent implements OnInit {
   editCopyNumber = '';
   editCopyNotes = '';
 
+  reservingCopyId: number | null = null;
+  reserveMemberId: number | null = null;
+  reserveMemberSearch = '';
+  showReserveMemberDropdown = false;
+  reserveUntil = '';
+  members: Member[] = [];
+
   copySearchTerm = '';
   copyFilterCondition = 'all';
   copyFilterAvailability = 'all';
 
   constructor(private gameService: GameService, private gameCopyService: GameCopyService, private cdr: ChangeDetectorRef,
-    public authService: AuthService, private dialogService: DialogService, private toastService: ToastService) {}
+    public authService: AuthService, private dialogService: DialogService, private toastService: ToastService,
+    private memberService: MemberService) {}
 
   ngOnInit(): void {
     this.loadGames();
@@ -258,22 +275,19 @@ export class GameListComponent implements OnInit {
 
     this.cdr.detectChanges();
 
-    const isAvailable = this.editCopyCondition !== 'lost';
-
     this.gameCopyService.update(copyId, {
       condition: this.editCopyCondition as any,
       copyNumber: trimmedNumber,
-      notes: this.editCopyNotes.trim() || null,
-      isAvailable: isAvailable
+      notes: this.editCopyNotes.trim() || null
     }).subscribe({
-      next: () => {
+      next: (updated) => {
         if (this.selectedGameForCopies?.copies) {
           const target = this.selectedGameForCopies.copies.find(c => c.id === copyId);
           if (target) {
-            target.copyNumber = trimmedNumber;
-            target.condition = this.editCopyCondition as any;
-            target.notes = this.editCopyNotes.trim() || null;
-            target.isAvailable = isAvailable;
+            target.copyNumber = updated.copyNumber;
+            target.condition = updated.condition;
+            target.notes = updated.notes;
+            target.isAvailable = updated.isAvailable;
           }
         }
         this.editingCopyId = null;
@@ -342,14 +356,61 @@ export class GameListComponent implements OnInit {
     });
   }
 
-  get filteredGames(): Game[] {
-    if (this.searchTerm.trim() === '') return this.games;
+  get activeFilterCount(): number {
+    let count = 0;
+    if (this.ageRatingFilter !== 'all') count++;
+    if (this.playerCountFilter !== null) count++;
+    if (this.playtimeMinFilter !== null) count++;
+    if (this.playtimeMaxFilter !== null) count++;
+    if (this.availabilityFilter !== 'all') count++;
+    return count;
+  }
 
-    const term = this.searchTerm.trim().toLowerCase();
-    return this.games.filter(game =>
-      game.title.toLowerCase().includes(term)
-      || (game.category?.toLowerCase().includes(term) ?? false)
-    );
+  clearFilters(): void {
+    this.searchTerm = '';
+    this.ageRatingFilter = 'all';
+    this.playerCountFilter = null;
+    this.playtimeMinFilter = null;
+    this.playtimeMaxFilter = null;
+    this.availabilityFilter = 'all';
+    this.cdr.detectChanges();
+  }
+
+  get filteredGames(): Game[] {
+    let result = this.games;
+
+    if (this.searchTerm.trim() !== '') {
+      const term = this.searchTerm.trim().toLowerCase();
+      result = result.filter(game =>
+        game.title.toLowerCase().includes(term)
+        || (game.category?.toLowerCase().includes(term) ?? false)
+      );
+    }
+
+    if (this.ageRatingFilter !== 'all') {
+      result = result.filter(game => game.ageRating === this.ageRatingFilter);
+    }
+
+    if (this.playerCountFilter !== null) {
+      const count = this.playerCountFilter;
+      result = result.filter(game => game.minPlayers <= count && game.maxPlayers >= count);
+    }
+
+    if (this.playtimeMinFilter !== null) {
+      const min = this.playtimeMinFilter;
+      result = result.filter(game => (game.estimatedTimeMinutes ?? 0) >= min);
+    }
+
+    if (this.playtimeMaxFilter !== null) {
+      const max = this.playtimeMaxFilter;
+      result = result.filter(game => !!game.estimatedTimeMinutes && game.estimatedTimeMinutes <= max);
+    }
+
+    if (this.availabilityFilter === 'available') {
+      result = result.filter(game => this.availableCount(game) > 0);
+    }
+
+    return result;
   }
 
   get filteredCopies(): GameCopy[] {
@@ -363,7 +424,8 @@ export class GameListComponent implements OnInit {
         || copy.condition === this.copyFilterCondition;
 
       const matchesAvailability = this.copyFilterAvailability === 'all'
-        || (this.copyFilterAvailability === 'available' && copy.isAvailable)
+        || (this.copyFilterAvailability === 'available' && copy.isAvailable && !isCopyReserved(copy))
+        || (this.copyFilterAvailability === 'reserved' && isCopyReserved(copy))
         || (this.copyFilterAvailability === 'rented' && !copy.isAvailable && copy.condition !== 'lost');
 
       return matchesSearch && matchesCondition && matchesAvailability;
@@ -382,7 +444,7 @@ export class GameListComponent implements OnInit {
   }
 
   availableCount(game: Game): number {
-    return game.copies?.filter(copy => copy.isAvailable).length || 0;
+    return game.copies?.filter(copy => copy.isAvailable && !isCopyReserved(copy)).length || 0;
   }
 
   conditionBadgeClass(condition: string): string {
@@ -450,6 +512,123 @@ export class GameListComponent implements OnInit {
     this.cdr.detectChanges();
   }
 
+  isReserved(copy: GameCopy): boolean {
+    return isCopyReserved(copy);
+  }
+
+  statusLabel(copy: GameCopy): string {
+    if (isCopyReserved(copy)) return 'Reserved';
+    return copy.isAvailable ? 'Available' : 'Rented out';
+  }
+
+  statusBadgeClass(copy: GameCopy): string {
+    if (isCopyReserved(copy)) return 'bg-warning text-dark';
+    return copy.isAvailable ? 'bg-info' : 'bg-secondary';
+  }
+
+  get activeMembers(): Member[] {
+    return this.members.filter(m => m.isActive);
+  }
+
+  get filteredReserveMembers(): Member[] {
+    const term = this.reserveMemberSearch.trim().toLowerCase();
+    const pool = this.activeMembers;
+    if (!term) return pool.slice(0, 8);
+
+    return pool.filter(m =>
+      `${m.firstName} ${m.lastName}`.toLowerCase().includes(term)
+      || m.email?.toLowerCase().includes(term)
+    ).slice(0, 8);
+  }
+
+  get reserveMin(): string { return dateString(); }
+  get reserveMax(): string { return dateString(30); }
+
+  startReserve(copy: GameCopy): void {
+    this.reservingCopyId = copy.id;
+    this.reserveMemberId = null;
+    this.reserveMemberSearch = '';
+    this.showReserveMemberDropdown = false;
+    this.reserveUntil = dateString(3);
+    if (this.members.length === 0) {
+      this.memberService.getAll().subscribe({
+        next: (members) => { this.members = members; this.cdr.detectChanges(); },
+        error: () => { this.toastService.error('Failed to load members.'); this.cdr.detectChanges(); }
+      });
+    }
+    this.cdr.detectChanges();
+  }
+
+  onReserveMemberSearchChange(value: string): void {
+    this.reserveMemberSearch = value;
+    this.reserveMemberId = null;
+    this.showReserveMemberDropdown = true;
+  }
+
+  selectReserveMember(member: Member): void {
+    this.reserveMemberId = member.id;
+    this.reserveMemberSearch = `${member.firstName} ${member.lastName}`;
+    this.showReserveMemberDropdown = false;
+  }
+
+  onReserveMemberBlur(): void {
+    setTimeout(() => {
+      this.showReserveMemberDropdown = false;
+      this.cdr.detectChanges();
+    }, 150);
+  }
+
+  cancelReserve(): void {
+    this.reservingCopyId = null;
+    this.reserveMemberSearch = '';
+    this.showReserveMemberDropdown = false;
+    this.cdr.detectChanges();
+  }
+
+  confirmReserve(copy: GameCopy): void {
+    if (!this.reserveMemberId || !this.reserveUntil) {
+      this.toastService.error('Choose a member and a date.');
+      this.cdr.detectChanges();
+      return;
+    }
+    const member = this.members.find(m => m.id === this.reserveMemberId);
+
+    this.gameCopyService.reserve(copy.id, this.reserveMemberId, this.reserveUntil).subscribe({
+      next: () => {
+        this.reservingCopyId = null;
+        this.toastService.success(`Copy #${copy.copyNumber} reserved for ${member?.firstName} ${member?.lastName}.`);
+        this.loadGames();
+      },
+      error: (err) => {
+        this.toastService.error(err.error?.message || 'Failed to reserve this copy. Please try again.');
+        console.error(err);
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  async cancelReservation(copy: GameCopy): Promise<void> {
+    const confirmed = await this.dialogService.confirm({
+      title: 'Cancel Reservation',
+      message: `Cancel the reservation of Copy #${copy.copyNumber} for ${copy.reservedFor?.firstName} ${copy.reservedFor?.lastName}?`,
+      confirmLabel: 'Cancel Reservation',
+      type: 'warning',
+    });
+    if (!confirmed) return;
+
+    this.gameCopyService.cancelReservation(copy.id).subscribe({
+      next: () => {
+        this.toastService.success(`Reservation of Copy #${copy.copyNumber} cancelled.`);
+        this.loadGames();
+      },
+      error: (err) => {
+        this.toastService.error(err.error?.message || 'Failed to cancel the reservation.');
+        console.error(err);
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
   auditActionLabel(action: string): string {
     switch (action) {
       case 'created': return 'Created';
@@ -457,6 +636,8 @@ export class GameListComponent implements OnInit {
       case 'name_changed': return 'Renamed';
       case 'notes_changed': return 'Notes';
       case 'deleted': return 'Deleted';
+      case 'reserved': return 'Reserved';
+      case 'reservation_cancelled': return 'Reservation cancelled';
       default: return action;
     }
   }
@@ -466,16 +647,12 @@ export class GameListComponent implements OnInit {
       case 'created': return 'text-success';
       case 'deleted': return 'text-danger';
       case 'condition_changed': return 'text-warning';
+      case 'reserved': return 'text-primary';
       default: return 'text-secondary';
     }
   }
 
   auditTimeAgo(dateStr: string): string {
-    const diff = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
-    if (diff < 60) return 'just now';
-    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-    const days = Math.floor(diff / 86400);
-    return days === 1 ? 'yesterday' : `${days} days ago`;
+    return timeAgo(dateStr);
   }
 }

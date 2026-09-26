@@ -6,11 +6,12 @@ import { filter } from 'rxjs';
 import { BackToTopComponent } from './components/back-to-top/back-to-top';
 import { DialogComponent } from './components/dialog/dialog';
 import { ToastComponent } from './components/toast/toast';
+import { ThemeToggleComponent } from './components/theme-toggle/theme-toggle';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, CommonModule, NavbarComponent, BackToTopComponent, DialogComponent, ToastComponent],
+  imports: [RouterOutlet, CommonModule, NavbarComponent, BackToTopComponent, DialogComponent, ToastComponent, ThemeToggleComponent],
   templateUrl: './app.html',
   styleUrl: './app.css'
 })

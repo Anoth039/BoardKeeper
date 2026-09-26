@@ -1,6 +1,9 @@
 import { Request, Response } from "express";
 import { AppDataSource } from "../data-source";
-import { GameCopy } from "../entities/GameCopy";
+import { CopyCondition, GameCopy, MAX_RESERVATION_DAYS, hasActiveReservation } from "../entities/GameCopy";
+import { Member } from "../entities/Member";
+import { dateString, toDate, toDateString } from "../utils/date";
+import { Rental, RentalStatus } from "../entities/Rental";
 import { Game } from "../entities/Game";
 import { AuditAction, CopyAuditLog } from "../entities/CopyAuditLog";
 import { User } from "../entities/User";
@@ -8,6 +11,8 @@ import { AuthenticatedRequest } from "../middleware/authMiddleware";
 
 const gameCopyRepository = AppDataSource.getRepository(GameCopy);
 const gameRepository = AppDataSource.getRepository(Game);
+const rentalRepository = AppDataSource.getRepository(Rental);
+const memberRepository = AppDataSource.getRepository(Member);
 
 const auditRepo = AppDataSource.getRepository(CopyAuditLog);
 const userRepo = AppDataSource.getRepository(User);
@@ -18,23 +23,22 @@ async function logAudit(copy: GameCopy, gameId: number, action: AuditAction, old
   await auditRepo.save(log);
 }
 
-// GET /api/game-copies
 export const getAllGameCopies = async (req: Request, res: Response) => {
   try {
-    const copies = await gameCopyRepository.find({ relations: { game: true } });
+    const copies = await gameCopyRepository.find({ relations: { game: true, reservedFor: true } });
     res.json(copies);
   } catch (error) {
-    res.status(500).json({ message: "Failed to fetch game copies", error });
+    console.error("Failed to fetch game copies:", error);
+    res.status(500).json({ message: "Failed to fetch game copies" });
   }
 };
 
-// GET /api/game-copies/:id
 export const getGameCopyById = async (req: Request, res: Response) => {
   try {
     const id = Number(req.params.id);
     const copy = await gameCopyRepository.findOne({
       where: { id },
-      relations: { game: true },
+      relations: { game: true, reservedFor: true },
     });
 
     if (!copy) {
@@ -43,11 +47,11 @@ export const getGameCopyById = async (req: Request, res: Response) => {
 
     res.json(copy);
   } catch (error) {
-    res.status(500).json({ message: "Failed to fetch game copy", error });
+    console.error("Failed to fetch game copy:", error);
+    res.status(500).json({ message: "Failed to fetch game copy" });
   }
 };
 
-// POST /api/game-copies
 export const createGameCopy = async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { gameId, copyNumber, condition } = req.body;
@@ -89,7 +93,8 @@ export const createGameCopy = async (req: AuthenticatedRequest, res: Response) =
 
     res.status(201).json(saved);
   } catch (error) {
-    res.status(500).json({ message: "Failed to create copy", error });
+    console.error("Failed to create copy:", error);
+    res.status(500).json({ message: "Failed to create copy" });
   }
 };
 
@@ -140,21 +145,25 @@ export const createGameCopiesBulk = async (req: AuthenticatedRequest, res: Respo
 
     res.status(201).json(saved);
   } catch (error) {
-    res.status(500).json({ message: "Failed to create copies", error });
+    console.error("Failed to create copies:", error);
+    res.status(500).json({ message: "Failed to create copies" });
   }
 };
 
-// PUT /api/game-copies/:id
 export const updateGameCopy = async (req: AuthenticatedRequest, res: Response) => {
   try {
     const id = Number(req.params.id);
     const copy = await gameCopyRepository.findOne({
       where: { id },
-      relations: { game: true },
+      relations: { game: true, reservedFor: true },
     });
 
     if (!copy) {
       return res.status(404).json({ message: "GameCopy not found" });
+    }
+
+    if (hasActiveReservation(copy)) {
+      return res.status(409).json({ message: "This copy is reserved. Cancel the reservation before editing it." });
     }
 
     const { copyNumber, condition, notes } = req.body;
@@ -172,11 +181,16 @@ export const updateGameCopy = async (req: AuthenticatedRequest, res: Response) =
 
     if (condition !== undefined && condition !== copy.condition) {
       await logAudit(copy, gameId, AuditAction.CONDITION_CHANGED, copy.condition, condition, userId);
+      const wasLost = copy.condition === CopyCondition.LOST;
       copy.condition = condition;
-      if (condition === "lost") {
+
+      if (condition === CopyCondition.LOST) {
         copy.isAvailable = false;
-      } else if (copy.condition !== "lost") {
-        copy.isAvailable = true;
+      } else if (wasLost) {
+        const activeRentals = await rentalRepository.count({
+          where: { gameCopy: { id }, status: RentalStatus.ACTIVE },
+        });
+        copy.isAvailable = activeRentals === 0;
       }
     }
 
@@ -188,21 +202,25 @@ export const updateGameCopy = async (req: AuthenticatedRequest, res: Response) =
     const updated = await gameCopyRepository.save(copy);
     res.json(updated);
   } catch (error) {
-    res.status(500).json({ message: "Failed to update copy", error });
+    console.error("Failed to update copy:", error);
+    res.status(500).json({ message: "Failed to update copy" });
   }
 };
 
-// DELETE /api/game-copies/:id
 export const deleteGameCopy = async (req: AuthenticatedRequest, res: Response) => {
   try {
     const id = Number(req.params.id);
     const copy = await gameCopyRepository.findOne({
       where: { id },
-      relations: { rentals: true, game: true },
+      relations: { rentals: true, game: true, reservedFor: true },
     });
 
     if (!copy) {
       return res.status(404).json({ message: "GameCopy not found" });
+    }
+
+    if (hasActiveReservation(copy)) {
+      return res.status(409).json({ message: "This copy is reserved. Cancel the reservation before deleting it." });
     }
 
     const hasActiveRentals = copy.rentals?.some(r => r.status === "active");
@@ -215,7 +233,87 @@ export const deleteGameCopy = async (req: AuthenticatedRequest, res: Response) =
     await gameCopyRepository.delete(id);
     res.status(204).send();
   } catch (error) {
-    res.status(500).json({ message: "Failed to delete copy", error });
+    console.error("Failed to delete copy:", error);
+    res.status(500).json({ message: "Failed to delete copy" });
+  }
+};
+
+export const reserveGameCopy = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const id = Number(req.params.id);
+    const { memberId, reservedUntil } = req.body;
+
+    if (!memberId || !reservedUntil) {
+      return res.status(400).json({ message: "memberId and reservedUntil are required" });
+    }
+    if (typeof reservedUntil !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(reservedUntil) || toDateString(toDate(reservedUntil)) !== reservedUntil) {
+      return res.status(400).json({ message: "reservedUntil must be a valid date (YYYY-MM-DD)" });
+    }
+    if (reservedUntil < dateString() || reservedUntil > dateString(MAX_RESERVATION_DAYS)) {
+      return res.status(400).json({ message: `A reservation can last from today up to ${MAX_RESERVATION_DAYS} days` });
+    }
+
+    const copy = await gameCopyRepository.findOne({
+      where: { id },
+      relations: { game: true, reservedFor: true },
+    });
+    if (!copy) {
+      return res.status(404).json({ message: "Game copy not found" });
+    }
+
+    const member = await memberRepository.findOneBy({ id: Number(memberId) });
+    if (!member) {
+      return res.status(404).json({ message: "Member not found" });
+    }
+    if (!member.isActive) {
+      return res.status(409).json({ message: "Inactive members cannot reserve copies" });
+    }
+    if (copy.condition === CopyCondition.LOST) {
+      return res.status(409).json({ message: "A lost copy cannot be reserved" });
+    }
+    if (!copy.isAvailable) {
+      return res.status(409).json({ message: "Only copies that are in the library can be reserved" });
+    }
+    if (hasActiveReservation(copy)) {
+      return res.status(409).json({ message: `This copy is already reserved for ${copy.reservedFor!.firstName} ${copy.reservedFor!.lastName}` });
+    }
+
+    copy.reservedFor = member;
+    copy.reservedUntil = reservedUntil;
+    const saved = await gameCopyRepository.save(copy);
+
+    await logAudit(copy, copy.game.id, AuditAction.RESERVED, null, `${member.firstName} ${member.lastName} until ${reservedUntil}`, req.user?.userId ?? null);
+    res.json(saved);
+  } catch (error) {
+    console.error("Failed to reserve copy:", error);
+    res.status(500).json({ message: "Failed to reserve copy" });
+  }
+};
+
+export const cancelReservation = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const id = Number(req.params.id);
+    const copy = await gameCopyRepository.findOne({
+      where: { id },
+      relations: { game: true, reservedFor: true },
+    });
+    if (!copy) {
+      return res.status(404).json({ message: "Game copy not found" });
+    }
+    if (!hasActiveReservation(copy)) {
+      return res.status(409).json({ message: "This copy is not reserved" });
+    }
+
+    const holder = `${copy.reservedFor!.firstName} ${copy.reservedFor!.lastName} until ${copy.reservedUntil}`;
+    copy.reservedFor = null;
+    copy.reservedUntil = null;
+    const saved = await gameCopyRepository.save(copy);
+
+    await logAudit(copy, copy.game.id, AuditAction.RESERVATION_CANCELLED, holder, null, req.user?.userId ?? null);
+    res.json(saved);
+  } catch (error) {
+    console.error("Failed to cancel reservation:", error);
+    res.status(500).json({ message: "Failed to cancel reservation" });
   }
 };
 
@@ -240,6 +338,7 @@ export const getCopyAuditLog = async (req: Request, res: Response) => {
       createdAt: log.createdAt,
     })));
   } catch (error) {
-    res.status(500).json({ message: "Failed to fetch audit log", error });
+    console.error("Failed to fetch audit log:", error);
+    res.status(500).json({ message: "Failed to fetch audit log" });
   }
 };

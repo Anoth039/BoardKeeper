@@ -3,6 +3,7 @@ import { Member } from "./Member";
 import { GameCopy } from "./GameCopy";
 import { User } from "./User";
 import { RentalExtension } from "./RentalExtension";
+import { decimalTransformer } from "../utils/money";
 
 export enum RentalStatus {
   ACTIVE = "active",
@@ -59,6 +60,24 @@ export class Rental {
 
   @Column({ name: "copy_label_snapshot", nullable: true })
   copyLabelSnapshot!: string;
+
+  @Column({ name: "price_per_day_snapshot", type: "decimal", precision: 8, scale: 2, nullable: true, transformer: decimalTransformer })
+  pricePerDaySnapshot!: number | null;
+
+  @Column({ name: "rental_charge", type: "decimal", precision: 8, scale: 2, nullable: true, transformer: decimalTransformer })
+  rentalCharge!: number | null;
+
+  @Column({ name: "late_fee_charged", type: "decimal", precision: 8, scale: 2, nullable: true, transformer: decimalTransformer })
+  lateFeeCharged!: number | null;
+
+  @Column({ name: "extension_fee_charged", type: "decimal", precision: 8, scale: 2, default: 0, transformer: decimalTransformer })
+  extensionFeeCharged!: number;
+
+  @Column({ name: "replacement_fee_charged", type: "decimal", precision: 8, scale: 2, nullable: true, transformer: decimalTransformer })
+  replacementFeeCharged!: number | null;
+
+  @Column({ name: "total_charged", type: "decimal", precision: 8, scale: 2, nullable: true, transformer: decimalTransformer })
+  totalCharged!: number | null;
 
   @OneToMany(() => RentalExtension, (ext) => ext.rental)
   extensions!: RentalExtension[];

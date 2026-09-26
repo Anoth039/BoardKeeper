@@ -1,8 +1,10 @@
-import { Component, OnInit, AfterViewInit, OnDestroy, ViewChild, ElementRef, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, AfterViewInit, OnDestroy, ViewChild, ElementRef, ChangeDetectorRef, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { StatsService } from '../../services/stats';
 import { Stats, UnusedGame } from '../../models/stats.model';
 import { Chart, registerables } from 'chart.js';
+import { formatDate, timeAgo } from '../../utils/date';
+import { ThemeService } from '../../services/theme';
 
 Chart.register(...registerables);
 
@@ -25,7 +27,12 @@ export class StatsPage implements OnInit, AfterViewInit, OnDestroy {
   private viewReady = false;
   private dataReady = false;
 
-  constructor(private statsService: StatsService, private cdr: ChangeDetectorRef) {}
+  constructor(private statsService: StatsService, private cdr: ChangeDetectorRef, private themeService: ThemeService) {
+    effect(() => {
+      this.themeService.theme();
+      if (this.viewReady && this.dataReady) this.renderAll();
+    });
+  }
 
   ngOnInit(): void {
     this.statsService.get().subscribe({
@@ -54,6 +61,8 @@ export class StatsPage implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private renderAll(): void {
+    this.charts.forEach(c => c.destroy());
+    this.charts = [];
     setTimeout(() => {
       this.renderTopGames();
       this.renderActivity();
@@ -61,10 +70,20 @@ export class StatsPage implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
+  private chartColors() {
+    const style = getComputedStyle(document.documentElement);
+    return {
+      text: style.getPropertyValue('--bs-body-color').trim() || '#212529',
+      grid: style.getPropertyValue('--bk-divider').trim() || '#f1f3f5',
+      surface: style.getPropertyValue('--bk-surface').trim() || '#fff',
+    };
+  }
+
   private renderTopGames(): void {
     if (!this.topGamesCanvas || !this.stats) return;
     const games = this.stats.topGamesThisMonth;
     const truncate = (str: string, len = 15) => str.length > len ? str.slice(0, len) + '…' : str;
+    const colors = this.chartColors();
 
     const chart = new Chart(this.topGamesCanvas.nativeElement, {
       type: 'bar',
@@ -95,10 +114,10 @@ export class StatsPage implements OnInit, AfterViewInit, OnDestroy {
         scales: {
           x: {
             beginAtZero: true,
-            ticks: { stepSize: 1, precision: 0 },
-            grid: { color: '#f1f3f5' }
+            ticks: { stepSize: 1, precision: 0, color: colors.text },
+            grid: { color: colors.grid }
           },
-          y: { grid: { display: false } }
+          y: { ticks: { color: colors.text }, grid: { display: false } }
         }
       }
     });
@@ -108,11 +127,12 @@ export class StatsPage implements OnInit, AfterViewInit, OnDestroy {
   private renderActivity(): void {
     if (!this.activityCanvas || !this.stats) return;
     const points = this.stats.rentalActivity;
+    const colors = this.chartColors();
 
     const chart = new Chart(this.activityCanvas.nativeElement, {
       type: 'line',
       data: {
-        labels: points.map(p => this.shortDate(p.date)),
+        labels: points.map(p => formatDate(p.date, 'short')),
         datasets: [{
           label: 'Rentals',
           data: points.map(p => p.count),
@@ -139,10 +159,10 @@ export class StatsPage implements OnInit, AfterViewInit, OnDestroy {
         scales: {
           y: {
             beginAtZero: true,
-            ticks: { stepSize: 1, precision: 0 },
-            grid: { color: '#f1f3f5' }
+            ticks: { stepSize: 1, precision: 0, color: colors.text },
+            grid: { color: colors.grid }
           },
-          x: { grid: { display: false } }
+          x: { ticks: { color: colors.text }, grid: { display: false } }
         }
       }
     });
@@ -153,6 +173,7 @@ export class StatsPage implements OnInit, AfterViewInit, OnDestroy {
     if (!this.statusCanvas || !this.stats) return;
     const b = this.stats.monthlyBreakdown;
     const total = b.active + b.overdue + b.returned + b.lost;
+    const colors = this.chartColors();
 
     const chart = new Chart(this.statusCanvas.nativeElement, {
       type: 'doughnut',
@@ -160,9 +181,9 @@ export class StatsPage implements OnInit, AfterViewInit, OnDestroy {
         labels: ['Active', 'Overdue', 'Returned', 'Lost'],
         datasets: [{
           data: [b.active, b.overdue, b.returned, b.lost],
-          backgroundColor: ['#0d6efd', '#dc3545', '#198754', '#212529'],
+          backgroundColor: ['#0d6efd', '#dc3545', '#198754', '#3f4040'],
           borderWidth: 3,
-          borderColor: '#fff',
+          borderColor: colors.surface,
           hoverOffset: 6,
         }]
       },
@@ -173,7 +194,7 @@ export class StatsPage implements OnInit, AfterViewInit, OnDestroy {
         plugins: {
           legend: {
             position: 'bottom',
-            labels: { boxWidth: 12, padding: 14, font: { size: 12 } }
+            labels: { boxWidth: 12, padding: 14, font: { size: 12 }, color: colors.text }
           },
           tooltip: {
             callbacks: {
@@ -191,24 +212,8 @@ export class StatsPage implements OnInit, AfterViewInit, OnDestroy {
   }
 
   unusedGameLabel(game: UnusedGame): string {
-    if (game.lastRentedDate) return this.timeAgo(game.lastRentedDate);
+    if (game.lastRentedDate) return timeAgo(game.lastRentedDate, { capitalize: true });
     return 'Never rented';
-  }
-
-  private shortDate(d: string): string {
-    return new Date(d).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-  }
-
-  private timeAgo(d: string): string {
-    const days = Math.floor((Date.now() - new Date(d).getTime()) / 86400000);
-    if (days === 0) return 'Today';
-    if (days === 1) return '1 day ago';
-    if (days < 30) return `${days} days ago`;
-    const months = Math.floor(days / 30);
-    if (months === 1) return '1 month ago';
-    if (months < 12) return `${months} months ago`;
-    const years = Math.floor(months / 12);
-    return years === 1 ? '1 year ago' : `${years} years ago`;
   }
 
   get totalRentalsThisMonth(): number {

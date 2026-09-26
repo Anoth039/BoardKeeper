@@ -63,6 +63,33 @@
           </div>
         </div>
 
+        <div class="row g-2 mb-3">
+          <div class="col">
+            <label class="form-label">Price / Day</label>
+            <div class="input-group">
+              <span class="input-group-text">$</span>
+              <input type="number" class="form-control" formControlName="pricePerDay" step="0.01" min="0"/>
+            </div>
+            <div class="text-danger small" *ngIf="form.get('pricePerDay')?.invalid && form.get('pricePerDay')?.touched">
+              Enter a valid daily price.
+            </div>
+          </div>
+          <div class="col">
+            <label class="form-label">Replacement Value</label>
+            <div class="input-group">
+              <span class="input-group-text">$</span>
+              <input type="number" class="form-control" formControlName="replacementValue" step="0.01" min="0"/>
+            </div>
+            <div class="text-danger small" *ngIf="form.get('replacementValue')?.invalid && form.get('replacementValue')?.touched">
+              Enter a valid replacement value.
+            </div>
+          </div>
+        </div>
+
+        <p class="caption text-muted mb-3">
+          Worn copies rent for 75% and damaged copies for 50% of this price automatically.
+        </p>
+
         <div class="mb-3">
           <label class="form-label d-block">Categories</label>
 
@@ -86,7 +113,7 @@
             <div class="d-flex flex-wrap gap-1">
               <span *ngFor="let cat of selectedCategories" class="badge bg-secondary d-inline-flex align-items-center gap-1">
                 {{ cat }}
-                <button type="button" class="btn-close btn-close-white ms-1" style="font-size: 0.5rem;" (click)="removeCategory(cat)"></button>
+                <button type="button" class="btn-close btn-close-white ms-1 tag-remove" (click)="removeCategory(cat)"></button>
               </span>
             </div>
           </div>
