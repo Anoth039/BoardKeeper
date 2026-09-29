@@ -11,6 +11,7 @@ import authRoutes from './routes/authRoutes';
 import { requireAuth } from './middleware/authMiddleware';
 import statsRoutes from './routes/statsRoutes';
 import userRoutes from './routes/userRoutes';
+import { assignQueuedReservations } from './controllers/queueController';
 
 dotenv.config();
 const app = express();
@@ -33,6 +34,8 @@ AppDataSource.initialize()
     console.log('Adatbázis kapcsolat sikeres.');
     app.listen(PORT, () => {
       console.log(`Szerver fut: http://localhost:${PORT}`);
+      assignQueuedReservations();
+      setInterval(assignQueuedReservations, 5 * 60 * 1000);
     });
   })
   .catch((err) => {

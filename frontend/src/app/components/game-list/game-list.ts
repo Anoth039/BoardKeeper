@@ -1,12 +1,13 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { GameService } from '../../services/game';
 import { GameCopyService } from '../../services/game-copy';
-import { CopyAuditLog, Game, GameCopy, isCopyReserved } from '../../models/game.model';
+import { CopyAuditLog, Game, GameCopy, QueueEntry, isCopyReserved } from '../../models/game.model';
 import { Member } from '../../models/member.model';
 import { MemberService } from '../../services/member';
 import { GameForm } from '../game-form/game-form';
+import { MemberPicker } from '../member-picker/member-picker';
 import { AuthService } from '../../services/auth';
 import { DialogService } from '../../services/dialog';
 import { ToastService } from '../../services/toast';
@@ -15,7 +16,7 @@ import { dateString, timeAgo } from '../../utils/date';
 @Component({
   selector: 'app-game-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, GameForm],
+  imports: [CommonModule, FormsModule, GameForm, MemberPicker],
   templateUrl: './game-list.html',
   styleUrl: './game-list.css'
 })
@@ -32,7 +33,7 @@ export class GameListComponent implements OnInit {
   playtimeMaxFilter: number | null = null;
   availabilityFilter: 'all' | 'available' = 'all';
 
-  showAuditLog = false;
+  modalTab: 'copies' | 'queue' | 'audit' = 'copies';
   auditLogs: CopyAuditLog[] = [];
   auditLoading = false;
 
@@ -57,10 +58,12 @@ export class GameListComponent implements OnInit {
 
   reservingCopyId: number | null = null;
   reserveMemberId: number | null = null;
-  reserveMemberSearch = '';
-  showReserveMemberDropdown = false;
   reserveUntil = '';
   members: Member[] = [];
+
+  queue: QueueEntry[] = [];
+  queueMemberId: number | null = null;
+  @ViewChild(MemberPicker) queuePicker?: MemberPicker;
 
   copySearchTerm = '';
   copyFilterCondition = 'all';
@@ -81,6 +84,7 @@ export class GameListComponent implements OnInit {
         if (this.selectedGameForCopies) {
           const refreshed = data.find(g => g.id === this.selectedGameForCopies!.id);
           this.selectedGameForCopies = refreshed || null;
+          this.loadQueue();
         }
         this.cdr.detectChanges();
       },
@@ -122,12 +126,16 @@ export class GameListComponent implements OnInit {
     this.resetNewCopyForm();
     this.resetCopyFilters();
     this.editingCopyId = null;
+    this.loadMembersIfNeeded();
+    this.loadQueue();
     this.cdr.detectChanges();
   }
 
   closeCopiesModal(): void {
     this.selectedGameForCopies = null;
-    this.showAuditLog = false;
+    this.queue = [];
+    this.queueMemberId = null;
+    this.modalTab = 'copies';
     this.auditLogs = [];
     this.resetCopyFilters();
     this.bulkMode = false;
@@ -222,15 +230,9 @@ export class GameListComponent implements OnInit {
     }).subscribe({
       next: (newCopies) => {
         this.addingBulk = false;
-        this.selectedGameForCopies!.copies = [
-          ...(this.selectedGameForCopies!.copies || []),
-          ...newCopies
-        ];
-        const gameInList = this.games.find(g => g.id === this.selectedGameForCopies!.id);
-        if (gameInList) gameInList.copies = this.selectedGameForCopies!.copies;
         this.bulkStartNumber = this.bulkStartNumber + this.bulkQuantity;
         this.toastService.success(`Added ${newCopies.length} copy/copies.`);
-        this.cdr.detectChanges();
+        this.loadGames();
       },
       error: (err) => {
         this.addingBulk = false;
@@ -488,7 +490,7 @@ export class GameListComponent implements OnInit {
 
   openAuditLog(): void {
     if (!this.selectedGameForCopies) return;
-    this.showAuditLog = true;
+    this.modalTab = 'audit';
     this.auditLoading = true;
     this.cdr.detectChanges();
 
@@ -506,8 +508,8 @@ export class GameListComponent implements OnInit {
     });
   }
 
-  closeAuditLog(): void {
-    this.showAuditLog = false;
+  showTab(tab: 'copies' | 'queue'): void {
+    this.modalTab = tab;
     this.auditLogs = [];
     this.cdr.detectChanges();
   }
@@ -526,62 +528,75 @@ export class GameListComponent implements OnInit {
     return copy.isAvailable ? 'bg-info' : 'bg-secondary';
   }
 
-  get activeMembers(): Member[] {
-    return this.members.filter(m => m.isActive);
-  }
-
-  get filteredReserveMembers(): Member[] {
-    const term = this.reserveMemberSearch.trim().toLowerCase();
-    const pool = this.activeMembers;
-    if (!term) return pool.slice(0, 8);
-
-    return pool.filter(m =>
-      `${m.firstName} ${m.lastName}`.toLowerCase().includes(term)
-      || m.email?.toLowerCase().includes(term)
-    ).slice(0, 8);
-  }
-
   get reserveMin(): string { return dateString(); }
-  get reserveMax(): string { return dateString(30); }
+  get reserveMax(): string { return dateString(2); }
 
   startReserve(copy: GameCopy): void {
     this.reservingCopyId = copy.id;
     this.reserveMemberId = null;
-    this.reserveMemberSearch = '';
-    this.showReserveMemberDropdown = false;
-    this.reserveUntil = dateString(3);
-    if (this.members.length === 0) {
-      this.memberService.getAll().subscribe({
-        next: (members) => { this.members = members; this.cdr.detectChanges(); },
-        error: () => { this.toastService.error('Failed to load members.'); this.cdr.detectChanges(); }
-      });
-    }
+    this.reserveUntil = dateString(2);
+    this.loadMembersIfNeeded();
     this.cdr.detectChanges();
   }
 
-  onReserveMemberSearchChange(value: string): void {
-    this.reserveMemberSearch = value;
-    this.reserveMemberId = null;
-    this.showReserveMemberDropdown = true;
+  loadMembersIfNeeded(): void {
+    if (this.members.length > 0) return;
+    this.memberService.getAll().subscribe({
+      next: (members) => { this.members = members; this.cdr.detectChanges(); },
+      error: () => { this.toastService.error('Failed to load members.'); this.cdr.detectChanges(); }
+    });
   }
 
-  selectReserveMember(member: Member): void {
-    this.reserveMemberId = member.id;
-    this.reserveMemberSearch = `${member.firstName} ${member.lastName}`;
-    this.showReserveMemberDropdown = false;
+  loadQueue(): void {
+    const game = this.selectedGameForCopies;
+    if (!game) { this.queue = []; return; }
+    this.gameService.getQueue(game.id).subscribe({
+      next: (entries) => {
+        if (this.selectedGameForCopies?.id === game.id) this.queue = entries;
+        this.cdr.detectChanges();
+      },
+      error: () => { this.toastService.error('Failed to load the waiting queue.'); this.cdr.detectChanges(); }
+    });
   }
 
-  onReserveMemberBlur(): void {
-    setTimeout(() => {
-      this.showReserveMemberDropdown = false;
-      this.cdr.detectChanges();
-    }, 150);
+  joinQueue(): void {
+    const game = this.selectedGameForCopies;
+    if (!game || !this.queueMemberId) return;
+    this.gameService.joinQueue(game.id, this.queueMemberId).subscribe({
+      next: () => {
+        this.toastService.success('Added to the waiting queue.');
+        this.queuePicker?.clear();
+        this.loadQueue();
+      },
+      error: (err) => {
+        this.toastService.error(err.error?.message || 'Failed to join the queue.');
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  async leaveQueue(entry: QueueEntry): Promise<void> {
+    const game = this.selectedGameForCopies;
+    if (!game) return;
+    const confirmed = await this.dialogService.confirm({
+      title: 'Leave Queue',
+      message: `Remove ${entry.member.firstName} ${entry.member.lastName} from the waiting queue?`,
+      confirmLabel: 'Remove',
+      type: 'warning',
+    });
+    if (!confirmed) return;
+
+    this.gameService.leaveQueue(game.id, entry.id).subscribe({
+      next: () => this.loadQueue(),
+      error: (err) => {
+        this.toastService.error(err.error?.message || 'Failed to remove from the queue.');
+        this.cdr.detectChanges();
+      }
+    });
   }
 
   cancelReserve(): void {
     this.reservingCopyId = null;
-    this.reserveMemberSearch = '';
-    this.showReserveMemberDropdown = false;
     this.cdr.detectChanges();
   }
 

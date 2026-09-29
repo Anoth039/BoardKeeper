@@ -6,6 +6,7 @@ import { Member } from "../entities/Member";
 import { AuthenticatedRequest } from "../middleware/authMiddleware";
 import { User } from "../entities/User";
 import { RentalExtension } from "../entities/RentalExtension";
+import { assignQueuedReservations } from "./queueController";
 import { dateString, daysBetween } from "../utils/date";
 import { effectiveDailyRate, round2, LATE_FEE_RATE_MULTIPLIER, EXTENSION_FEE } from "../utils/pricing";
 
@@ -52,6 +53,7 @@ export const getRentalById = async (req: AuthenticatedRequest, res: Response) =>
 export const createRental = async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { memberId, gameCopyId, rentalDate, dueDate } = req.body;
+    await assignQueuedReservations();
 
     if (!memberId || !gameCopyId || !rentalDate || !dueDate) {
       return res.status(400).json({
@@ -197,6 +199,7 @@ export const returnRental = async (req: AuthenticatedRequest, res: Response) => 
       return savedRental;
     });
 
+    await assignQueuedReservations();
     res.json(updatedRental);
   } catch (error: any) {
     if (error.message === "RENTAL_NOT_FOUND") {

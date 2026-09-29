@@ -1,12 +1,15 @@
 import { Request, Response } from "express";
+import { In } from "typeorm";
 import { AppDataSource } from "../data-source";
-import { CopyCondition, GameCopy, MAX_RESERVATION_DAYS, hasActiveReservation } from "../entities/GameCopy";
+import { CopyCondition, GameCopy, MAX_RESERVATION_DAYS, MAX_ACTIVE_RESERVATIONS_PER_MEMBER, hasActiveReservation } from "../entities/GameCopy";
 import { Member } from "../entities/Member";
 import { dateString, toDate, toDateString } from "../utils/date";
 import { Rental, RentalStatus } from "../entities/Rental";
 import { Game } from "../entities/Game";
 import { AuditAction, CopyAuditLog } from "../entities/CopyAuditLog";
 import { User } from "../entities/User";
+import { assignQueuedReservations, countMemberHolds } from "./queueController";
+import { sendReservationEmail } from "../mailer";
 import { AuthenticatedRequest } from "../middleware/authMiddleware";
 
 const gameCopyRepository = AppDataSource.getRepository(GameCopy);
@@ -90,8 +93,10 @@ export const createGameCopy = async (req: AuthenticatedRequest, res: Response) =
     const saved = await gameCopyRepository.save(copy);
 
     await logAudit(saved, game.id, AuditAction.CREATED, null, `Condition: ${saved.condition}`, req.user?.userId ?? null);
+    await assignQueuedReservations();
 
-    res.status(201).json(saved);
+    const finalCopy = await gameCopyRepository.findOne({ where: { id: saved.id }, relations: { reservedFor: true } });
+    res.status(201).json(finalCopy);
   } catch (error) {
     console.error("Failed to create copy:", error);
     res.status(500).json({ message: "Failed to create copy" });
@@ -142,8 +147,11 @@ export const createGameCopiesBulk = async (req: AuthenticatedRequest, res: Respo
     for (const copy of saved) {
       await logAudit(copy, gameId, AuditAction.CREATED, null, `Condition: ${copy.condition}`, req.user?.userId ?? null);
     }
+    await assignQueuedReservations();
 
-    res.status(201).json(saved);
+    const finalCopies = await gameCopyRepository.find({ where: { id: In(saved.map(c => c.id)) }, relations: { reservedFor: true } });
+    const byId = new Map(finalCopies.map(c => [c.id, c]));
+    res.status(201).json(saved.map(c => byId.get(c.id)));
   } catch (error) {
     console.error("Failed to create copies:", error);
     res.status(500).json({ message: "Failed to create copies" });
@@ -200,6 +208,7 @@ export const updateGameCopy = async (req: AuthenticatedRequest, res: Response) =
     }
 
     const updated = await gameCopyRepository.save(copy);
+    await assignQueuedReservations();
     res.json(updated);
   } catch (error) {
     console.error("Failed to update copy:", error);
@@ -277,12 +286,17 @@ export const reserveGameCopy = async (req: AuthenticatedRequest, res: Response) 
     if (hasActiveReservation(copy)) {
       return res.status(409).json({ message: `This copy is already reserved for ${copy.reservedFor!.firstName} ${copy.reservedFor!.lastName}` });
     }
+    if ((await countMemberHolds(member.id)) >= MAX_ACTIVE_RESERVATIONS_PER_MEMBER) {
+      return res.status(409).json({ message: `${member.firstName} ${member.lastName} already has ${MAX_ACTIVE_RESERVATIONS_PER_MEMBER} active reservations / queue spots` });
+    }
 
     copy.reservedFor = member;
     copy.reservedUntil = reservedUntil;
     const saved = await gameCopyRepository.save(copy);
 
     await logAudit(copy, copy.game.id, AuditAction.RESERVED, null, `${member.firstName} ${member.lastName} until ${reservedUntil}`, req.user?.userId ?? null);
+    sendReservationEmail(member.email, member.firstName, copy.game.title, copy.copyNumber, reservedUntil)
+      .catch(err => console.error("Failed to send reservation email:", err));
     res.json(saved);
   } catch (error) {
     console.error("Failed to reserve copy:", error);
@@ -310,6 +324,7 @@ export const cancelReservation = async (req: AuthenticatedRequest, res: Response
     const saved = await gameCopyRepository.save(copy);
 
     await logAudit(copy, copy.game.id, AuditAction.RESERVATION_CANCELLED, holder, null, req.user?.userId ?? null);
+    await assignQueuedReservations();
     res.json(saved);
   } catch (error) {
     console.error("Failed to cancel reservation:", error);

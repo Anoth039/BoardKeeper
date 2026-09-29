@@ -1,0 +1,13 @@
+<div class="position-relative">
+  <input type="text" class="form-control form-control-sm" placeholder="Search member…" autocomplete="off"
+    [ngModel]="search" (ngModelChange)="onSearchChange($event)" (focus)="open = true" (blur)="onBlur()"/>
+  <div class="member-search-dropdown" *ngIf="open && filtered.length > 0">
+    <button type="button" class="member-search-option" *ngFor="let m of filtered" (mousedown)="select(m)">
+      <span class="fw-semibold">{{ m.firstName }} {{ m.lastName }}</span>
+      <span class="text-muted small d-block">{{ m.email }}</span>
+    </button>
+  </div>
+  <div class="member-search-dropdown" *ngIf="open && search.trim() && filtered.length === 0">
+    <div class="member-search-empty text-muted small">No active members match.</div>
+  </div>
+</div>

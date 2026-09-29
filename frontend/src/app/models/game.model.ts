@@ -43,6 +43,12 @@ export function isCopyReserved(copy: GameCopy): boolean {
   return !!copy.reservedFor && !!copy.reservedUntil && copy.reservedUntil >= dateString();
 }
 
+export interface QueueEntry {
+  id: number;
+  createdAt: string;
+  member: Member;
+}
+
 export interface CopyAuditLog {
   id: number;
   copyNumber: string;
