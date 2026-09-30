@@ -16,7 +16,6 @@ export const getStats = async (req: Request, res: Response) => {
     const today = dateString();
     const monthStart = monthStartString();
     const fourteenDaysAgo = dateString(-13);
-    const twoDaysFromNow = dateString(2);
 
     const totalGames = await gameRepo.count();
     const totalCopies = await copyRepo.count();
@@ -33,11 +32,10 @@ export const getStats = async (req: Request, res: Response) => {
       .where("r.status = :s", { s: RentalStatus.ACTIVE })
       .getCount();
 
-    const dueSoonRentals = await rentalRepo
-      .createQueryBuilder("r")
-      .where("r.status = :s", { s: RentalStatus.ACTIVE })
-      .andWhere("r.due_date >= :today", { today })
-      .andWhere("r.due_date <= :twoDaysFromNow", { twoDaysFromNow })
+    const activeReservations = await copyRepo
+      .createQueryBuilder("c")
+      .where("c.reserved_for_member_id IS NOT NULL")
+      .andWhere("c.reserved_until >= :today", { today })
       .getCount();
 
     const overdueRentals = await rentalRepo
@@ -148,7 +146,7 @@ export const getStats = async (req: Request, res: Response) => {
         availableCopies,
         activeMembers,
         activeRentals,
-        dueSoonRentals,
+        activeReservations,
         overdueRentals,
       },
       monthlyBreakdown: {

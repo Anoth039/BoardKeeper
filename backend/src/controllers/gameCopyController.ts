@@ -87,7 +87,6 @@ export const createGameCopy = async (req: AuthenticatedRequest, res: Response) =
       game,
       copyNumber: trimmed,
       condition: condition || "good",
-      isAvailable: true,
     });
 
     const saved = await gameCopyRepository.save(copy);

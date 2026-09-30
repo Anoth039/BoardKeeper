@@ -226,8 +226,8 @@ export class RentalListComponent implements OnInit {
     return rental.status;
   }
 
-  private formatCharge(value: number | null | undefined): string {
-    return value == null ? '—' : `$${Number(value).toFixed(2)}`;
+  private charge(value: number | null | undefined): number | null {
+    return value == null ? null : Number(value);
   }
 
   exportToExcel(): void {
@@ -243,16 +243,23 @@ export class RentalListComponent implements OnInit {
       'Original Due Date': r.originalDueDate,
       'Due Date': r.dueDate,
       'Return Date': r.returnDate || '—',
-      'Rental Charge': this.formatCharge(r.rentalCharge),
-      'Late Fee': this.formatCharge(r.lateFeeCharged),
-      'Extension Fee': r.extensionFeeCharged ? `$${Number(r.extensionFeeCharged).toFixed(2)}` : '—',
-      'Replacement Fee': this.formatCharge(r.replacementFeeCharged),
-      'Total Charged': this.formatCharge(r.totalCharged),
+      'Rental Charge': this.charge(r.rentalCharge),
+      'Late Fee': this.charge(r.lateFeeCharged),
+      'Extension Fee': this.charge(r.extensionFeeCharged || null),
+      'Replacement Fee': this.charge(r.replacementFeeCharged),
+      'Total Charged': this.charge(r.totalCharged),
       'Rented out by': r.handledBy?.email || '—',
       'Checked in by': r.returnedBy?.email || '—',
     }));
 
     const ws = XLSX.utils.json_to_sheet(rows);
+    const lastRow = XLSX.utils.decode_range(ws['!ref'] ?? 'A1').e.r;
+    for (let r = 1; r <= lastRow; r++) {
+      for (let c = 9; c <= 13; c++) {
+        const cell = ws[XLSX.utils.encode_cell({ r, c })];
+        if (cell) cell.z = '$#,##0.00';
+      }
+    }
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Rentals');
 

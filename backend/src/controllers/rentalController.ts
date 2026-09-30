@@ -1,14 +1,16 @@
 import { Request, Response } from "express";
 import { AppDataSource } from "../data-source";
 import { Rental, RentalStatus } from "../entities/Rental";
-import { GameCopy, hasActiveReservation } from "../entities/GameCopy";
+import { GameCopy, hasActiveReservation, MAX_ACTIVE_RENTALS_PER_MEMBER } from "../entities/GameCopy";
 import { Member } from "../entities/Member";
 import { AuthenticatedRequest } from "../middleware/authMiddleware";
 import { User } from "../entities/User";
 import { RentalExtension } from "../entities/RentalExtension";
 import { assignQueuedReservations } from "./queueController";
 import { dateString, daysBetween } from "../utils/date";
-import { effectiveDailyRate, round2, LATE_FEE_RATE_MULTIPLIER, EXTENSION_FEE } from "../utils/pricing";
+import { effectiveDailyRate, LATE_FEE_RATE_MULTIPLIER, EXTENSION_FEE } from "../utils/pricing";
+import { round2 } from "../utils/money";
+import { LessThan } from "typeorm";
 
 const rentalRepository = AppDataSource.getRepository(Rental);
 
@@ -72,11 +74,18 @@ export const createRental = async (req: AuthenticatedRequest, res: Response) => 
         throw new Error("MEMBER_NOT_FOUND");
       }
 
+      if (!member.isActive) throw new Error("MEMBER_INACTIVE");
+      
+      const overdue = await rentalRepo.count({
+        where: { member: { id: memberId }, status: RentalStatus.ACTIVE, dueDate: LessThan(dateString()) },
+      });
+      if (overdue > 0) throw new Error("MEMBER_HAS_OVERDUE");
+
       const activeRentalCount = await rentalRepo.count({
         where: { member: { id: memberId }, status: RentalStatus.ACTIVE }
       });
 
-      if (activeRentalCount >= 3) {
+      if (activeRentalCount >= MAX_ACTIVE_RENTALS_PER_MEMBER) {
         throw new Error("RENTAL_LIMIT_REACHED");
       }
 
@@ -128,8 +137,14 @@ export const createRental = async (req: AuthenticatedRequest, res: Response) => 
     if (error.message === "MEMBER_NOT_FOUND") {
       return res.status(404).json({ message: "Member not found" });
     }
+    if (error.message === "MEMBER_INACTIVE") {
+      return res.status(409).json({ message: "Inactive members cannot rent games" });
+    }
+    if (error.message === "MEMBER_HAS_OVERDUE") {
+      return res.status(409).json({ message: "This member has an overdue rental. Please return it first." });
+    }
     if (error.message === "RENTAL_LIMIT_REACHED") {
-      return res.status(409).json({ message: "This member already has 3 active rentals. Please return one before renting another." });
+      return res.status(409).json({ message: `This member already has ${MAX_ACTIVE_RENTALS_PER_MEMBER} active rentals. Please return one before renting another.` });
     }
     if (error.message === "COPY_NOT_FOUND") {
       return res.status(404).json({ message: "Game copy not found" });

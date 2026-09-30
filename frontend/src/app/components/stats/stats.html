@@ -44,12 +44,12 @@
       </div>
     </div>
     <div class="col-6 col-sm-4 col-lg-2">
-      <div class="surface stat-card" [class.stat-card-warning]="stats.summary.dueSoonRentals > 0">
-        <i class="bi bi-clock stat-icon" [ngClass]="stats.summary.dueSoonRentals > 0 ? 'text-warning' : 'text-muted'"></i>
-        <div class="stat-value" [ngClass]="stats.summary.dueSoonRentals > 0 ? 'text-warning' : ''">
-          {{ stats.summary.dueSoonRentals }}
+      <div class="surface stat-card" [class.stat-card-warning]="stats.summary.activeReservations > 0">
+        <i class="bi bi-bookmark-fill stat-icon" [ngClass]="stats.summary.activeReservations > 0 ? 'text-warning' : 'text-muted'"></i>
+        <div class="stat-value" [ngClass]="stats.summary.activeReservations > 0 ? 'text-warning' : ''">
+          {{ stats.summary.activeReservations }}
         </div>
-        <div class="caption">Due Soon</div>
+        <div class="caption">Reservations</div>
       </div>
     </div>
   </div>

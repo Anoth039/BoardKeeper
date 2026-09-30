@@ -4,7 +4,7 @@ export interface StatsSummary {
   availableCopies: number;
   activeMembers: number;
   activeRentals: number;
-  dueSoonRentals: number;
+  activeReservations: number;
   overdueRentals: number;
 }
 

@@ -3,7 +3,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { AppDataSource } from "../data-source";
 import { User } from "../entities/User";
-import { sendResetCodeEmail, sendVerificationCodeEmail } from "../mailer";
+import { sendCodeEmail } from "../mailer";
 
 const userRepository = AppDataSource.getRepository(User);
 
@@ -41,7 +41,7 @@ export const sendVerificationCode = async (req: Request, res: Response) => {
       expiresAt: new Date(now + 10 * 60 * 1000)
     });
 
-    await sendVerificationCodeEmail(email, code);
+    await sendCodeEmail(email, code, "registration");
 
     res.json({ message: "A verification code has been sent to your email" });
   } catch (error) {
@@ -158,7 +158,7 @@ export const forgotPassword = async (req: Request, res: Response) => {
     user.resetCodeRequestedAt = new Date();
     await userRepository.save(user);
 
-    await sendResetCodeEmail(email, code);
+    await sendCodeEmail(email, code, "password reset");
 
     res.json({ message: "A reset code has been sent to your email" });
   } catch (error) {

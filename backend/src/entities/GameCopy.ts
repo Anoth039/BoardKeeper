@@ -53,6 +53,7 @@ export class GameCopy {
 
 export const MAX_RESERVATION_DAYS = 2;
 export const MAX_ACTIVE_RESERVATIONS_PER_MEMBER = 2;
+export const MAX_ACTIVE_RENTALS_PER_MEMBER = 3;
 
 export const hasActiveReservation = (copy: Pick<GameCopy, "reservedFor" | "reservedUntil">): boolean =>
   !!copy.reservedFor && !!copy.reservedUntil && copy.reservedUntil >= dateString();
