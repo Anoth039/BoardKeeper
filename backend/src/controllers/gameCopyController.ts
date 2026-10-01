@@ -20,7 +20,7 @@ const memberRepository = AppDataSource.getRepository(Member);
 const auditRepo = AppDataSource.getRepository(CopyAuditLog);
 const userRepo = AppDataSource.getRepository(User);
 
-async function logAudit(copy: GameCopy, gameId: number, action: AuditAction, oldValue: string | null, newValue: string | null, userId: number | null): Promise<void> {
+export async function logAudit(copy: GameCopy, gameId: number, action: AuditAction, oldValue: string | null, newValue: string | null, userId: number | null): Promise<void> {
   const performedBy = userId ? await userRepo.findOneBy({ id: userId }) : null;
   const log = auditRepo.create({ copy, copyNumberSnapshot: copy.copyNumber, gameId, action, oldValue, newValue, performedBy });
   await auditRepo.save(log);

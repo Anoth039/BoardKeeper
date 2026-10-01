@@ -1,18 +1,22 @@
 import { Request, Response } from "express";
 import { AppDataSource } from "../data-source";
 import { Rental, RentalStatus } from "../entities/Rental";
-import { GameCopy, hasActiveReservation, MAX_ACTIVE_RENTALS_PER_MEMBER } from "../entities/GameCopy";
+import { CopyCondition, GameCopy, hasActiveReservation, MAX_ACTIVE_RENTALS_PER_MEMBER } from "../entities/GameCopy";
 import { Member } from "../entities/Member";
 import { AuthenticatedRequest } from "../middleware/authMiddleware";
 import { User } from "../entities/User";
 import { RentalExtension } from "../entities/RentalExtension";
 import { assignQueuedReservations } from "./queueController";
+import { logAudit } from "./gameCopyController";
+import { AuditAction } from "../entities/CopyAuditLog";
 import { dateString, daysBetween } from "../utils/date";
 import { effectiveDailyRate, LATE_FEE_RATE_MULTIPLIER, EXTENSION_FEE } from "../utils/pricing";
 import { round2 } from "../utils/money";
 import { LessThan } from "typeorm";
 
 const rentalRepository = AppDataSource.getRepository(Rental);
+
+const CONDITION_ORDER = [CopyCondition.NEW, CopyCondition.GOOD, CopyCondition.WORN, CopyCondition.DAMAGED];
 
 export const getAllRentals = async (req: AuthenticatedRequest, res: Response) => {
   try {
@@ -71,22 +75,25 @@ export const createRental = async (req: AuthenticatedRequest, res: Response) => 
 
       const member = await memberRepo.findOneBy({ id: memberId });
       if (!member) {
-        throw new Error("MEMBER_NOT_FOUND");
+        return res.status(404).json({ message: "Member not found" });
+      }
+      if (!member.isActive) {
+        return res.status(409).json({ message: "Inactive members cannot rent games" });
       }
 
-      if (!member.isActive) throw new Error("MEMBER_INACTIVE");
-      
       const overdue = await rentalRepo.count({
         where: { member: { id: memberId }, status: RentalStatus.ACTIVE, dueDate: LessThan(dateString()) },
       });
-      if (overdue > 0) throw new Error("MEMBER_HAS_OVERDUE");
+      if (overdue > 0) {
+        return res.status(409).json({ message: "This member has an overdue rental. Please return it first." });
+      }
 
       const activeRentalCount = await rentalRepo.count({
         where: { member: { id: memberId }, status: RentalStatus.ACTIVE }
       });
 
       if (activeRentalCount >= MAX_ACTIVE_RENTALS_PER_MEMBER) {
-        throw new Error("RENTAL_LIMIT_REACHED");
+        return res.status(409).json({ message: `This member already has ${MAX_ACTIVE_RENTALS_PER_MEMBER} active rentals. Please return one before renting another.` });
       }
 
       const gameCopy = await gameCopyRepo.findOne({
@@ -94,16 +101,16 @@ export const createRental = async (req: AuthenticatedRequest, res: Response) => 
         relations: { game: true, reservedFor: true },
       });
       if (!gameCopy) {
-        throw new Error("COPY_NOT_FOUND");
+        return res.status(404).json({ message: "Game copy not found" });
       }
       if (!gameCopy.isAvailable) {
-        throw new Error("COPY_NOT_AVAILABLE");
+        return res.status(409).json({ message: "This copy is not available for rent" });
       }
       if (gameCopy.condition === "lost") {
-        throw new Error("COPY_LOST");
+        return res.status(409).json({ message: "This copy is marked as lost and cannot be rented" });
       }
       if (hasActiveReservation(gameCopy) && gameCopy.reservedFor!.id !== member.id) {
-        throw Object.assign(new Error("COPY_RESERVED"), { reservedUntil: gameCopy.reservedUntil });
+        return res.status(409).json({ message: `This copy is reserved for another member until ${gameCopy.reservedUntil}` });
       }
 
       const handledByUser = req.user
@@ -132,32 +139,9 @@ export const createRental = async (req: AuthenticatedRequest, res: Response) => 
       return newRental;
     });
 
+    if (res.headersSent) return;
     res.status(201).json(savedRental);
-  } catch (error: any) {
-    if (error.message === "MEMBER_NOT_FOUND") {
-      return res.status(404).json({ message: "Member not found" });
-    }
-    if (error.message === "MEMBER_INACTIVE") {
-      return res.status(409).json({ message: "Inactive members cannot rent games" });
-    }
-    if (error.message === "MEMBER_HAS_OVERDUE") {
-      return res.status(409).json({ message: "This member has an overdue rental. Please return it first." });
-    }
-    if (error.message === "RENTAL_LIMIT_REACHED") {
-      return res.status(409).json({ message: `This member already has ${MAX_ACTIVE_RENTALS_PER_MEMBER} active rentals. Please return one before renting another.` });
-    }
-    if (error.message === "COPY_NOT_FOUND") {
-      return res.status(404).json({ message: "Game copy not found" });
-    }
-    if (error.message === "COPY_NOT_AVAILABLE") {
-      return res.status(409).json({ message: "This copy is not available for rent" });
-    }
-    if (error.message === "COPY_LOST") {
-      return res.status(409).json({ message: "This copy is marked as lost and cannot be rented" });
-    }
-    if (error.message === "COPY_RESERVED") {
-      return res.status(409).json({ message: `This copy is reserved for another member until ${error.reservedUntil}` });
-    }
+  } catch (error) {
     console.error("Failed to create rental:", error);
     res.status(500).json({ message: "Failed to create rental" });
   }
@@ -166,6 +150,14 @@ export const createRental = async (req: AuthenticatedRequest, res: Response) => 
 export const returnRental = async (req: AuthenticatedRequest, res: Response) => {
   try {
     const id = Number(req.params.id);
+    const { condition, notes } = req.body ?? {};
+
+    if (condition !== undefined && (!Object.values(CopyCondition).includes(condition) || condition === CopyCondition.LOST)) {
+      return res.status(400).json({ message: "Invalid condition. Use \"Mark as Lost\" for lost copies." });
+    }
+
+    let returnedCopy: GameCopy | null = null;
+    const copyChanges: { action: AuditAction; oldValue: string | null; newValue: string | null }[] = [];
 
     const updatedRental = await AppDataSource.transaction(async (manager) => {
       const rentalRepo = manager.getRepository(Rental);
@@ -174,20 +166,20 @@ export const returnRental = async (req: AuthenticatedRequest, res: Response) => 
 
       const rental = await rentalRepo.findOne({
         where: { id },
-        relations: { gameCopy: true },
+        relations: { gameCopy: { game: true } },
       });
 
       if (!rental) {
-        throw new Error("RENTAL_NOT_FOUND");
+        return res.status(404).json({ message: "Rental not found" });
       }
       if (rental.status === RentalStatus.RETURNED) {
-        throw new Error("ALREADY_RETURNED");
+        return res.status(409).json({ message: "This rental has already been returned" });
       }
       if (rental.status !== RentalStatus.ACTIVE) {
-        throw new Error("NOT_ACTIVE");
+        return res.status(409).json({ message: "Only active rentals can be returned" });
       }
       if (!rental.gameCopy) {
-        throw new Error("COPY_NO_LONGER_EXISTS");
+        return res.status(409).json({ message: "This rental's copy no longer exists and cannot be marked as returned this way" });
       }
 
       const returnedByUser = req.user
@@ -208,27 +200,35 @@ export const returnRental = async (req: AuthenticatedRequest, res: Response) => 
       rental.returnedBy = returnedByUser;
       const savedRental = await rentalRepo.save(rental);
 
+      if (condition !== undefined && CONDITION_ORDER.indexOf(condition) < CONDITION_ORDER.indexOf(rental.gameCopy.condition)) {
+        return res.status(400).json({ message: "A copy's condition can only be downgraded when it is returned. Ask an admin to upgrade it." });
+      }
+      if (condition !== undefined && condition !== rental.gameCopy.condition) {
+        copyChanges.push({ action: AuditAction.CONDITION_CHANGED, oldValue: rental.gameCopy.condition, newValue: condition });
+        rental.gameCopy.condition = condition;
+      }
+      if (notes !== undefined && (notes || null) !== (rental.gameCopy.notes || null)) {
+        copyChanges.push({ action: AuditAction.NOTES_CHANGED, oldValue: rental.gameCopy.notes || null, newValue: notes || null });
+        rental.gameCopy.notes = notes || null;
+      }
+
       rental.gameCopy.isAvailable = true;
       await gameCopyRepo.save(rental.gameCopy);
+      returnedCopy = rental.gameCopy;
 
       return savedRental;
     });
 
+    if (res.headersSent) return;
+    const copy = returnedCopy as GameCopy | null;
+    if (copy) {
+      for (const change of copyChanges) {
+        await logAudit(copy, copy.game.id, change.action, change.oldValue, change.newValue, req.user?.userId ?? null);
+      }
+    }
     await assignQueuedReservations();
     res.json(updatedRental);
-  } catch (error: any) {
-    if (error.message === "RENTAL_NOT_FOUND") {
-      return res.status(404).json({ message: "Rental not found" });
-    }
-    if (error.message === "ALREADY_RETURNED") {
-      return res.status(409).json({ message: "This rental has already been returned" });
-    }
-    if (error.message === "NOT_ACTIVE") {
-      return res.status(409).json({ message: "Only active rentals can be returned" });
-    }
-    if (error.message === "COPY_NO_LONGER_EXISTS") {
-      return res.status(409).json({ message: "This rental's copy no longer exists and cannot be marked as returned this way" });
-    }
+  } catch (error) {
     console.error("Failed to return rental:", error);
     res.status(500).json({ message: "Failed to return rental" });
   }
@@ -250,16 +250,16 @@ export const extendRental = async (req: AuthenticatedRequest, res: Response) => 
 
       const rental = await rentalRepo.findOneBy({ id });
       if (!rental) {
-        throw new Error("RENTAL_NOT_FOUND");
+        return res.status(404).json({ message: "Rental not found" });
       }
       if (rental.status !== RentalStatus.ACTIVE) {
-        throw new Error("NOT_ACTIVE");
+        return res.status(409).json({ message: "Only active rentals can be extended" });
       }
       if (daysBetween(rental.dueDate, dateString()) > 0) {
-        throw new Error("RENTAL_OVERDUE");
+        return res.status(409).json({ message: "This rental is already overdue and cannot be extended. Please return it or mark it as lost instead." });
       }
       if (newDueDate <= rental.dueDate) {
-        throw new Error("INVALID_DUE_DATE");
+        return res.status(400).json({ message: "New due date must be after the current due date" });
       }
 
       const extendedByUser = req.user
@@ -280,20 +280,9 @@ export const extendRental = async (req: AuthenticatedRequest, res: Response) => 
       return rentalRepo.save(rental);
     });
 
+    if (res.headersSent) return;
     res.json(updated);
-  } catch (error: any) {
-    if (error.message === "RENTAL_NOT_FOUND") {
-      return res.status(404).json({ message: "Rental not found" });
-    }
-    if (error.message === "NOT_ACTIVE") {
-      return res.status(409).json({ message: "Only active rentals can be extended" });
-    }
-    if (error.message === "RENTAL_OVERDUE") {
-      return res.status(409).json({ message: "This rental is already overdue and cannot be extended. Please return it or mark it as lost instead." });
-    }
-    if (error.message === "INVALID_DUE_DATE") {
-      return res.status(400).json({ message: "New due date must be after the current due date" });
-    }
+  } catch (error) {
     console.error("Failed to extend rental:", error);
     res.status(500).json({ message: "Failed to extend rental" });
   }
@@ -314,13 +303,13 @@ export const markRentalLost = async (req: AuthenticatedRequest, res: Response) =
       });
 
       if (!rental) {
-        throw new Error("RENTAL_NOT_FOUND");
+        return res.status(404).json({ message: "Rental not found" });
       }
       if (rental.status !== RentalStatus.ACTIVE) {
-        throw new Error("NOT_ACTIVE");
+        return res.status(409).json({ message: "Only active rentals can be marked as lost" });
       }
       if (!rental.gameCopy) {
-        throw new Error("COPY_NO_LONGER_EXISTS");
+        return res.status(409).json({ message: "This rental's copy no longer exists" });
       }
 
       const returnedByUser = req.user
@@ -351,17 +340,9 @@ export const markRentalLost = async (req: AuthenticatedRequest, res: Response) =
       return savedRental;
     });
 
+    if (res.headersSent) return;
     res.json(updatedRental);
-  } catch (error: any) {
-    if (error.message === "RENTAL_NOT_FOUND") {
-      return res.status(404).json({ message: "Rental not found" });
-    }
-    if (error.message === "NOT_ACTIVE") {
-      return res.status(409).json({ message: "Only active rentals can be marked as lost" });
-    }
-    if (error.message === "COPY_NO_LONGER_EXISTS") {
-      return res.status(409).json({ message: "This rental's copy no longer exists" });
-    }
+  } catch (error) {
     console.error("Failed to mark rental as lost:", error);
     res.status(500).json({ message: "Failed to mark rental as lost" });
   }

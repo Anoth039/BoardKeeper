@@ -6,7 +6,6 @@ import { MemberService } from '../../services/member';
 import { GameService } from '../../services/game';
 import { Member } from '../../models/member.model';
 import { Game, GameCopy, isCopyReserved } from '../../models/game.model';
-import { AutofocusDirective } from '../../directives/autofocus';
 import { DialogService } from '../../services/dialog';
 import { ToastService } from '../../services/toast';
 import { dateString } from '../../utils/date';
@@ -14,7 +13,7 @@ import { dateString } from '../../utils/date';
 @Component({
   selector: 'app-rental-form',
   standalone: true,
-  imports: [CommonModule, FormsModule, AutofocusDirective],
+  imports: [CommonModule, FormsModule],
   templateUrl: './rental-form.html',
   styleUrl: './rental-form.css'
 })
@@ -121,6 +120,10 @@ export class RentalForm implements OnInit {
       const bReservedForMember = isCopyReserved(b) && b.reservedFor?.id === this.selectedMemberId ? 1 : 0;
       return bReservedForMember - aReservedForMember;
     });
+  }
+
+  isReserved(copy: GameCopy): boolean {
+    return isCopyReserved(copy);
   }
 
   get selectedCopy(): GameCopy | null {

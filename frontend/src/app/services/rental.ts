@@ -19,8 +19,8 @@ export class RentalService {
     return this.http.post<Rental>(this.apiUrl, rental);
   }
 
-  return(rentalId: number): Observable<Rental> {
-    return this.http.put<Rental>(`${this.apiUrl}/${rentalId}/return`, {});
+  return(rentalId: number, copyUpdate: { condition?: string; notes?: string } = {}): Observable<Rental> {
+    return this.http.put<Rental>(`${this.apiUrl}/${rentalId}/return`, copyUpdate);
   }
 
   extend(rentalId: number, newDueDate: string): Observable<Rental> {

@@ -146,21 +146,55 @@ export class RentalListComponent implements OnInit {
     this.cdr.detectChanges();
   }
 
-  async returnRental(rental: Rental): Promise<void> {
-    const title = rental.gameCopy?.game?.title || rental.gameTitleSnapshot;
-    const confirmed = await this.dialogService.confirm({
-      title: 'Return Rental',
-      message: `Mark "${title}" [${rental.gameCopy?.copyNumber || rental.copyLabelSnapshot}] as returned by ${rental.member?.firstName}?`,
-      confirmLabel: 'Return',
-      type: 'primary',
-    });
-    if (!confirmed) return;
+  returningRental: Rental | null = null;
+  returnCondition = 'good';
+  returnNotes = '';
 
-    this.rentalService.return(rental.id).subscribe({
+  returnRental(rental: Rental): void {
+    this.returningRental = rental;
+    this.returnCondition = rental.gameCopy?.condition || 'good';
+    this.returnNotes = rental.gameCopy?.notes || '';
+    this.cdr.detectChanges();
+  }
+
+  private readonly conditionOrder = ['new', 'good', 'worn', 'damaged'];
+
+  get returnConditionOptions(): string[] {
+    const current = this.returningRental?.gameCopy?.condition || 'good';
+    return this.conditionOrder.slice(Math.max(0, this.conditionOrder.indexOf(current)));
+  }
+
+  get returnDirty(): boolean {
+    const copy = this.returningRental?.gameCopy;
+    return this.returnCondition !== (copy?.condition || 'good')
+      || this.returnNotes.trim() !== (copy?.notes || '').trim();
+  }
+
+  async cancelReturn(): Promise<void> {
+    if (this.returnDirty) {
+      const confirmed = await this.dialogService.confirm({
+        title: 'Unsaved Changes',
+        message: 'Are you sure you want to close? You have unsaved changes.',
+        confirmLabel: 'Discard',
+        type: 'warning'
+      });
+      if (!confirmed) return;
+    }
+    this.returningRental = null;
+    this.cdr.detectChanges();
+  }
+
+  submitReturn(): void {
+    const rental = this.returningRental;
+    if (!rental) return;
+    const title = rental.gameCopy?.game?.title || rental.gameTitleSnapshot;
+
+    this.rentalService.return(rental.id, { condition: this.returnCondition, notes: this.returnNotes.trim() }).subscribe({
       next: (updated) => {
         Object.assign(rental, updated);
+        this.returningRental = null;
         this.toastService.success(`Rental for "${title}" marked as returned.`);
-        this.cdr.detectChanges();
+        this.loadRentals();
       },
       error: (err) => {
         const message = err.error?.message || 'Failed to return rental.';

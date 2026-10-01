@@ -13,6 +13,30 @@ const gameCopyRepository = AppDataSource.getRepository(GameCopy);
 
 const countActiveReservations = (memberId: number) => gameCopyRepository.count({ where: { reservedFor: { id: memberId }, reservedUntil: MoreThanOrEqual(dateString()) } });
 
+const INACTIVITY_DAYS = 30;
+
+export const deactivateInactiveMembers = async (): Promise<void> => {
+  try {
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - INACTIVITY_DAYS);
+
+    const result = await memberRepository
+      .createQueryBuilder()
+      .update(Member)
+      .set({ isActive: false })
+      .where("is_active = true")
+      .andWhere("updated_at < :cutoff", { cutoff })
+      .andWhere("id NOT IN (SELECT member_id FROM rental WHERE member_id IS NOT NULL AND (status = :active OR created_at >= :cutoff))", { active: RentalStatus.ACTIVE })
+      .andWhere("id NOT IN (SELECT reserved_for_member_id FROM game_copy WHERE reserved_for_member_id IS NOT NULL AND reserved_until >= :today)", { today: dateString() })
+      .andWhere("id NOT IN (SELECT member_id FROM game_queue_entry)")
+      .execute();
+
+    if (result.affected) console.log(`Deactivated ${result.affected} inactive member(s).`);
+  } catch (error) {
+    console.error("Failed to deactivate inactive members:", error);
+  }
+};
+
 export const getAllMembers = async (req: Request, res: Response) => {
   try {
     const members = await memberRepository.find({

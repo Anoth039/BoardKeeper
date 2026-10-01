@@ -234,6 +234,10 @@ h1, h2, h3, h4, h5, h6 {
   overflow: hidden;
 }
 
+.modal-box-tall {
+  height: 90vh;
+}
+
 .modal-header-custom {
   display: flex;
   flex-shrink: 0;

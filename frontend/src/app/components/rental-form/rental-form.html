@@ -22,7 +22,7 @@
           </div>
 
           <div *ngIf="!selectedMember" class="position-relative">
-            <input type="text" appAutofocus class="form-control" placeholder="Search members by name or email..." [(ngModel)]="memberSearchTerm"
+            <input type="text" class="form-control" placeholder="Search members by name or email..." [(ngModel)]="memberSearchTerm"
               name="memberSearch" (focus)="showMemberDropdown = true"/>
             <div class="dropdown-list" *ngIf="showMemberDropdown">
               <div class="dropdown-list-item" *ngFor="let member of filteredMembers" (click)="selectMember(member)">
@@ -83,7 +83,7 @@
                 <div class="dropdown-list-item" *ngFor="let copy of filteredCopiesForSelectedGame" (click)="selectCopy(copy.id)">
                   {{ copy.copyNumber }}
                   <small class="text-muted ms-1">({{ copy.condition }})</small>
-                  <span *ngIf="copy.reservedFor" class="badge bg-warning text-dark ms-1">Reserved for {{ copy.reservedFor.firstName }}</span>
+                  <span *ngIf="isReserved(copy)" class="badge bg-warning text-dark ms-1">Reserved for {{ copy.reservedFor?.firstName }}</span>
                 </div>
                 <div class="dropdown-list-item text-muted" *ngIf="filteredCopiesForSelectedGame.length === 0">
                   No copies match your search.

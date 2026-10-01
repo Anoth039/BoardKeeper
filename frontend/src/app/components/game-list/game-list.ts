@@ -455,7 +455,7 @@ export class GameListComponent implements OnInit {
       case 'good': return 'bg-success';
       case 'worn': return 'bg-warning';
       case 'damaged': return 'bg-danger';
-      case 'lost': return 'bg-dark';
+      case 'lost': return 'bg-secondary';
       default: return 'bg-secondary';
     }
   }

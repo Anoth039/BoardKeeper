@@ -12,6 +12,7 @@ import { requireAuth } from './middleware/authMiddleware';
 import statsRoutes from './routes/statsRoutes';
 import userRoutes from './routes/userRoutes';
 import { assignQueuedReservations } from './controllers/queueController';
+import { deactivateInactiveMembers } from './controllers/memberController';
 
 dotenv.config();
 const app = express();
@@ -35,7 +36,9 @@ AppDataSource.initialize()
     app.listen(PORT, () => {
       console.log(`Szerver fut: http://localhost:${PORT}`);
       assignQueuedReservations();
-      setInterval(assignQueuedReservations, 5 * 60 * 1000);
+      setInterval(assignQueuedReservations, 60 * 60 * 1000);
+      deactivateInactiveMembers();
+      setInterval(deactivateInactiveMembers, 24 * 60 * 60 * 1000);
     });
   })
   .catch((err) => {

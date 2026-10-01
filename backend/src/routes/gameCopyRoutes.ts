@@ -11,7 +11,7 @@ router.post("/", requireAdmin, createGameCopy);
 router.post("/bulk", requireAdmin, createGameCopiesBulk);
 router.put("/:id/reserve", reserveGameCopy);
 router.delete("/:id/reserve", cancelReservation);
-router.put("/:id", updateGameCopy);
+router.put("/:id", requireAdmin, updateGameCopy);
 router.delete("/:id", requireAdmin, deleteGameCopy);
     
 export default router;
