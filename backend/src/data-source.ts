@@ -20,6 +20,6 @@ export const AppDataSource = new DataSource({
   password: process.env.DB_PASSWORD || '',
   database: process.env.DB_NAME || 'boardkeeper_db',
   synchronize: true,
-  logging: true,
+  logging: false,
   entities: [Game, GameCopy, Member, Rental, User, RentalExtension, CopyAuditLog, GameQueueEntry],
 });

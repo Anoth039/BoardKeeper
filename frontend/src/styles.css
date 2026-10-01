@@ -171,11 +171,13 @@ h1, h2, h3, h4, h5, h6 {
 
 .input-group-toggle .form-control { border-right: 0; }
 
-.input-group-toggle .btn {
-  border: 1px solid var(--bs-border-color);
-  border-left: 0;
-  background: transparent;
+.input-group-toggle .btn,
+.input-group-toggle .btn:is(:hover, :focus, :active, :disabled) {
   color: var(--bs-secondary-color);
+  background: transparent;
+  border-color: var(--bs-border-color);
+  border-left: 0;
+  box-shadow: none;
 }
 
 .empty-state {

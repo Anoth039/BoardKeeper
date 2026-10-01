@@ -17,10 +17,6 @@
       <span class="filter-badge" *ngIf="activeFilterCount > 0">{{ activeFilterCount }}</span>
     </button>
 
-    <button *ngIf="activeFilterCount > 0 || searchTerm" class="btn btn-link text-muted btn-sm" (click)="clearFilters()">
-      Clear all
-    </button>
-
     <div class="ms-auto">
       <button *ngIf="!showForm && isAdmin" class="btn btn-primary" (click)="openAddForm()">
         <i class="bi bi-plus-lg me-1"></i> Add Game
@@ -71,12 +67,7 @@
 
 <div *ngIf="games.length > 0 && filteredGames.length === 0" class="empty-state">
   <i class="bi bi-search"></i>
-  <p *ngIf="searchTerm" class="text-break">
-    No games match "<strong>{{ searchTerm }}</strong>"
-  </p>
-  <p *ngIf="!searchTerm">
-    No games match the selected filters.
-  </p>
+  <p>No games match your search or filters.</p>
   <button class="btn btn-sm btn-outline-secondary" (click)="clearFilters()">Clear search &amp; filters</button>
 </div>
 
