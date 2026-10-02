@@ -52,12 +52,16 @@ export class MemberDetail implements OnInit {
     return formatDate(this.member.createdAt, 'monthYear');
   }
 
+  private newestFirst(rentals: Rental[]): Rental[] {
+    return [...rentals].sort((a, b) => b.rentalDate.localeCompare(a.rentalDate) || b.id - a.id);
+  }
+
   get activeRentals(): Rental[] {
-    return this.member?.rentals?.filter(r => r.status === RentalStatus.ACTIVE) || [];
+    return this.newestFirst(this.member?.rentals?.filter(r => r.status === RentalStatus.ACTIVE) || []);
   }
 
   get pastRentals(): Rental[] {
-    return this.member?.rentals?.filter(r => r.status !== RentalStatus.ACTIVE) || [];
+    return this.newestFirst(this.member?.rentals?.filter(r => r.status !== RentalStatus.ACTIVE) || []);
   }
 
   get filteredActiveRentals(): Rental[] {

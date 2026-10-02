@@ -3,6 +3,13 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Rental } from '../models/rental.model';
 
+export interface RentalCharges {
+  rentalCharge: number;
+  lateFeeCharged: number;
+  replacementFeeCharged: number;
+  totalCharged: number;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -17,6 +24,10 @@ export class RentalService {
 
   create(rental: { memberId: number; gameCopyId: number; rentalDate: string; dueDate: string }): Observable<Rental> {
     return this.http.post<Rental>(this.apiUrl, rental);
+  }
+
+  getCharges(rentalId: number): Observable<RentalCharges> {
+    return this.http.get<RentalCharges>(`${this.apiUrl}/${rentalId}/charges`);
   }
 
   return(rentalId: number, copyUpdate: { condition?: string; notes?: string } = {}): Observable<Rental> {

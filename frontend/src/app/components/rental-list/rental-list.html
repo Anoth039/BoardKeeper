@@ -210,6 +210,17 @@
         [{{ returningRental.gameCopy?.copyNumber || returningRental.copyLabelSnapshot }}]
         as returned by {{ returningRental.member?.firstName }}?
       </p>
+      <div class="d-flex justify-content-between align-items-center border rounded p-2 mb-3 bg-body-secondary" *ngIf="returnCharges">
+        <span>
+          <span class="fw-semibold">Amount due</span>
+          <small class="text-muted d-block">
+            {{ returnCharges.rentalCharge | currency }} rental
+            <ng-container *ngIf="returnCharges.lateFeeCharged > 0">+ {{ returnCharges.lateFeeCharged | currency }} late fee</ng-container>
+            <ng-container *ngIf="returnExtensionFee > 0">+ {{ returnExtensionFee | currency }} extension</ng-container>
+          </small>
+        </span>
+        <span class="fs-5 fw-bold">{{ returnCharges.totalCharged | currency }}</span>
+      </div>
       <div class="mb-3">
         <label class="form-label small fw-semibold">Condition</label>
         <select class="form-select form-select-sm" [(ngModel)]="returnCondition" name="returnCondition">

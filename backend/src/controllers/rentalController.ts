@@ -10,7 +10,7 @@ import { assignQueuedReservations } from "./queueController";
 import { logAudit } from "./gameCopyController";
 import { AuditAction } from "../entities/CopyAuditLog";
 import { dateString, daysBetween } from "../utils/date";
-import { effectiveDailyRate, LATE_FEE_RATE_MULTIPLIER, EXTENSION_FEE } from "../utils/pricing";
+import { calculateCharges, effectiveDailyRate, EXTENSION_FEE } from "../utils/pricing";
 import { round2 } from "../utils/money";
 import { LessThan } from "typeorm";
 
@@ -53,6 +53,29 @@ export const getRentalById = async (req: AuthenticatedRequest, res: Response) =>
   } catch (error) {
     console.error("Failed to fetch rental:", error);
     res.status(500).json({ message: "Failed to fetch rental" });
+  }
+};
+
+export const getRentalCharges = async (req: Request, res: Response) => {
+  try {
+    const rental = await rentalRepository.findOneBy({ id: Number(req.params.id) });
+    if (!rental) {
+      return res.status(404).json({ message: "Rental not found" });
+    }
+    if (rental.status !== RentalStatus.ACTIVE) {
+      return res.status(409).json({ message: "Only active rentals have charges due" });
+    }
+
+    res.json(calculateCharges({
+      rentalDate: rental.rentalDate,
+      dueDate: rental.dueDate,
+      returnDate: dateString(),
+      ratePerDay: rental.pricePerDaySnapshot,
+      extensionFeeCharged: rental.extensionFeeCharged,
+    }));
+  } catch (error) {
+    console.error("Failed to calculate rental charges:", error);
+    res.status(500).json({ message: "Failed to calculate rental charges" });
   }
 };
 
@@ -181,28 +204,31 @@ export const returnRental = async (req: AuthenticatedRequest, res: Response) => 
       if (!rental.gameCopy) {
         return res.status(409).json({ message: "This rental's copy no longer exists and cannot be marked as returned this way" });
       }
+      if (condition !== undefined && CONDITION_ORDER.indexOf(condition) < CONDITION_ORDER.indexOf(rental.gameCopy.condition)) {
+        return res.status(400).json({ message: "A copy's condition can only be downgraded when it is returned. Ask an admin to upgrade it." });
+      }
 
       const returnedByUser = req.user
         ? await userRepo.findOneBy({ id: req.user.userId })
         : null;
 
       const today = dateString();
-      const daysRented = Math.max(1, daysBetween(rental.rentalDate, today));
-      const lateDays = Math.max(0, daysBetween(rental.dueDate, today));
-      const rate = rental.pricePerDaySnapshot || 0;
-
-      rental.rentalCharge = round2(rate * daysRented);
-      rental.lateFeeCharged = lateDays > 0 ? round2(rate * LATE_FEE_RATE_MULTIPLIER * lateDays) : 0;
-      rental.totalCharged = round2(rental.rentalCharge + rental.lateFeeCharged + (rental.extensionFeeCharged || 0));
+      const charges = calculateCharges({
+        rentalDate: rental.rentalDate,
+        dueDate: rental.dueDate,
+        returnDate: today,
+        ratePerDay: rental.pricePerDaySnapshot,
+        extensionFeeCharged: rental.extensionFeeCharged,
+      });
+      rental.rentalCharge = charges.rentalCharge;
+      rental.lateFeeCharged = charges.lateFeeCharged;
+      rental.totalCharged = charges.totalCharged;
 
       rental.status = RentalStatus.RETURNED;
       rental.returnDate = today;
       rental.returnedBy = returnedByUser;
       const savedRental = await rentalRepo.save(rental);
 
-      if (condition !== undefined && CONDITION_ORDER.indexOf(condition) < CONDITION_ORDER.indexOf(rental.gameCopy.condition)) {
-        return res.status(400).json({ message: "A copy's condition can only be downgraded when it is returned. Ask an admin to upgrade it." });
-      }
       if (condition !== undefined && condition !== rental.gameCopy.condition) {
         copyChanges.push({ action: AuditAction.CONDITION_CHANGED, oldValue: rental.gameCopy.condition, newValue: condition });
         rental.gameCopy.condition = condition;
@@ -321,16 +347,15 @@ export const markRentalLost = async (req: AuthenticatedRequest, res: Response) =
       await gameCopyRepo.save(rental.gameCopy);
 
       const today = dateString();
-      const daysRented = Math.max(1, daysBetween(rental.rentalDate, today));
-      const lateDays = Math.max(0, daysBetween(rental.dueDate, today));
-      const rate = rental.pricePerDaySnapshot || 0;
-
-      rental.rentalCharge = round2(rate * daysRented);
-      rental.lateFeeCharged = lateDays > 0 ? round2(rate * LATE_FEE_RATE_MULTIPLIER * lateDays) : 0;
-      rental.replacementFeeCharged = round2(rental.gameCopy.game?.replacementValue || 0);
-      rental.totalCharged = round2(
-        rental.rentalCharge + rental.lateFeeCharged + (rental.extensionFeeCharged || 0) + rental.replacementFeeCharged
-      );
+      const charges = calculateCharges({
+        rentalDate: rental.rentalDate,
+        dueDate: rental.dueDate,
+        returnDate: today,
+        ratePerDay: rental.pricePerDaySnapshot,
+        extensionFeeCharged: rental.extensionFeeCharged,
+        replacementFee: rental.gameCopy.game?.replacementValue,
+      });
+      Object.assign(rental, charges);
 
       rental.status = RentalStatus.LOST;
       rental.returnDate = today;

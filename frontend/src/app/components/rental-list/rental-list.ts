@@ -2,7 +2,7 @@ import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { RentalService } from '../../services/rental';
+import { RentalService, RentalCharges } from '../../services/rental';
 import { AuthService } from '../../services/auth';
 import { Rental, RentalStatus, isRentalOverdue, isRentalDueSoon } from '../../models/rental.model';
 import { RentalForm } from '../rental-form/rental-form';
@@ -149,12 +149,28 @@ export class RentalListComponent implements OnInit {
   returningRental: Rental | null = null;
   returnCondition = 'good';
   returnNotes = '';
+  returnCharges: RentalCharges | null = null;
 
   returnRental(rental: Rental): void {
     this.returningRental = rental;
     this.returnCondition = rental.gameCopy?.condition || 'good';
     this.returnNotes = rental.gameCopy?.notes || '';
+    this.returnCharges = null;
     this.cdr.detectChanges();
+
+    this.rentalService.getCharges(rental.id).subscribe({
+      next: (charges) => {
+        if (this.returningRental?.id !== rental.id) return;
+        this.returnCharges = charges;
+        this.cdr.detectChanges();
+      },
+      error: () => {}
+    });
+  }
+
+  get returnExtensionFee(): number {
+    const c = this.returnCharges;
+    return c ? Math.round((c.totalCharged - c.rentalCharge - c.lateFeeCharged) * 100) / 100 : 0;
   }
 
   private readonly conditionOrder = ['new', 'good', 'worn', 'damaged'];

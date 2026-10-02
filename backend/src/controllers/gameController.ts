@@ -42,6 +42,9 @@ export const createGame = async (req: Request, res: Response) => {
     if (!title || !minPlayers || !maxPlayers) {
       return res.status(400).json({ message: "title, minPlayers, and maxPlayers are required" });
     }
+    if (!(Number(pricePerDay) > 0) || !(Number(replacementValue) > 0)) {
+      return res.status(400).json({ message: "pricePerDay and replacementValue must be greater than 0" });
+    }
 
     const existing = await gameRepository.findOne({
       where: { title: ILike(title.trim()) }
@@ -87,6 +90,11 @@ export const updateGame = async (req: Request, res: Response) => {
 
     if (!game) {
       return res.status(404).json({ message: "Game not found" });
+    }
+
+    const { pricePerDay, replacementValue } = req.body;
+    if ((pricePerDay !== undefined && !(Number(pricePerDay) > 0)) || (replacementValue !== undefined && !(Number(replacementValue) > 0))) {
+      return res.status(400).json({ message: "pricePerDay and replacementValue must be greater than 0" });
     }
 
     if (req.body.title && req.body.title.trim() !== game.title) {
