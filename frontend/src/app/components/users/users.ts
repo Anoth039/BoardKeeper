@@ -1,7 +1,7 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { UserService } from '../../services/user';
-import { SystemUser } from '../../models/user.model';
+import { Role, SystemUser } from '../../models/user.model';
 import { FormsModule } from '@angular/forms';
 import { DialogService } from '../../services/dialog';
 import { ToastService } from '../../services/toast';
@@ -16,6 +16,7 @@ import { formatDate, timeAgo } from '../../utils/date';
 })
 export class UsersPage implements OnInit {
   users: SystemUser[] = [];
+  selectedRoles: Record<number, Role> = {};
   searchTerm = '';
   loading = true;
 
@@ -51,25 +52,38 @@ export class UsersPage implements OnInit {
   }
 
   get pendingUsers(): SystemUser[] {
-    return this.filteredUsers.filter(u => !u.isApproved && u.role !== 'admin');
+    return this.filteredUsers.filter(u => !u.isApproved);
   }
 
   get approvedUsers(): SystemUser[] {
-    return this.filteredUsers.filter(u => u.isApproved && u.role !== 'admin');
+    return this.filteredUsers.filter(u => u.isApproved);
+  }
+
+  roleFor(user: SystemUser): Role {
+    return this.selectedRoles[user.id] ?? 'staff';
+  }
+
+  setRole(user: SystemUser, role: Role): void {
+    this.selectedRoles[user.id] = role;
   }
 
   async toggleApproval(user: SystemUser): Promise<void> {
+    const role = this.roleFor(user);
+    const approving = !user.isApproved;
     const confirmed = await this.dialogService.confirm({
       title: user.isApproved ? 'Revoke Access' : 'Approve User',
-      message: `Are you sure you want to ${user.isApproved ? 'revoke access from' : 'approve'} ${user.email}?`,
+      message: approving
+        ? `Approve ${user.email} as ${role}?${role === 'admin' ? ' Administrators have full access and cannot be demoted or removed from this page.' : ''}`
+        : `Are you sure you want to revoke access from ${user.email}?`,
       confirmLabel: user.isApproved ? 'Revoke' : 'Approve',
       type: user.isApproved ? 'danger' : 'primary',
     });
     if (!confirmed) return;
 
-    this.userService.toggleApproval(user.id).subscribe({
+    this.userService.toggleApproval(user.id, approving ? role : undefined).subscribe({
       next: (updated) => {
         user.isApproved = updated.isApproved;
+        user.role = updated.role;
         const actionLabel = updated.isApproved ? 'approved' : 'revoked access for';
         this.toastService.success(`Successfully ${actionLabel} ${user.email}.`);
         this.cdr.detectChanges();

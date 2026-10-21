@@ -101,9 +101,11 @@ export class Register implements OnDestroy {
     const { email, password, verificationCode } = this.form.value;
 
     this.authService.register(email, password, verificationCode).subscribe({
-      next: () => {
+      next: (response) => {
         this.submitting = false;
-        this.toastService.success('Account created successfully! Please log in.');
+        this.toastService.success(response.isApproved
+          ? 'Account created! You are the first user, so you were made an administrator. Please log in.'
+          : 'Account created! An administrator must approve it before you can log in.');
         this.router.navigate(['/login']);
         this.cdr.detectChanges();
       },

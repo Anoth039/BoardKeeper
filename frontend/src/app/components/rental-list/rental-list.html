@@ -18,7 +18,7 @@
     </button>
 
     <div class="ms-auto d-flex gap-2">
-      <button *ngIf="isAdmin" class="btn btn-outline-success btn-sm" (click)="exportToExcel()" 
+      <button *ngIf="can('rentals:export')" class="btn btn-outline-success btn-sm" (click)="exportToExcel()" 
         [disabled]="filteredRentals.length === 0" title="Export current view to Excel">
         <i class="bi bi-file-earmark-excel me-1"></i> Export
       </button>
@@ -104,11 +104,14 @@
               <button class="btn btn-sm btn-outline-success" (click)="returnRental(rental)" title="Return">
                 <i class="bi bi-box-arrow-in-left"></i>
               </button>
-              <button class="btn btn-sm btn-outline-primary" *ngIf="!isOverdue(rental)" (click)="startExtend(rental)" title="Extend due date">
+              <button class="btn btn-sm btn-outline-primary" *ngIf="canExtend(rental)" (click)="startExtend(rental)" title="Extend due date">
                 <i class="bi bi-calendar-plus"></i>
               </button>
-              <button class="btn btn-sm btn-outline-secondary" (click)="markLost(rental)" title="Mark as lost">
+              <button class="btn btn-sm btn-outline-secondary" *ngIf="can('rentals:mark_lost')" (click)="markLost(rental)" title="Mark as lost">
                 <i class="bi bi-bookmark-x"></i>
+              </button>
+              <button class="btn btn-sm btn-outline-danger" *ngIf="can('rentals:delete')" (click)="deleteRental(rental)" title="Delete (entered by mistake)">
+                <i class="bi bi-trash"></i>
               </button>
             </ng-container>
 
@@ -151,7 +154,7 @@
           </span>
           <span class="meta-divider" *ngIf="rental.extensions?.length">·</span>
           <span *ngIf="rental.extensions && rental.extensions.length > 0"
-            [title]="rental.extensions.map(e => e.previousDueDate + ' → ' + e.newDueDate + ' by ' + (e.extendedBy?.email || 'unknown')).join('\n')">
+            [attr.title]="extensionsTooltip(rental)">
             <i class="bi bi-arrow-repeat me-1"></i>
             Extended {{ rental.extensions.length }}x
             (was {{ rental.extensions[0].previousDueDate }})
@@ -163,7 +166,7 @@
           </span>
         </div>
 
-        <div class="avatar-stack ms-auto flex-shrink-0" *ngIf="isAdmin">
+        <div class="avatar-stack ms-auto flex-shrink-0" *ngIf="can('rentals:view_handlers')">
           <span class="avatar avatar-sm handler-avatar" [title]="'Rented out by: ' + (rental.handledBy?.email || 'Unknown')">
             {{ handledByInitials(rental) }}
           </span>
@@ -199,43 +202,77 @@
 </div>
 
 <div class="modal-backdrop-custom" *ngIf="returningRental" (click)="cancelReturn()">
-  <div class="modal-box" (click)="$event.stopPropagation()">
+  <div class="modal-box return-modal" (click)="$event.stopPropagation()">
     <div class="modal-header-custom">
-      <h5 class="mb-0 text-truncate me-2">Return Rental</h5>
+      <div class="d-flex align-items-center gap-2 min-w-0">
+        <span class="return-icon"><i class="bi bi-box-arrow-in-left"></i></span>
+        <h5 class="mb-0 text-truncate">Return Rental</h5>
+      </div>
       <button class="btn-close" (click)="cancelReturn()"></button>
     </div>
-    <div class="modal-body-custom">
-      <p>
-        Mark "{{ returningRental.gameCopy?.game?.title || returningRental.gameTitleSnapshot }}"
-        [{{ returningRental.gameCopy?.copyNumber || returningRental.copyLabelSnapshot }}]
-        as returned by {{ returningRental.member?.firstName }}?
-      </p>
-      <div class="d-flex justify-content-between align-items-center border rounded p-2 mb-3 bg-body-secondary" *ngIf="returnCharges">
-        <span>
-          <span class="fw-semibold">Amount due</span>
-          <small class="text-muted d-block">
-            {{ returnCharges.rentalCharge | currency }} rental
-            <ng-container *ngIf="returnCharges.lateFeeCharged > 0">+ {{ returnCharges.lateFeeCharged | currency }} late fee</ng-container>
-            <ng-container *ngIf="returnExtensionFee > 0">+ {{ returnExtensionFee | currency }} extension</ng-container>
-          </small>
-        </span>
-        <span class="fs-5 fw-bold">{{ returnCharges.totalCharged | currency }}</span>
+
+    <div class="modal-body-custom return-body">
+      <div class="return-summary">
+        <div class="return-summary-game">
+          <span class="return-game-title">
+            {{ returningRental.gameCopy?.game?.title || returningRental.gameTitleSnapshot }}
+          </span>
+          <span class="chip">{{ returningRental.gameCopy?.copyNumber || returningRental.copyLabelSnapshot }}</span>
+        </div>
+        <div class="return-summary-member">
+          <i class="bi bi-person"></i>
+          {{ returningRental.member?.firstName }} {{ returningRental.member?.lastName }}
+        </div>
       </div>
-      <div class="mb-3">
-        <label class="form-label small fw-semibold">Condition</label>
-        <select class="form-select form-select-sm" [(ngModel)]="returnCondition" name="returnCondition">
-          <option *ngFor="let c of returnConditionOptions" [value]="c">{{ c | titlecase }}</option>
-        </select>
+
+      <div class="return-amount" *ngIf="returnCharges">
+        <div class="return-amount-main">
+          <span class="caption text-uppercase">Amount due</span>
+          <span class="return-amount-total">{{ returnCharges.totalCharged | currency }}</span>
+        </div>
+        <div class="return-breakdown">
+          <span class="breakdown-item">
+            <i class="bi bi-dice-5"></i> Rental {{ returnCharges.rentalCharge | currency }}
+          </span>
+          <span class="breakdown-item breakdown-late" *ngIf="returnCharges.lateFeeCharged > 0">
+            <i class="bi bi-clock-history"></i> Late fee {{ returnCharges.lateFeeCharged | currency }}
+          </span>
+          <span class="breakdown-item" *ngIf="returnExtensionFee > 0">
+            <i class="bi bi-arrow-repeat"></i> Extension {{ returnExtensionFee | currency }}
+          </span>
+        </div>
       </div>
-      <div class="mb-3">
-        <label class="form-label small fw-semibold">Notes</label>
-        <textarea class="form-control form-control-sm" rows="3" maxlength="200" [(ngModel)]="returnNotes" name="returnNotes"></textarea>
-        <div class="form-text text-end">{{ returnNotes.length }}/200</div>
+      <div class="return-amount return-amount-loading" *ngIf="!returnCharges">
+        <span class="spinner-border spinner-border-sm text-secondary"></span>
+        <span class="caption">Calculating amount due…</span>
       </div>
-      <div class="d-flex justify-content-end gap-2">
-        <button class="btn btn-sm btn-outline-secondary" (click)="cancelReturn()">Cancel</button>
-        <button class="btn btn-sm btn-primary" (click)="submitReturn()">Return</button>
+
+      <div class="return-field">
+        <label class="return-label">Condition</label>
+        <div class="condition-group" role="radiogroup">
+          <button type="button" *ngFor="let c of returnConditionOptions"
+            class="condition-pill" [ngClass]="'cond-' + c"
+            [class.selected]="returnCondition === c"
+            role="radio" [attr.aria-checked]="returnCondition === c"
+            (click)="returnCondition = c">
+            {{ c | titlecase }}
+          </button>
+        </div>
       </div>
+
+      <div class="return-field mb-0">
+        <div class="d-flex justify-content-between align-items-baseline">
+          <label class="return-label" for="returnNotes">Notes</label>
+          <span class="caption" [class.text-warning]="returnNotes.length >= 180">{{ returnNotes.length }}/200</span>
+        </div>
+        <textarea id="returnNotes" class="form-control return-notes" rows="3" maxlength="200"
+          placeholder="Missing pieces, damage, anything worth remembering…"
+          [(ngModel)]="returnNotes" name="returnNotes"></textarea>
+      </div>
+    </div>
+
+    <div class="return-footer">
+      <button class="btn btn-success" (click)="submitReturn()">Confirm</button>
     </div>
   </div>
 </div>

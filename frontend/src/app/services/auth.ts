@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, tap } from 'rxjs';
-import { AuthUser, LoginResponse } from '../models/user.model';
+import { AuthUser, LoginResponse, RegisterResponse } from '../models/user.model';
 
 @Injectable({
   providedIn: 'root'
@@ -17,8 +17,8 @@ export class AuthService {
     return this.http.post<{ message: string }>(`${this.apiUrl}/send-verification-code`, { email });
   }
 
-  register(email: string, password: string, verificationCode: string): Observable<{ message: string }> {
-    return this.http.post<{ message: string }>(`${this.apiUrl}/register`, { email, password, verificationCode });
+  register(email: string, password: string, verificationCode: string): Observable<RegisterResponse> {
+    return this.http.post<RegisterResponse>(`${this.apiUrl}/register`, { email, password, verificationCode });
   }
 
   login(email: string, password: string): Observable<LoginResponse> {
@@ -50,6 +50,16 @@ export class AuthService {
   getCurrentUser(): AuthUser | null {
     const stored = localStorage.getItem(this.userKey);
     return stored ? JSON.parse(stored) : null;
+  }
+
+  can(permission: string): boolean {
+    return this.getCurrentUser()?.permissions?.includes(permission) ?? false;
+  }
+
+  refreshUser(): Observable<AuthUser> {
+    return this.http.get<AuthUser>(`${this.apiUrl}/me`).pipe(
+      tap((user) => localStorage.setItem(this.userKey, JSON.stringify(user)))
+    );
   }
 
   isLoggedIn(): boolean {

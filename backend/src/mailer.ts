@@ -1,6 +1,6 @@
 import nodemailer from "nodemailer";
 
-export const transporter = nodemailer.createTransport({
+const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
     user: process.env.GMAIL_USER,
@@ -28,6 +28,20 @@ export const sendReservationEmail = async (to: string, firstName: string, gameTi
       <p>Hi ${firstName},</p>
       <p>Your reservation for <strong>${gameTitle}</strong> (Copy #${copyNumber}) is confirmed.</p>
       <p>It will be held until <strong>the end of the day on ${reservedUntil}</strong>.</p>
+      <p>This is an automated email. Please do not reply.</p>
+    `,
+  });
+};
+
+export const sendApprovalEmail = async (to: string, role: string) => {
+  await transporter.sendMail({
+    from: `"BoardKeeper" <${process.env.GMAIL_USER}>`,
+    to,
+    subject: "Your BoardKeeper account has been approved",
+    text: `Your BoardKeeper account has been approved with the "${role}" role. You can now log in.\n\nThis is an automated email. Please do not reply.`,
+    html: `
+      <p>Your BoardKeeper account has been approved with the <strong>${role}</strong> role.</p>
+      <p>You can now log in.</p>
       <p>This is an automated email. Please do not reply.</p>
     `,
   });

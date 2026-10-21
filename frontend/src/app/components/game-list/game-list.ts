@@ -434,8 +434,8 @@ export class GameListComponent implements OnInit {
     });
   }
 
-  get isAdmin(): boolean {
-    return this.authService.getCurrentUser()?.role === 'admin';
+  can(permission: string): boolean {
+    return this.authService.can(permission);
   }
 
   resetCopyFilters(): void {

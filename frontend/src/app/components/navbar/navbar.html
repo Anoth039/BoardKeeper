@@ -1,7 +1,7 @@
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-3">
+<nav class="navbar navbar-expand-lg navbar-dark mb-3">
   <div class="container-fluid">
     <a class="navbar-brand d-flex align-items-center gap-2" routerLink="/stats">
-      <i class="bi bi-shield-fill-check text-primary"></i>
+      <img src="logo.svg" alt="" width="30" height="30" class="brand-logo">
       <span>BoardKeeper</span>
     </a>
 
@@ -21,18 +21,19 @@
         <li class="nav-item">
           <a class="nav-link" routerLink="/rentals" routerLinkActive="active">Rentals</a>
         </li>
-        <li class="nav-item" *ngIf="isAdmin">
+        <li class="nav-item" *ngIf="can('users:manage')">
           <a class="nav-link" routerLink="/users" routerLinkActive="active">Users</a>
         </li>
       </ul>
 
       <div class="d-flex align-items-center gap-3 my-2">
-        <span class="text-light small">
-          <i class="bi bi-person-circle me-1"></i>{{ authService.getCurrentUser()?.email }}
-          <span class="badge ms-1" [ngClass]="authService.getCurrentUser()?.role === 'admin' ? 'bg-danger' : 'bg-secondary'">
+        <div class="user-chip">
+          <span class="avatar avatar-sm">{{ authService.getCurrentUser()?.email?.charAt(0) | uppercase }}</span>
+          <span class="user-email">{{ authService.getCurrentUser()?.email }}</span>
+          <span class="badge" [ngClass]="authService.getCurrentUser()?.role === 'admin' ? 'bg-danger' : 'bg-secondary'">
             {{ authService.getCurrentUser()?.role }}
           </span>
-        </span>
+        </div>
         <button class="btn btn-sm btn-outline-light ms-auto" (click)="logout()">
           <i class="bi bi-box-arrow-right"></i> Logout
         </button>

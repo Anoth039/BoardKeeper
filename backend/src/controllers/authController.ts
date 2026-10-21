@@ -4,6 +4,8 @@ import jwt from "jsonwebtoken";
 import { AppDataSource } from "../data-source";
 import { User } from "../entities/User";
 import { sendCodeEmail } from "../mailer";
+import { Role, permissionsOf } from "../permissions";
+import { AuthenticatedRequest } from "../middleware/authMiddleware";
 
 const userRepository = AppDataSource.getRepository(User);
 
@@ -76,13 +78,25 @@ export const register = async (req: Request, res: Response) => {
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
-    const user = userRepository.create({ email, passwordHash });
+
+    const isFirstUser = (await userRepository.count()) === 0;
+    const user = userRepository.create({
+      email,
+      passwordHash,
+      role: isFirstUser ? Role.ADMIN : Role.STAFF,
+      isApproved: isFirstUser,
+    });
     await userRepository.save(user);
 
     verificationCodes.delete(email);
     verificationCooldowns.delete(email);
 
-    res.status(201).json({ message: "Account created successfully" });
+    res.status(201).json({
+      message: isFirstUser
+        ? "Account created successfully. You are the first user, so you were made an administrator."
+        : "Account created successfully",
+      isApproved: user.isApproved,
+    });
   } catch (error) {
     console.error("Failed to register:", error);
     res.status(500).json({ message: "Failed to register" });
@@ -114,11 +128,11 @@ export const login = async (req: Request, res: Response) => {
     user.lastLoginAt = new Date();
     await userRepository.save(user);
 
-    const token = jwt.sign({ userId: user.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '1h' });
+    const token = jwt.sign({ userId: user.id, email: user.email }, JWT_SECRET, { expiresIn: '1h' });
 
     res.json({
       token,
-      user: { id: user.id, email: user.email, role: user.role },
+      user: { id: user.id, email: user.email, role: user.role, permissions: permissionsOf(user.role) },
     });
   } catch (error) {
     console.error("Failed to login:", error);
@@ -202,4 +216,9 @@ export const resetPassword = async (req: Request, res: Response) => {
     console.error("Failed to reset password:", error);
     res.status(500).json({ message: "Failed to reset password" });
   }
+};
+
+export const me = (req: AuthenticatedRequest, res: Response) => {
+  const user = req.user!;
+  res.json({ id: user.userId, email: user.email, role: user.role, permissions: permissionsOf(user.role) });
 };

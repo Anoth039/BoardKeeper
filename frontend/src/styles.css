@@ -15,22 +15,6 @@
   --bs-box-shadow-sm: var(--bk-shadow);
 }
 
-[data-bs-theme="dark"] {
-  --bk-page-bg: #17191d;
-  --bk-surface: #1f2227;
-  --bk-surface-muted: #24272d;
-  --bk-border: #33363c;
-  --bk-divider: #2b2e34;
-
-  --bk-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.4);
-  --bk-shadow-overlay: 0 1rem 3rem rgba(0, 0, 0, 0.55);
-  --bk-backdrop: rgba(0, 0, 0, 0.65);
-}
-
-[data-bs-theme="dark"] .auth-wrapper {
-  background: linear-gradient(135deg, #17191d 0%, #1f2227 100%);
-}
-
 body {
   background: var(--bk-page-bg);
   -webkit-font-smoothing: antialiased;

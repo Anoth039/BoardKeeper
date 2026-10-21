@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { RentalService, RentalCharges } from '../../services/rental';
 import { AuthService } from '../../services/auth';
-import { Rental, RentalStatus, isRentalOverdue, isRentalDueSoon } from '../../models/rental.model';
+import { Rental, RentalStatus, isRentalOverdue, isRentalDueSoon, canExtendRental, MAX_EXTENSION_DAYS } from '../../models/rental.model';
 import { RentalForm } from '../rental-form/rental-form';
 import { dateString } from '../../utils/date';
 import { PdfService } from '../../services/pdf';
@@ -38,13 +38,14 @@ export class RentalListComponent implements OnInit {
   previewRental: Rental | null = null;
 
   isOverdue = isRentalOverdue;
+  canExtend = canExtendRental;
   isDueSoon = isRentalDueSoon;
 
   constructor(private rentalService: RentalService, public authService: AuthService, private pdfService: PdfService, 
     private cdr: ChangeDetectorRef, private dialogService: DialogService, private toastService: ToastService) {}
 
-  get isAdmin(): boolean {
-    return this.authService.getCurrentUser()?.role === 'admin';
+  can(permission: string): boolean {
+    return this.authService.can(permission);
   }
 
   ngOnInit(): void {
@@ -220,6 +221,29 @@ export class RentalListComponent implements OnInit {
     });
   }
 
+  async deleteRental(rental: Rental): Promise<void> {
+    const title = rental.gameCopy?.game?.title || rental.gameTitleSnapshot;
+    const confirmed = await this.dialogService.confirm({
+      title: 'Delete Rental',
+      message: `Delete the active rental of "${title}" [${rental.gameCopy?.copyNumber || rental.copyLabelSnapshot}]? Use this only for rentals entered by mistake. The copy becomes available again.`,
+      confirmLabel: 'Delete',
+      type: 'danger',
+    });
+    if (!confirmed) return;
+
+    this.rentalService.delete(rental.id).subscribe({
+      next: () => {
+        this.toastService.success(`Rental for "${title}" deleted.`);
+        this.loadRentals();
+      },
+      error: (err) => {
+        const message = err.error?.message || 'Failed to delete rental.';
+        this.toastService.error(message);
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
   async markLost(rental: Rental): Promise<void> {
     const title = rental.gameCopy?.game?.title || rental.gameTitleSnapshot;
     const confirmed = await this.dialogService.confirm({
@@ -242,6 +266,13 @@ export class RentalListComponent implements OnInit {
         this.cdr.detectChanges();
       }
     });
+  }
+
+  extensionsTooltip(rental: Rental): string | null {
+    if (!this.can('rentals:view_handlers') || !rental.extensions?.length) return null;
+    return rental.extensions
+      .map(e => `${e.previousDueDate} → ${e.newDueDate} by ${e.extendedBy?.email || 'unknown'}`)
+      .join('\n');
   }
 
   handledByInitials(rental: Rental): string {
@@ -281,7 +312,7 @@ export class RentalListComponent implements OnInit {
   }
 
   exportToExcel(): void {
-    if (!this.isAdmin) return;
+    if (!this.can('rentals:export')) return;
     
     const rows = this.filteredRentals.map(r => ({
       'Member': r.member ? `${r.member.firstName} ${r.member.lastName}` : 'Unknown',
@@ -326,7 +357,7 @@ export class RentalListComponent implements OnInit {
   }
 
   getMaxDueDate(dueDate: string): string {
-    return dateString(14, dueDate);
+    return dateString(MAX_EXTENSION_DAYS, dueDate);
   }
 
   startExtend(rental: Rental): void {

@@ -149,15 +149,7 @@
   color: #1e7e34;
 }
 
-:host-context([data-bs-theme="dark"]) .audit-value.old {
-  background: rgba(192, 57, 43, 0.18);
-  color: #ff8a7a;
-}
 
-:host-context([data-bs-theme="dark"]) .audit-value.new {
-  background: rgba(30, 126, 52, 0.18);
-  color: #6fd897;
-}
 
 .audit-arrow {
   font-size: 0.7rem;

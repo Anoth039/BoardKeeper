@@ -41,4 +41,8 @@ export class RentalService {
   markLost(rentalId: number): Observable<Rental> {
     return this.http.put<Rental>(`${this.apiUrl}/${rentalId}/lost`, {});
   }
+
+  delete(rentalId: number): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/${rentalId}`);
+  }
 }

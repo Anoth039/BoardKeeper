@@ -8,16 +8,6 @@
   background: #fff5f5;
 }
 
-:host-context([data-bs-theme="dark"]) .stat-card-warning {
-  border-color: #6b5a1f;
-  background: rgba(255, 230, 156, 0.08);
-}
-
-:host-context([data-bs-theme="dark"]) .stat-card-danger {
-  border-color: #6b3238;
-  background: rgba(245, 198, 203, 0.08);
-}
-
 .stat-icon {
   display: block;
   margin-bottom: 0.4rem;

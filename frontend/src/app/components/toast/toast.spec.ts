@@ -1,14 +1,18 @@
+import { provideRouter } from '@angular/router';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { provideHttpClient } from '@angular/common/http';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { ToastComponent } from './toast';
 
-describe('ToastComponent', () => {
+describe('Értesítési üzenetek', () => {
   let component: ToastComponent;
   let fixture: ComponentFixture<ToastComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [ToastComponent],
+      providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([])],
     }).compileComponents();
 
     fixture = TestBed.createComponent(ToastComponent);
@@ -16,7 +20,7 @@ describe('ToastComponent', () => {
     await fixture.whenStable();
   });
 
-  it('should create', () => {
+  it('létrejön', () => {
     expect(component).toBeTruthy();
   });
 });

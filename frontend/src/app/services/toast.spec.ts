@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 
 import { ToastService } from './toast';
 
-describe('ToastService', () => {
+describe('Értesítési szolgáltatás', () => {
   let service: ToastService;
 
   beforeEach(() => {
@@ -10,7 +10,7 @@ describe('ToastService', () => {
     service = TestBed.inject(ToastService);
   });
 
-  it('should be created', () => {
+  it('létrejön', () => {
     expect(service).toBeTruthy();
   });
 });

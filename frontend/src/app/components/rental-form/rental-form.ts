@@ -9,6 +9,7 @@ import { Game, GameCopy, isCopyReserved } from '../../models/game.model';
 import { DialogService } from '../../services/dialog';
 import { ToastService } from '../../services/toast';
 import { dateString } from '../../utils/date';
+import { MAX_RENTAL_DAYS } from '../../models/rental.model';
 
 @Component({
   selector: 'app-rental-form',
@@ -183,7 +184,7 @@ export class RentalForm implements OnInit {
   }
 
   get maxDueDate(): string {
-    return dateString(60);
+    return dateString(MAX_RENTAL_DAYS, this.rentalDate || dateString());
   }
 
   onSubmit(): void {

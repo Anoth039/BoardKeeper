@@ -1,10 +1,9 @@
-import { Component, OnInit, AfterViewInit, OnDestroy, ViewChild, ElementRef, ChangeDetectorRef, effect } from '@angular/core';
+import { Component, OnInit, AfterViewInit, OnDestroy, ViewChild, ElementRef, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { StatsService } from '../../services/stats';
 import { Stats, UnusedGame } from '../../models/stats.model';
 import { Chart, registerables } from 'chart.js';
 import { formatDate, timeAgo } from '../../utils/date';
-import { ThemeService } from '../../services/theme';
 
 Chart.register(...registerables);
 
@@ -27,12 +26,7 @@ export class StatsPage implements OnInit, AfterViewInit, OnDestroy {
   private viewReady = false;
   private dataReady = false;
 
-  constructor(private statsService: StatsService, private cdr: ChangeDetectorRef, private themeService: ThemeService) {
-    effect(() => {
-      this.themeService.theme();
-      if (this.viewReady && this.dataReady) this.renderAll();
-    });
-  }
+  constructor(private statsService: StatsService, private cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
     this.statsService.get().subscribe({

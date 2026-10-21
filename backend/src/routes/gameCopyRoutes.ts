@@ -1,17 +1,17 @@
 import { Router } from "express";
 import { getAllGameCopies, getGameCopyById, createGameCopy, updateGameCopy, deleteGameCopy, createGameCopiesBulk, getCopyAuditLog, reserveGameCopy, cancelReservation } from "../controllers/gameCopyController";
-import { requireAdmin } from "../middleware/authMiddleware";
+import { requirePermission } from "../middleware/authMiddleware";
 
 const router = Router();
 
-router.get("/", getAllGameCopies);
-router.get("/:id", getGameCopyById);
-router.get("/audit/:gameId", requireAdmin, getCopyAuditLog);
-router.post("/", requireAdmin, createGameCopy);
-router.post("/bulk", requireAdmin, createGameCopiesBulk);
-router.put("/:id/reserve", reserveGameCopy);
-router.delete("/:id/reserve", cancelReservation);
-router.put("/:id", requireAdmin, updateGameCopy);
-router.delete("/:id", requireAdmin, deleteGameCopy);
-    
+router.get("/", requirePermission("copies:read"), getAllGameCopies);
+router.get("/:id", requirePermission("copies:read"), getGameCopyById);
+router.get("/audit/:gameId", requirePermission("copies:audit"), getCopyAuditLog);
+router.post("/", requirePermission("copies:write"), createGameCopy);
+router.post("/bulk", requirePermission("copies:write"), createGameCopiesBulk);
+router.put("/:id/reserve", requirePermission("copies:reserve"), reserveGameCopy);
+router.delete("/:id/reserve", requirePermission("copies:reserve"), cancelReservation);
+router.put("/:id", requirePermission("copies:write"), updateGameCopy);
+router.delete("/:id", requirePermission("copies:write"), deleteGameCopy);
+
 export default router;

@@ -5,9 +5,12 @@ import { dateString, daysBetween } from '../utils/date';
 export enum RentalStatus {
   ACTIVE = 'active',
   RETURNED = 'returned',
-  OVERDUE = 'overdue',
   LOST = 'lost'
 }
+
+export const MAX_RENTAL_DAYS = 60;
+export const MAX_EXTENSION_DAYS = 14;
+export const MAX_EXTENSIONS_PER_RENTAL = 3;
 
 export interface RentalExtension {
   id: number;
@@ -51,4 +54,9 @@ export function isRentalDueSoon(rental: Rental): boolean {
 
   const daysLeft = daysBetween(new Date(), rental.dueDate);
   return daysLeft >= 0 && daysLeft <= 2;
+}
+export function canExtendRental(rental: Rental): boolean {
+  return rental.status === RentalStatus.ACTIVE
+    && !isRentalOverdue(rental)
+    && (rental.extensions?.length ?? 0) < MAX_EXTENSIONS_PER_RENTAL;
 }

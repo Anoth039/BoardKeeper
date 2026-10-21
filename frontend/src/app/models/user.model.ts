@@ -1,7 +1,15 @@
+export type Role = 'staff' | 'admin';
+
 export interface AuthUser {
   id: number;
   email: string;
   role: string;
+  permissions: string[];
+}
+
+export interface RegisterResponse {
+  message: string;
+  isApproved: boolean;
 }
 
 export interface LoginResponse {

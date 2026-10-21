@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { SystemUser } from '../models/user.model';
+import { Role, SystemUser } from '../models/user.model';
 
 @Injectable({ providedIn: 'root' })
 export class UserService {
@@ -13,8 +13,8 @@ export class UserService {
     return this.http.get<SystemUser[]>(this.apiUrl);
   }
 
-  toggleApproval(id: number): Observable<SystemUser> {
-    return this.http.patch<SystemUser>(`${this.apiUrl}/${id}/toggle-approval`, {});
+  toggleApproval(id: number, role?: Role): Observable<SystemUser> {
+    return this.http.patch<SystemUser>(`${this.apiUrl}/${id}/toggle-approval`, role ? { role } : {});
   }
 
   delete(id: number): Observable<void> {

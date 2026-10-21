@@ -1,14 +1,18 @@
+import { provideRouter } from '@angular/router';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { provideHttpClient } from '@angular/common/http';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { MemberDetail } from './member-detail';
 
-describe('MemberDetail', () => {
+describe('Tag adatlapja', () => {
   let component: MemberDetail;
   let fixture: ComponentFixture<MemberDetail>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [MemberDetail],
+      providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([])],
     }).compileComponents();
 
     fixture = TestBed.createComponent(MemberDetail);
@@ -16,7 +20,7 @@ describe('MemberDetail', () => {
     await fixture.whenStable();
   });
 
-  it('should create', () => {
+  it('létrejön', () => {
     expect(component).toBeTruthy();
   });
 });

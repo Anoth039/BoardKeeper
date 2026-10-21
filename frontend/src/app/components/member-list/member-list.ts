@@ -68,8 +68,8 @@ export class MemberListComponent implements OnInit {
     });
   }
 
-  get isAdmin(): boolean {
-    return this.authService.getCurrentUser()?.role === 'admin';
+  can(permission: string): boolean {
+    return this.authService.can(permission);
   }
 
   hasOverdueRental(member: Member): boolean {

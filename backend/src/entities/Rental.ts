@@ -8,7 +8,6 @@ import { decimalTransformer } from "../utils/money";
 export enum RentalStatus {
   ACTIVE = "active",
   RETURNED = "returned",
-  OVERDUE = "overdue",
   LOST = "lost"
 }
 

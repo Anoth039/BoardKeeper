@@ -2,3 +2,4 @@
 **/dist
 frontend/.angular
 backend/.env
+backend/coverage

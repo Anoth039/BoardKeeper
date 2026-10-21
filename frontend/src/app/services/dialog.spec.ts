@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 
 import { DialogService } from './dialog';
 
-describe('DialogService', () => {
+describe('Párbeszédablak-szolgáltatás', () => {
   let service: DialogService;
 
   beforeEach(() => {
@@ -10,7 +10,7 @@ describe('DialogService', () => {
     service = TestBed.inject(DialogService);
   });
 
-  it('should be created', () => {
+  it('létrejön', () => {
     expect(service).toBeTruthy();
   });
 });

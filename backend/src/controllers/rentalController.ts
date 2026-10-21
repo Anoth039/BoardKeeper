@@ -12,6 +12,8 @@ import { AuditAction } from "../entities/CopyAuditLog";
 import { dateString, daysBetween } from "../utils/date";
 import { calculateCharges, effectiveDailyRate, EXTENSION_FEE } from "../utils/pricing";
 import { round2 } from "../utils/money";
+import { MAX_EXTENSIONS_PER_RENTAL, validateExtensionDate, validateNewRentalDates } from "../utils/rentalRules";
+import { hasPermission } from "../permissions";
 import { LessThan } from "typeorm";
 
 const rentalRepository = AppDataSource.getRepository(Rental);
@@ -20,11 +22,14 @@ const CONDITION_ORDER = [CopyCondition.NEW, CopyCondition.GOOD, CopyCondition.WO
 
 export const getAllRentals = async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const isAdmin = req.user?.role === "admin";
+    const canViewHandlers = hasPermission(req.user?.role, "rentals:view_handlers");
 
     const rentals = await rentalRepository.find({
-      relations: { 
-        member: true, gameCopy: { game: true }, ...(isAdmin ? { handledBy: true, returnedBy: true } : {}), extensions: { extendedBy: true }
+      relations: {
+        member: true,
+        gameCopy: { game: true },
+        ...(canViewHandlers ? { handledBy: true, returnedBy: true } : {}),
+        extensions: canViewHandlers ? { extendedBy: true } : true
       },
     });
 
@@ -37,12 +42,12 @@ export const getAllRentals = async (req: AuthenticatedRequest, res: Response) =>
 
 export const getRentalById = async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const isAdmin = req.user?.role === "admin";
+    const canViewHandlers = hasPermission(req.user?.role, "rentals:view_handlers");
 
     const id = Number(req.params.id);
     const rental = await rentalRepository.findOne({
       where: { id },
-      relations: { member: true, gameCopy: { game: true }, ...(isAdmin ? { handledBy: true, returnedBy: true } : {}) },
+      relations: { member: true, gameCopy: { game: true }, ...(canViewHandlers ? { handledBy: true, returnedBy: true } : {}) },
     });
 
     if (!rental) {
@@ -90,11 +95,18 @@ export const createRental = async (req: AuthenticatedRequest, res: Response) => 
       });
     }
 
+    const dateError = validateNewRentalDates(rentalDate, dueDate);
+    if (dateError) {
+      return res.status(400).json({ message: dateError });
+    }
+
     const savedRental = await AppDataSource.transaction(async (manager) => {
       const memberRepo = manager.getRepository(Member);
       const gameCopyRepo = manager.getRepository(GameCopy);
       const rentalRepo = manager.getRepository(Rental);
       const userRepo = manager.getRepository(User);
+
+      await gameCopyRepo.findOne({ where: { id: gameCopyId }, lock: { mode: "pessimistic_write" } });
 
       const member = await memberRepo.findOneBy({ id: memberId });
       if (!member) {
@@ -284,8 +296,13 @@ export const extendRental = async (req: AuthenticatedRequest, res: Response) => 
       if (daysBetween(rental.dueDate, dateString()) > 0) {
         return res.status(409).json({ message: "This rental is already overdue and cannot be extended. Please return it or mark it as lost instead." });
       }
-      if (newDueDate <= rental.dueDate) {
-        return res.status(400).json({ message: "New due date must be after the current due date" });
+      const extensionError = validateExtensionDate(rental.dueDate, newDueDate);
+      if (extensionError) {
+        return res.status(400).json({ message: extensionError });
+      }
+      const extensionCount = await extensionRepo.count({ where: { rental: { id: rental.id } } });
+      if (extensionCount >= MAX_EXTENSIONS_PER_RENTAL) {
+        return res.status(409).json({ message: `A rental can be extended at most ${MAX_EXTENSIONS_PER_RENTAL} times` });
       }
 
       const extendedByUser = req.user
@@ -376,12 +393,29 @@ export const markRentalLost = async (req: AuthenticatedRequest, res: Response) =
 export const deleteRental = async (req: Request, res: Response) => {
   try {
     const id = Number(req.params.id);
-    const result = await rentalRepository.delete(id);
 
-    if (result.affected === 0) {
-      return res.status(404).json({ message: "Rental not found" });
-    }
+    await AppDataSource.transaction(async (manager) => {
+      const rental = await manager.getRepository(Rental).findOne({
+        where: { id },
+        relations: { gameCopy: true },
+      });
 
+      if (!rental) {
+        return res.status(404).json({ message: "Rental not found" });
+      }
+      if (rental.status !== RentalStatus.ACTIVE) {
+        return res.status(409).json({ message: "Only active rentals can be deleted. Returned or lost rentals are kept as history." });
+      }
+
+      if (rental.gameCopy) {
+        rental.gameCopy.isAvailable = true;
+        await manager.getRepository(GameCopy).save(rental.gameCopy);
+      }
+      await manager.getRepository(Rental).delete(id);
+    });
+
+    if (res.headersSent) return;
+    await assignQueuedReservations();
     res.status(204).send();
   } catch (error) {
     console.error("Failed to delete rental:", error);
