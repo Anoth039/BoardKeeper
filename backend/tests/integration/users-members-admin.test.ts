@@ -8,6 +8,7 @@ import { Member } from '../../src/entities/Member';
 import { dateString } from '../../src/utils/date';
 import { initDb, closeDb, resetDb, createUser, createAdmin, createStaff, createGame, createCopy, createMember, createRentalDirect, bearer } from '../helpers';
 import { RentalStatus } from '../../src/entities/Rental';
+import { GameQueueEntry } from '../../src/entities/GameQueueEntry';
 
 jest.mock('../../src/mailer', () => ({
   sendCodeEmail: jest.fn<() => Promise<void>>().mockResolvedValue(undefined),
@@ -214,6 +215,15 @@ describe('Tag módosítása', () => {
     const member = await createMember();
     const copy = await createCopy(await createGame());
     await request(app).put(`/api/game-copies/${copy.id}/reserve`).set(asStaff()).send({ memberId: member.id, reservedUntil: dateString(1) }).expect(200);
+    const res = await request(app).put(`/api/members/${member.id}`).set(asStaff()).send({ isActive: false });
+    expect(res.status).toBe(409);
+  });
+
+  it('várólistán álló tag nem inaktiválható (409)', async () => {
+    const member = await createMember();
+    const game = await createGame();
+    const repo = AppDataSource.getRepository(GameQueueEntry);
+    await repo.save(repo.create({ game, member }));
     const res = await request(app).put(`/api/members/${member.id}`).set(asStaff()).send({ isActive: false });
     expect(res.status).toBe(409);
   });

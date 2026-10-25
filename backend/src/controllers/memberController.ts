@@ -6,10 +6,12 @@ import { GameCopy } from "../entities/GameCopy";
 import { MoreThanOrEqual } from "typeorm";
 import { dateString } from "../utils/date";
 import { AuthenticatedRequest } from "../middleware/authMiddleware";
+import { GameQueueEntry } from "../entities/GameQueueEntry";
 
 const memberRepository = AppDataSource.getRepository(Member);
 const rentalRepository = AppDataSource.getRepository(Rental);
 const gameCopyRepository = AppDataSource.getRepository(GameCopy);
+const queueRepository = AppDataSource.getRepository(GameQueueEntry);
 
 const countActiveReservations = (memberId: number) => gameCopyRepository.count({ where: { reservedFor: { id: memberId }, reservedUntil: MoreThanOrEqual(dateString()) } });
 
@@ -127,6 +129,15 @@ export const updateMember = async (req: AuthenticatedRequest, res: Response) => 
       if (reservations > 0) {
         return res.status(409).json({
           message: `Cannot deactivate this member — they have ${reservations} reserved copy/copies. Please cancel the reservation(s) first.`,
+        });
+      }
+    }
+
+    if (req.body.isActive === false && member.isActive === true) {
+      const queueSpots = await queueRepository.count({ where: { member: { id } } });
+      if (queueSpots > 0) {
+        return res.status(409).json({
+          message: `Cannot deactivate this member — they are in ${queueSpots} waiting queue(s). Please remove them from the queue(s) first.`,
         });
       }
     }
