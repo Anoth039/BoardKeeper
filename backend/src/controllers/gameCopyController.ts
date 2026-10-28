@@ -15,7 +15,6 @@ import { AuthenticatedRequest } from "../middleware/authMiddleware";
 const gameCopyRepository = AppDataSource.getRepository(GameCopy);
 const gameRepository = AppDataSource.getRepository(Game);
 const rentalRepository = AppDataSource.getRepository(Rental);
-const memberRepository = AppDataSource.getRepository(Member);
 
 const auditRepo = AppDataSource.getRepository(CopyAuditLog);
 const userRepo = AppDataSource.getRepository(User);
@@ -25,6 +24,21 @@ export async function logAudit(copy: GameCopy, gameId: number, action: AuditActi
   const log = auditRepo.create({ copy, copyNumberSnapshot: copy.copyNumber, gameId, action, oldValue, newValue, performedBy });
   await auditRepo.save(log);
 }
+
+class HttpError extends Error {
+  constructor(public status: number, message: string) {
+    super(message);
+  }
+}
+
+const findDuplicateCopyNumber = (gameId: number, copyNumber: string, excludeId?: number) => {
+  const query = gameCopyRepository
+    .createQueryBuilder("copy")
+    .where("copy.game.id = :gameId", { gameId })
+    .andWhere("LOWER(copy.copyNumber) = LOWER(:copyNumber)", { copyNumber });
+  if (excludeId !== undefined) query.andWhere("copy.id != :excludeId", { excludeId });
+  return query.getOne();
+};
 
 export const getAllGameCopies = async (req: Request, res: Response) => {
   try {
@@ -73,13 +87,7 @@ export const createGameCopy = async (req: AuthenticatedRequest, res: Response) =
       return res.status(404).json({ message: "Game not found" });
     }
 
-    const existing = await gameCopyRepository
-      .createQueryBuilder("copy")
-      .where("copy.game.id = :gameId", { gameId })
-      .andWhere("LOWER(copy.copyNumber) = LOWER(:copyNumber)", { copyNumber: trimmed })
-      .getOne();
-
-    if (existing) {
+    if (await findDuplicateCopyNumber(gameId, trimmed)) {
       return res.status(409).json({ message: `A copy named "${trimmed}" already exists for this game` });
     }
 
@@ -125,13 +133,7 @@ export const createGameCopiesBulk = async (req: AuthenticatedRequest, res: Respo
         });
       }
 
-      const existing = await gameCopyRepository
-        .createQueryBuilder("copy")
-        .where("copy.game.id = :gameId", { gameId })
-        .andWhere("LOWER(copy.copyNumber) = LOWER(:copyNumber)", { copyNumber })
-        .getOne();
-
-      if (existing) duplicates.push(copyNumber);
+      if (await findDuplicateCopyNumber(gameId, copyNumber)) duplicates.push(copyNumber);
       else copies.push(gameCopyRepository.create({ game, condition, copyNumber }));
     }
 
@@ -181,6 +183,9 @@ export const updateGameCopy = async (req: AuthenticatedRequest, res: Response) =
       const trimmed = copyNumber.trim();
       if (trimmed.length < 3 || trimmed.length > 12) {
         return res.status(400).json({ message: "copyNumber must be between 3 and 12 characters" });
+      }
+      if (await findDuplicateCopyNumber(gameId, trimmed, copy.id)) {
+        return res.status(409).json({ message: `A copy named "${trimmed}" already exists for this game` });
       }
       await logAudit(copy, gameId, AuditAction.NAME_CHANGED, copy.copyNumber, trimmed, userId);
       copy.copyNumber = trimmed;
@@ -261,43 +266,49 @@ export const reserveGameCopy = async (req: AuthenticatedRequest, res: Response) 
       return res.status(400).json({ message: `A reservation can last from today up to ${MAX_RESERVATION_DAYS} days` });
     }
 
-    const copy = await gameCopyRepository.findOne({
-      where: { id },
-      relations: { game: true, reservedFor: true },
+    const { copy, member, saved } = await AppDataSource.transaction(async (manager) => {
+      const copyRepo = manager.getRepository(GameCopy);
+      const memberRepo = manager.getRepository(Member);
+
+      const lockedCopy = await copyRepo.findOne({ where: { id }, lock: { mode: "pessimistic_write" } });
+      const member = await memberRepo.findOne({ where: { id: Number(memberId) }, lock: { mode: "pessimistic_write" } });
+
+      const copy = lockedCopy && await copyRepo.findOne({ where: { id }, relations: { game: true, reservedFor: true } });
+      if (!copy) {
+        throw new HttpError(404, "Game copy not found");
+      }
+      if (!member) {
+        throw new HttpError(404, "Member not found");
+      }
+      if (!member.isActive) {
+        throw new HttpError(409, "Inactive members cannot reserve copies");
+      }
+      if (copy.condition === CopyCondition.LOST) {
+        throw new HttpError(409, "A lost copy cannot be reserved");
+      }
+      if (!copy.isAvailable) {
+        throw new HttpError(409, "Only copies that are in the library can be reserved");
+      }
+      if (hasActiveReservation(copy)) {
+        throw new HttpError(409, `This copy is already reserved for ${copy.reservedFor!.firstName} ${copy.reservedFor!.lastName}`);
+      }
+      if ((await countMemberHolds(member.id, manager)) >= MAX_ACTIVE_RESERVATIONS_PER_MEMBER) {
+        throw new HttpError(409, `${member.firstName} ${member.lastName} already has ${MAX_ACTIVE_RESERVATIONS_PER_MEMBER} active reservations / queue spots`);
+      }
+
+      copy.reservedFor = member;
+      copy.reservedUntil = reservedUntil;
+      return { copy, member, saved: await copyRepo.save(copy) };
     });
-    if (!copy) {
-      return res.status(404).json({ message: "Game copy not found" });
-    }
-
-    const member = await memberRepository.findOneBy({ id: Number(memberId) });
-    if (!member) {
-      return res.status(404).json({ message: "Member not found" });
-    }
-    if (!member.isActive) {
-      return res.status(409).json({ message: "Inactive members cannot reserve copies" });
-    }
-    if (copy.condition === CopyCondition.LOST) {
-      return res.status(409).json({ message: "A lost copy cannot be reserved" });
-    }
-    if (!copy.isAvailable) {
-      return res.status(409).json({ message: "Only copies that are in the library can be reserved" });
-    }
-    if (hasActiveReservation(copy)) {
-      return res.status(409).json({ message: `This copy is already reserved for ${copy.reservedFor!.firstName} ${copy.reservedFor!.lastName}` });
-    }
-    if ((await countMemberHolds(member.id)) >= MAX_ACTIVE_RESERVATIONS_PER_MEMBER) {
-      return res.status(409).json({ message: `${member.firstName} ${member.lastName} already has ${MAX_ACTIVE_RESERVATIONS_PER_MEMBER} active reservations / queue spots` });
-    }
-
-    copy.reservedFor = member;
-    copy.reservedUntil = reservedUntil;
-    const saved = await gameCopyRepository.save(copy);
 
     await logAudit(copy, copy.game.id, AuditAction.RESERVED, null, `${member.firstName} ${member.lastName} until ${reservedUntil}`, req.user?.userId ?? null);
     sendReservationEmail(member.email, member.firstName, copy.game.title, copy.copyNumber, reservedUntil)
       .catch(err => console.error("Failed to send reservation email:", err));
     res.json(saved);
   } catch (error) {
+    if (error instanceof HttpError) {
+      return res.status(error.status).json({ message: error.message });
+    }
     console.error("Failed to reserve copy:", error);
     res.status(500).json({ message: "Failed to reserve copy" });
   }

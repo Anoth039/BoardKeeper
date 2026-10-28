@@ -1,5 +1,5 @@
 import { Response } from "express";
-import { MoreThanOrEqual } from "typeorm";
+import { EntityManager, MoreThanOrEqual } from "typeorm";
 import { AppDataSource } from "../data-source";
 import { CopyCondition, GameCopy, MAX_RESERVATION_DAYS, MAX_ACTIVE_RESERVATIONS_PER_MEMBER, hasActiveReservation } from "../entities/GameCopy";
 import { GameQueueEntry } from "../entities/GameQueueEntry";
@@ -19,9 +19,9 @@ const auditRepo = AppDataSource.getRepository(CopyAuditLog);
 const isFree = (copy: GameCopy): boolean =>
   copy.isAvailable && copy.condition !== CopyCondition.LOST && !hasActiveReservation(copy);
 
-export const countMemberHolds = async (memberId: number): Promise<number> =>
-  (await copyRepo.count({ where: { reservedFor: { id: memberId }, reservedUntil: MoreThanOrEqual(dateString()) } }))
-  + (await queueRepo.count({ where: { member: { id: memberId } } }));
+export const countMemberHolds = async (memberId: number, manager: EntityManager = AppDataSource.manager): Promise<number> =>
+  (await manager.count(GameCopy, { where: { reservedFor: { id: memberId }, reservedUntil: MoreThanOrEqual(dateString()) } }))
+  + (await manager.count(GameQueueEntry, { where: { member: { id: memberId } } }));
 
 const processQueues = async (): Promise<void> => {
   const entries = await queueRepo.find({ relations: { game: true, member: true }, order: { id: "ASC" } });

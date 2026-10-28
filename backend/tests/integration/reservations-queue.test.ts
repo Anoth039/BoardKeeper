@@ -49,7 +49,7 @@ describe('Példány foglalása', () => {
     expect(await AppDataSource.getRepository(CopyAuditLog).count({ where: { action: AuditAction.RESERVED } })).toBe(1);
   });
 
-  it('a foglalás egy tag másik példányát nem érinti, a példány kölcsönözhető a foglalónak (lásd rentals teszt)', async () => {
+  it('a foglalás nem érinti ugyanannak a játéknak a másik példányát', async () => {
     const game = await createGame();
     const a = await createCopy(game);
     const b = await createCopy(game);
@@ -242,7 +242,7 @@ describe('Várólista', () => {
     const after = await copyWithHolder(copy.id);
     expect(after.reservedFor?.id).toBe(first.id);
     expect(after.reservedUntil).toBe(dateString(2));
-    // a másodikat még várakozik
+
     const remaining = await AppDataSource.getRepository(GameQueueEntry).find({ relations: { member: true } });
     expect(remaining.map(e => e.member.id)).toEqual([second.id]);
     expect(mockedReservationMail).toHaveBeenCalledTimes(1);
@@ -329,6 +329,41 @@ describe('Példányok kezelése (admin)', () => {
     expect((await post({ gameId: game.id, copyNumber: 'ABC-001' })).status).toBe(409);
   });
 
+  describe('átnevezés', () => {
+    const rename = (id: number, copyNumber: string) =>
+      request(app).put(`/api/game-copies/${id}`).set({ Authorization: bearer(admin) }).send({ copyNumber });
+
+    it('azonos játékon belül már létező azonosítóra nem nevezhető át, kis/nagybetűtől függetlenül (409)', async () => {
+      const game = await createGame();
+      await createCopy(game, { copyNumber: 'ABC-001' });
+      const other = await createCopy(game, { copyNumber: 'ABC-002' });
+
+      const res = await rename(other.id, 'abc-001');
+
+      expect(res.status).toBe(409);
+      expect((await AppDataSource.getRepository(GameCopy).findOneByOrFail({ id: other.id })).copyNumber).toBe('ABC-002');
+      expect(await AppDataSource.getRepository(CopyAuditLog).count({ where: { action: AuditAction.NAME_CHANGED } })).toBe(0);
+    });
+
+    it('a példány a saját azonosítóját kis/nagybetű módosítással megtarthatja (200)', async () => {
+      const game = await createGame();
+      const copy = await createCopy(game, { copyNumber: 'abc-001' });
+
+      const res = await rename(copy.id, 'ABC-001');
+
+      expect(res.status).toBe(200);
+      expect((await AppDataSource.getRepository(GameCopy).findOneByOrFail({ id: copy.id })).copyNumber).toBe('ABC-001');
+    });
+
+    it('másik játék példányának azonosítójára átnevezhető (200)', async () => {
+      const taken = await createCopy(await createGame(), { copyNumber: 'ABC-001' });
+      const copy = await createCopy(await createGame(), { copyNumber: 'ABC-002' });
+
+      expect(taken.copyNumber).toBe('ABC-001');
+      expect((await rename(copy.id, 'ABC-001')).status).toBe(200);
+    });
+  });
+
   it('másik játéknál ugyanaz az azonosító használható', async () => {
     const g1 = await createGame();
     const g2 = await createGame();
@@ -357,5 +392,28 @@ describe('Párhuzamosság', () => {
     const statuses = [r1.status, r2.status].sort();
     expect(statuses).toEqual([201, 409]);
     expect(await AppDataSource.getRepository('Rental').count()).toBe(1);
+  });
+
+  it('két egyszerre érkező foglalás ugyanarra a példányra: pontosan egy sikerülhet', async () => {
+    const copy = await createCopy(await createGame());
+    const a = await createMember();
+    const b = await createMember();
+
+    const [r1, r2] = await Promise.all([reserve(copy.id, a.id), reserve(copy.id, b.id)]);
+
+    expect([r1.status, r2.status].sort()).toEqual([200, 409]);
+    const after = await copyWithHolder(copy.id);
+    expect([a.id, b.id]).toContain(after.reservedFor?.id);
+    expect(await AppDataSource.getRepository(CopyAuditLog).count({ where: { action: AuditAction.RESERVED } })).toBe(1);
+    expect(mockedReservationMail).toHaveBeenCalledTimes(1);
+  });
+
+  it('egy tag egyszerre három példányt foglalna: a tagonkénti limit (2) nem kerülhető meg', async () => {
+    const member = await createMember();
+    const copies = [await createCopy(await createGame()), await createCopy(await createGame()), await createCopy(await createGame())];
+
+    const results = await Promise.all(copies.map(c => reserve(c.id, member.id)));
+
+    expect(results.map(r => r.status).sort()).toEqual([200, 200, 409]);
   });
 });
