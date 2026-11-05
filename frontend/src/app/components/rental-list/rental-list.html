@@ -6,8 +6,8 @@
       <span class="input-group-text">
         <i class="bi bi-search text-muted"></i>
       </span>
-      <input type="text" class="form-control" placeholder="Search member, game, copy..." [(ngModel)]="searchTerm"/>
-      <button *ngIf="searchTerm" class="btn btn-outline-secondary" (click)="searchTerm = ''">
+      <input type="text" class="form-control" placeholder="Search member, game, copy..." [(ngModel)]="searchTerm" (input)="resetPaging()"/>
+      <button *ngIf="searchTerm" class="btn btn-outline-secondary" (click)="searchTerm = ''; resetPaging()">
         <i class="bi bi-x"></i>
       </button>
     </div>
@@ -28,7 +28,7 @@
     </div>
   </div>
 
-  <div class="filter-panel mt-2" *ngIf="showFilters">
+  <div class="filter-panel mt-2" *ngIf="showFilters" (input)="resetPaging()" (change)="resetPaging()">
     <div class="row g-2 align-items-end">
       <div class="col-sm-3">
         <label class="caption d-block mb-1">Status</label>
@@ -77,7 +77,7 @@
 </div>
 
 <div class="card-stack" *ngIf="filteredRentals.length > 0">
-  <div class="surface rental-card" *ngFor="let rental of filteredRentals">
+  <div class="surface rental-card" *ngFor="let rental of visibleRentals">
 
     <div class="stripe" [ngClass]="{
       'stripe-danger': isOverdue(rental),
@@ -180,6 +180,12 @@
     </div>
 
   </div>
+</div>
+
+<div class="text-center my-3" *ngIf="visibleRentals.length < filteredRentals.length">
+  <button class="btn btn-outline-secondary btn-sm" (click)="showMore()">
+    Show more ({{ filteredRentals.length - visibleRentals.length }} remaining)
+  </button>
 </div>
 
 <div class="modal-backdrop-custom" *ngIf="previewPdfUrl" (click)="closePreview()">

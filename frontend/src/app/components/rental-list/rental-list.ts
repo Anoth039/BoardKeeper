@@ -37,6 +37,9 @@ export class RentalListComponent implements OnInit {
   previewPdfUrl: string | null = null;
   previewRental: Rental | null = null;
 
+  readonly pageSize = 25;
+  visibleCount = this.pageSize;
+
   isOverdue = isRentalOverdue;
   canExtend = canExtendRental;
   isDueSoon = isRentalDueSoon;
@@ -83,7 +86,20 @@ export class RentalListComponent implements OnInit {
     this.rentalDateTo = '';
     this.dueDateFrom = '';
     this.dueDateTo = '';
+    this.resetPaging();
     this.cdr.detectChanges();
+  }
+
+  get visibleRentals(): Rental[] {
+    return this.filteredRentals.slice(0, this.visibleCount);
+  }
+
+  showMore(): void {
+    this.visibleCount += this.pageSize;
+  }
+
+  resetPaging(): void {
+    this.visibleCount = this.pageSize;
   }
 
   get filteredRentals(): Rental[] {

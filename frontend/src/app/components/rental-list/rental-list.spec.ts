@@ -116,4 +116,15 @@ describe('Kölcsönzések listázása', () => {
     expect(component.dueDateTo).toBe('');
     expect(component.filteredRentals).toHaveLength(3);
   });
+
+  it('az első oldalon csak a lapméretnyi kölcsönzést mutatja, a Show more pedig bővíti', () => {
+    component.rentals = Array.from({ length: 30 }, (_, i) => ({ ...rentalsData[0], id: 100 + i }));
+    expect(component.visibleRentals).toHaveLength(25);
+
+    component.showMore();
+    expect(component.visibleRentals).toHaveLength(30);
+
+    component.resetPaging();
+    expect(component.visibleRentals).toHaveLength(25);
+  });
 });
