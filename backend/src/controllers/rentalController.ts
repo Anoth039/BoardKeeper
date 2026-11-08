@@ -108,7 +108,7 @@ export const createRental = async (req: AuthenticatedRequest, res: Response) => 
 
       await gameCopyRepo.findOne({ where: { id: gameCopyId }, lock: { mode: "pessimistic_write" } });
 
-      const member = await memberRepo.findOneBy({ id: memberId });
+      const member = await memberRepo.findOne({ where: { id: memberId }, lock: { mode: "pessimistic_write" } });
       if (!member) {
         return res.status(404).json({ message: "Member not found" });
       }
@@ -199,6 +199,8 @@ export const returnRental = async (req: AuthenticatedRequest, res: Response) => 
       const gameCopyRepo = manager.getRepository(GameCopy);
       const userRepo = manager.getRepository(User);
 
+      await rentalRepo.findOne({ where: { id }, lock: { mode: "pessimistic_write" } });
+
       const rental = await rentalRepo.findOne({
         where: { id },
         relations: { gameCopy: { game: true } },
@@ -286,7 +288,7 @@ export const extendRental = async (req: AuthenticatedRequest, res: Response) => 
       const extensionRepo = manager.getRepository(RentalExtension);
       const userRepo = manager.getRepository(User);
 
-      const rental = await rentalRepo.findOneBy({ id });
+      const rental = await rentalRepo.findOne({ where: { id }, lock: { mode: "pessimistic_write" } });
       if (!rental) {
         return res.status(404).json({ message: "Rental not found" });
       }
@@ -339,6 +341,8 @@ export const markRentalLost = async (req: AuthenticatedRequest, res: Response) =
       const rentalRepo = manager.getRepository(Rental);
       const gameCopyRepo = manager.getRepository(GameCopy);
       const userRepo = manager.getRepository(User);
+
+      await rentalRepo.findOne({ where: { id }, lock: { mode: "pessimistic_write" } });
 
       const rental = await rentalRepo.findOne({
         where: { id },
@@ -395,6 +399,8 @@ export const deleteRental = async (req: Request, res: Response) => {
     const id = Number(req.params.id);
 
     await AppDataSource.transaction(async (manager) => {
+      await manager.getRepository(Rental).findOne({ where: { id }, lock: { mode: "pessimistic_write" } });
+
       const rental = await manager.getRepository(Rental).findOne({
         where: { id },
         relations: { gameCopy: true },

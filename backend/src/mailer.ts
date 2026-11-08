@@ -1,15 +1,30 @@
 import nodemailer from "nodemailer";
 
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: process.env.GMAIL_USER,
-    pass: process.env.GMAIL_APP_PASSWORD,
-  },
-});
+const gmailConfigured = Boolean(process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD);
+
+const transporter = gmailConfigured
+  ? nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.GMAIL_USER,
+        pass: process.env.GMAIL_APP_PASSWORD,
+      },
+    })
+  : null;
+
+const send = async (options: nodemailer.SendMailOptions) => {
+  if (!transporter) {
+    console.log(
+      `[mailer] Gmail is not configured, the e-mail is printed instead of sent.\n` +
+      `To: ${options.to}\nSubject: ${options.subject}\n\n${options.text}\n`
+    );
+    return;
+  }
+  await transporter.sendMail(options);
+};
 
 export const sendCodeEmail = async (to: string, code: string, purpose: string) => {
-  await transporter.sendMail({
+  await send({
     from: `"BoardKeeper" <${process.env.GMAIL_USER}>`,
     to,
     subject: `Your BoardKeeper ${purpose} code`,
@@ -19,7 +34,7 @@ export const sendCodeEmail = async (to: string, code: string, purpose: string) =
 };
 
 export const sendReservationEmail = async (to: string, firstName: string, gameTitle: string, copyNumber: string, reservedUntil: string) => {
-  await transporter.sendMail({
+  await send({
     from: `"BoardKeeper" <${process.env.GMAIL_USER}>`,
     to,
     subject: `Reservation Confirmed: ${gameTitle}`,
@@ -34,7 +49,7 @@ export const sendReservationEmail = async (to: string, firstName: string, gameTi
 };
 
 export const sendApprovalEmail = async (to: string, role: string) => {
-  await transporter.sendMail({
+  await send({
     from: `"BoardKeeper" <${process.env.GMAIL_USER}>`,
     to,
     subject: "Your BoardKeeper account has been approved",
